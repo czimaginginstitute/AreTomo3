@@ -41,6 +41,8 @@ void CTiltSeries::Create(int* piStkSize)
 
 void CTiltSeries::Create(int* piImgSize, int iNumTilts)
 {
+	mCleanCenters();
+	//-----------------
 	int aiStkSize[] = {piImgSize[0], piImgSize[1], iNumTilts};
 	CMrcStack::Create(2, aiStkSize);
 	//-----------------
@@ -52,7 +54,6 @@ void CTiltSeries::Create(int* piImgSize, int iNumTilts)
 	m_piAcqIndices = new int[iNumTilts];
 	memset(m_piAcqIndices, 0, sizeof(int) * iNumTilts);
 	//----------------
-	mCleanCenters();
 	m_ppfCenters = new float*[m_aiStkSize[2]];
 	for(int i=0; i<m_aiStkSize[2]; i++)
 	{	float* pfCent = new float[2];

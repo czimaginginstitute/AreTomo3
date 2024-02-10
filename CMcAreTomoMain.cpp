@@ -59,17 +59,22 @@ bool CMcAreTomoMain::DoIt(void)
 	//--------------------------------------------------------
 	// wait a new movie for 10 minutes and quit if not found.
 	//--------------------------------------------------------
+	bool bExit = false;
 	while(true)
 	{	int iQueueSize = s_pStackFolder->GetQueueSize();
-		if(iQueueSize > 0) mProcess();
-		bool bExit = s_pStackFolder->WaitForExit(1.0f);
+		if(iQueueSize > 0) 
+		{	mProcess();
+			s_pStackFolder->WaitForExit(5.0f);
+			continue;
+		}
+		bExit = s_pStackFolder->WaitForExit(1.0f);
 		if(bExit) break;
 	}
 	printf("All mdoc files have been processed, "
 	   "waiting processing to finish.\n\n");	
 	//-----------------
 	while(true)
-	{	bool bExit = CProcessThread::WaitExitAll(1.0f);
+	{	bExit = CProcessThread::WaitExitAll(1.0f);
 		if(bExit) break;
 	}
 	printf("All threads have finished, program exits.\n\n");

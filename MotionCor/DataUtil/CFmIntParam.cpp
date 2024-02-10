@@ -57,21 +57,16 @@ void CFmIntParam::Setup(int iNumRawFms, int iMrcMode)
 {
 	CMcInput* pMcInput = CMcInput::GetInstance();
 	if(m_iNumRawFms == iNumRawFms && m_iMrcMode == iMrcMode) return; 
-	//--------------------------------------------------------------
+	//-----------------
 	mClean();
 	m_iNumRawFms = iNumRawFms;
 	m_iMrcMode = iMrcMode;
-	//--------------------
+	//-----------------
 	CReadFmIntFile* pReadFmIntFile = CReadFmIntFile::GetInstance();
 	bool bIntegrate = pReadFmIntFile->NeedIntegrate();
-	if(bIntegrate) 
-	{	mSetupFileInt();
-	}
-	else if(pReadFmIntFile->HasDose())
-	{	mSetupFile();
-	}
+	if(bIntegrate) mCalcIntFms(); 
 	else mSetup();
-	//--------------------------
+	//-----------------
 	mCalcIntFmCenters();
 	//printf("Raw and rendered frames: %4d  %4d\n\n",
 	//   m_iNumRawFms, m_iNumIntFms);
@@ -138,126 +133,73 @@ void CFmIntParam::mSetup(void)
 	}
 }
 
-void CFmIntParam::mSetupFile(void)
+void CFmIntParam::mCalcIntFms(void)
 {
-	CMcInput* pInput = CMcInput::GetInstance();
 	CReadFmIntFile* pReadFmIntFile = CReadFmIntFile::GetInstance();
-	m_iNumIntFms = m_iNumRawFms;
-	mAllocate();
+        int iNumEntries = pReadFmIntFile->m_iNumEntries;
 	//-----------------
-	for(int i=0; i<m_iNumIntFms; i++)
-	{	m_piIntFmStart[i] = i;
-		m_piIntFmSize[i] = 1;
-	}
+	int* piIntFmSizes = new int[m_iNumRawFms];
+	float* pfIntFmDoses = new float[m_iNumRawFms];
 	//-----------------
-	int iNumIntFms = 0;
-	for(int i=0; i<pReadFmIntFile->m_iNumEntries; i++)
+	m_iNumIntFms = 0;
+	int iCountRaws = 0;
+	int iLeftRawFms = 0;
+	//-----------------
+	for(int i=0; i<iNumEntries; i++)
 	{	int iGroupSize = pReadFmIntFile->GetGroupSize(i);
-		float fDose = pReadFmIntFile->GetDose(i);
-		for(int j=0; j<iGroupSize; j++)
-		{	m_pfIntFmDose[iNumIntFms] = fDose;
-			iNumIntFms += 1;
-			if(iNumIntFms == m_iNumIntFms) break;
+		int iIntSize = pReadFmIntFile->GetIntSize(i);
+		float fRawDose = pReadFmIntFile->GetDose(i);
+		//----------------
+		iLeftRawFms = m_iNumRawFms - iCountRaws;
+		if(iLeftRawFms < iGroupSize) iGroupSize = iLeftRawFms;
+		if(iGroupSize <= 0) continue;
+		//----------------
+		int iNumInts = iGroupSize / iIntSize;
+		if(iNumInts == 0) continue;
+		for(int j=0; j<iNumInts; j++)
+		{	piIntFmSizes[m_iNumIntFms] = iIntSize;
+			m_iNumIntFms += 1;
 		}
-		if(iNumIntFms == m_iNumIntFms) break;
+		//----------------
+		int iLeft = iGroupSize % iIntSize;
+		int iSplits = iLeft / iNumInts;		
+		for(int j=0; j<iNumInts; j++)
+		{	int k = m_iNumIntFms - 1 - j;
+			piIntFmSizes[k] += iSplits;
+		}
+		iLeft = iLeft % iNumInts;
+		for(int j=0; j<iLeft; j++)
+		{	int k = m_iNumIntFms - 1 - j;
+			piIntFmSizes[k] += 1;
+		}
+		//----------------
+		for(int j=0; j<iNumInts; j++)
+		{	int k = m_iNumIntFms - 1 - j;
+			pfIntFmDoses[k] = fRawDose * piIntFmSizes[k];
+			iCountRaws += piIntFmSizes[k];
+		}
 	}
 	//-----------------
-	m_pfAccFmDose[0] = m_pfIntFmDose[0];
-	for(int i=1; i<m_iNumIntFms; i++)
-	{	m_pfAccFmDose[i] = m_pfIntFmDose[i] + m_pfAccFmDose[i-1];
-	}
-}
-
-void CFmIntParam::mSetupFileInt(void)
-{
-	CMcInput *pInput = CMcInput::GetInstance();
-	CReadFmIntFile* pReadFmIntFile = CReadFmIntFile::GetInstance();
-	//------------------------------------------------------------
-	// Make sure the total raw frames cannot exceed the stack size
-	//------------------------------------------------------------
-	int iSumFms = 0;
-       	int iLastEntry = pReadFmIntFile->m_iNumEntries - 1;
-	int iGpSize0 = pReadFmIntFile->GetGroupSize(0);
-	int iGpSizeN = pReadFmIntFile->GetGroupSize(iLastEntry);
-	int iNumEntries = pReadFmIntFile->m_iNumEntries;
-	//------------------------------------------------------
-	for(int i=0; i<iNumEntries; i++)
-	{	iSumFms += pReadFmIntFile->GetGroupSize(i);
-	}
-	int iDiff = iSumFms - m_iNumRawFms;
-	iGpSizeN -= iDiff;
-	//---------------------------------------------------------
-	// calculate for each group (i.e. the line in the frame
-	// integration file) number of integrated frames and number
-	// of raw frames. make sure they divisible. The extra
-	// raw frames will be added to the last integrated frame.
-	//---------------------------------------------------------
-	int iNumRawFms = 0, iNumIntFms = 0;
-	int iLeftRawFms = m_iNumRawFms;
-	int* piNumIntFmsPerGroup = new int[iNumEntries];
-	int* piNumRawFmsPerGroup = new int[iNumEntries];
-	for(int i=0; i<iNumEntries; i++)
-	{	int iGrpSize = pReadFmIntFile->GetGroupSize(i);
-		int iIntSize = pReadFmIntFile->GetIntSize(i);
-		if(iGrpSize > iLeftRawFms) iGrpSize = iLeftRawFms;
-		//------------------------------------------------
-		piNumIntFmsPerGroup[i] = iGrpSize / iIntSize;
-		piNumRawFmsPerGroup[i] = (piNumIntFmsPerGroup[i] * iIntSize);
-		iNumIntFms += piNumIntFmsPerGroup[i];
-		iNumRawFms += piNumRawFmsPerGroup[i];
-		//-----------------------------------
-		iLeftRawFms = m_iNumRawFms - iNumRawFms;
-		if(iLeftRawFms < iIntSize) break;	
-	}
-	m_iNumIntFms = iNumIntFms;
 	mAllocate();
-	//-----------------------------------------------
-	// calculate each integrated frame size, ie, the
-	// number of raw frames each has.
-	//-----------------------------------------------
-	iNumIntFms = 0;
-	for(int i=0; i<iNumEntries; i++)
-	{	int iIntSize = pReadFmIntFile->GetIntSize(i);
-		for(int j=0; j<piNumIntFmsPerGroup[i]; j++)
-		{	m_piIntFmSize[iNumIntFms] = iIntSize;
-			iNumIntFms += 1;
-		}
-	}
-	//--------------------------------------------------------
-	// Add the leftover raw frames to the trailing integrated
-	// frames, one raw frame for one integrated frame.
-	//--------------------------------------------------------
-	for(int i=0; i<iLeftRawFms; i++)
-	{	int j = m_iNumIntFms - 1 - i;
-		m_piIntFmSize[j] += 1;
-	}
+	//-----------------
 	m_piIntFmStart[0] = 0;
+	m_piIntFmSize[0] = piIntFmSizes[0];
+	m_pfIntFmDose[0] = pfIntFmDoses[0];
 	for(int i=1; i<m_iNumIntFms; i++)
-	{	int j = i - 1;
-		m_piIntFmStart[i] = m_piIntFmStart[j] + m_piIntFmSize[j];
+	{	int m1 = i - 1;
+		m_piIntFmSize[i] = piIntFmSizes[i];
+		m_piIntFmStart[i] = m_piIntFmStart[m1] + piIntFmSizes[m1];
+		//----------------
+		m_pfIntFmDose[i] = pfIntFmDoses[i];
+		m_pfAccFmDose[i] = m_pfAccFmDose[m1] + piIntFmSizes[m1];	
 	}
-	//---------------------------------------------------------------
-	int iIntSize = pReadFmIntFile->GetIntSize(0);
-	float fDose = pReadFmIntFile->GetDose(0);
-	if(fDose <= 0) fDose = 0.0f;
-	for(int i=0; i<m_iNumIntFms; i++)
-	{	m_pfIntFmDose[i] = fDose * m_piIntFmSize[i];
-	}
-	m_pfAccFmDose[0] = m_pfIntFmDose[0];
-	for(int i=1; i<m_iNumIntFms; i++)
-	{	int j = i - 1;
-		m_pfAccFmDose[i] = m_pfIntFmDose[i] + m_pfAccFmDose[j];
-	}
-	//-------------------------------------------------------------
-	delete[] piNumIntFmsPerGroup;
-	delete[] piNumRawFmsPerGroup;
+	if(piIntFmSizes != 0L) delete[] piIntFmSizes;
+	if(pfIntFmDoses != 0L) delete[] pfIntFmDoses;
 
-	/*
 	for(int i=0; i<m_iNumIntFms; i++)
 	{	printf("%4d %4d %4d %8.3f %8.3f\n", i, m_piIntFmStart[i],
 		   m_piIntFmSize[i], m_pfIntFmDose[i], m_pfAccFmDose[i]);
-	}
-	*/ 
+	}	
 }
 
 void CFmIntParam::mClean(void)

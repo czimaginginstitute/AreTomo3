@@ -86,7 +86,10 @@ void CBufferPool::Clean(void)
 //------------------------------------------------------------------------------
 void CBufferPool::Create(int* piStkSize)
 {
-	if(m_bCreated) this->Adjust(piStkSize[2]);
+	if(m_bCreated) 
+	{	this->Adjust(piStkSize[2]);
+		return;
+	}
 	//-----------------
 	this->Clean();
 	CInput* pInput = CInput::GetInstance();

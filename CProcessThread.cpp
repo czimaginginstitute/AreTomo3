@@ -98,6 +98,7 @@ void CProcessThread::ThreadMain(void)
 	pLogFiles->Create(pReadMdoc->m_acMdocFile);
 	//-----------------	
 	mProcessTsPackage();
+	printf("GPU %d: process thread exiting.\n\n", m_iNthGpu);
 }
 
 void CProcessThread::mProcessTsPackage(void)
@@ -131,9 +132,9 @@ void CProcessThread::mProcessMovie(int iTilt)
 	pMcPackage->m_fTilt = pReadMdoc->GetTilt(iTilt);
 	pMcPackage->m_fPixSize = pInput->m_fPixSize;
 	//-----------------
-	printf("Motion correct %s\n"
+	printf("GPU %d: Motion correct %s\n"
 	   "------------------\n\n", 
-	   pcFileName);
+	   m_iNthGpu, pcFileName);
 	//-----------------
 	MotionCor::CMotionCorMain mcMain;
 	mcMain.DoIt(m_iNthGpu);
