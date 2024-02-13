@@ -111,9 +111,22 @@ void CProcessThread::mProcessTsPackage(void)
 	{	mProcessMovie(i);
 		mAssembleTiltSeries(i);
 	}
-	//-----------------
+	//--------------------------------------------------
+	// 1) Tilt series are sorted by tilt angle and then
+	// saved into MRC file.
+	// 2) The subsequent processing is done on the
+	// tilt-angle sorted tilt series.
+	//--------------------------------------------------
 	pTsPackage->SortTiltSeries(0);
 	pTsPackage->SaveTiltSeries();
+	//--------------------------------------------------
+	// 1) Since the saved tilt series have been sorted
+	// by tilt angles, its section indices should be
+	// in ascending order as the tilt angles.
+	// 2) Note: if not sorted by tilt angles, section
+	// indices should be the same as acquisition ones.
+	//--------------------------------------------------
+	pTsPackage->ResetSectionIndices();
 	//----------------------------------------------
 	// Start AreTomo processing: to be implemented.
 	//----------------------------------------------
@@ -150,9 +163,18 @@ void CProcessThread::mAssembleTiltSeries(int iTilt)
 	//-----------------
 	float fTilt = pReadMdoc->GetTilt(iTilt);
 	pTsPackage->SetTiltAngle(iTilt, fTilt);
-	//-----------------
+	//--------------------------------------------------
+	// 1) when processing starts with movies, section
+	// indices are the same as acquisition  indices. 
+	// 2) when starting with MRC files of tilt series,
+	// section indices (MRC indices) likely differs
+	// from acquisition indices since MRC files usually
+	// sort tilt images in terms of tilt angles, not
+	// acquisition sequence.
+	//--------------------------------------------------
 	int iAcqIdx = pReadMdoc->GetAcqIdx(iTilt);
 	pTsPackage->SetAcqIdx(iTilt, iAcqIdx);
+	pTsPackage->SetSecIdx(iTilt, iAcqIdx);
 	//-----------------
 	pTsPackage->SetSums(iTilt, pMcPackage->m_pAlnSums);
 	pTsPackage->SetImgDose(pMcPackage->m_pRawStack->m_fStkDose);

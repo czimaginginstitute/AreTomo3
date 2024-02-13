@@ -52,12 +52,19 @@ CAreTomoMain::~CAreTomoMain(void)
 bool CAreTomoMain::DoIt(int iNthGpu)
 {
 	m_iNthGpu = iNthGpu;	
-	//-----------------
 	mCreateAlnParams();
-	mRemoveDarkFrames();
-	mRemoveSpikes();	
 	//-----------------
-	mFindCtf();
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	if(pAtInput->m_iOutImod == 1)
+	{	mFindCtf();
+		mRemoveDarkFrames();
+	}
+	else
+	{	mRemoveDarkFrames();
+		mFindCtf();
+	}
+	//-----------------
+	mRemoveSpikes();	
 	mMassNorm();
 	mAlign();
 	//-----------------
@@ -148,7 +155,7 @@ void CAreTomoMain::mAlign(void)
 	mPatchAlign();
 	//-----------------
 	if(pInput->m_afTiltCor[0] == 0) 
-	{	pAlignParam->AddTiltOffset(-m_fTiltOffset);
+	{	pAlignParam->AddAlphaOffset(-m_fTiltOffset);
 	}
 	else
 	{	MAM::CDarkFrames* pDarkFrames = 
@@ -248,7 +255,7 @@ void CAreTomoMain::mFindTiltOffset(void)
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	if(fabs(pInput->m_afTiltCor[1]) > 0.1)
         {       m_fTiltOffset = pInput->m_afTiltCor[1];
-                pAlignParam->AddTiltOffset(m_fTiltOffset);
+                pAlignParam->AddAlphaOffset(m_fTiltOffset);
 		return;
         }
 	//-----------------
@@ -257,7 +264,7 @@ void CAreTomoMain::mFindTiltOffset(void)
 	float fTiltOffset = aTiltOffsetMain.DoIt();
 	m_fTiltOffset += fTiltOffset;
 	//-----------------
-	pAlignParam->AddTiltOffset(fTiltOffset);
+	pAlignParam->AddAlphaOffset(fTiltOffset);
 }
 
 void CAreTomoMain::mPatchAlign(void)

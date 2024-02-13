@@ -43,6 +43,7 @@ public:
 	//-----------------
 	void SetTilts(float* pfTilts);
 	void SetAcqs(int* piAcqIndices);
+	void SetSecs(int* piSecIndices);
 	//-----------------
 	void SetImage(int iTilt, void* pvImage);
 	void SetCenter(int iFrame, float* pfCent);
@@ -54,8 +55,11 @@ public:
 	float* GetAccDose(void);
 	float** GetImages(void); // do not free;
 	//-----------------
+	void ResetSecIndices(void); // make sec indices ascending
+	//-----------------
 	float* m_pfTilts;
-	int* m_piAcqIndices;
+	int* m_piAcqIndices; // acquistion index, same as mdoc z value.
+	int* m_piSecIndices; // section index in input MRC file.
 	float m_fImgDose;
 private:
 	void mSwap(int iIdx1, int iIdx2);
@@ -295,12 +299,14 @@ public:
 	void CreateTiltSeries(void);
 	void SetTiltAngle(int iTilt, float fTiltAngle);
 	void SetAcqIdx(int iTilt, int iAcqIdx);
+	void SetSecIdx(int iTilt, int iSecIdx);
 	void SetSums(int iTilt, CAlnSums* pAlnSums);
 	void SetImgDose(float fImgDose);
 	//-----------------
 	CTiltSeries* GetSeries(int iSeries); // 0 - raw, 1 - evn, 2 - odd
 	//-----------------
 	void SortTiltSeries(int iOrder); // 0 - by tilt, 1 - by acq
+	void ResetSectionIndices(void);
 	void SaveTiltSeries(void);
 	//-----------------
 	void SaveVol(CTiltSeries* pVol, int iVol);
@@ -348,10 +354,14 @@ private:
         bool mAsyncReadFolder(void);
         char* mGetSerial(char* pcInputFile);
         char* mGetInPrefix(void);
+	bool mCheckSkips(const char* pcString);
         void mClean(void);
+	//-----------------
         char m_acDirName[256];
         char m_acPrefix[256];
         char m_acSuffix[256];
+	char m_acSkips[256];
+	//-----------------
 	std::queue<char*> m_aFileQueue;
         int m_ifd;
         int m_iwd;

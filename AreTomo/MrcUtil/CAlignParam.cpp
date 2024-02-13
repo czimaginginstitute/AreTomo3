@@ -54,6 +54,10 @@ CAlignParam::CAlignParam(void)
 	m_pfTiltAxis = 0L;
 	m_pfShiftXs = 0L;
 	m_pfShiftYs = 0L;
+	//-----------------
+	m_fAlphaOffset = 0.0f;
+	m_fBetaOffset = 0.0f;
+	//-----------------
 	m_iNumFrames = 0;
 	m_fZ0 = 0.0f;
 }
@@ -98,9 +102,9 @@ void CAlignParam::Create(int iNumFrames)
 }
 
 
-void CAlignParam::SetSecIndex(int iFrame, int iSecIndex)
+void CAlignParam::SetSecIndex(int iFrame, int iSecIdx)
 {
-	m_piSecIndex[iFrame] = iSecIndex;
+	m_piSecIndex[iFrame] = iSecIdx;
 }
 
 void CAlignParam::SetTilt(int iFrame, float fTilt)
@@ -207,11 +211,17 @@ float CAlignParam::GetMaxTilt(void)
 	return m_afTiltRange[1];
 }
 
-void CAlignParam::AddTiltOffset(float fTiltOffset)
+void CAlignParam::AddAlphaOffset(float fTiltOffset)
 {
 	for(int i=0; i<m_iNumFrames; i++)
 	{	m_pfTilts[i] += fTiltOffset;
 	}
+	m_fAlphaOffset += fTiltOffset;
+}
+
+void CAlignParam::AddBetaOffset(float fTiltOffset)
+{
+	m_fBetaOffset = fTiltOffset;
 }
 
 void CAlignParam::AddShift(int iFrame, float* pfShift)
@@ -310,10 +320,10 @@ CAlignParam* CAlignParam::GetCopy(void)
 {
 	CAlignParam* pAlignParam = new CAlignParam;
 	pAlignParam->Create(m_iNumFrames);
-	//--------------------------------
+	//-----------------
 	int iBytes = sizeof(int) * m_iNumFrames;
 	memcpy(pAlignParam->m_piSecIndex, m_piSecIndex, iBytes);
-	//------------------------------------------------------
+	//-----------------
 	iBytes = sizeof(float) * m_iNumFrames;
 	memcpy(pAlignParam->m_pfTilts, m_pfTilts, iBytes);
 	memcpy(pAlignParam->m_pfTiltAxis, m_pfTiltAxis, iBytes);
@@ -328,16 +338,16 @@ CAlignParam* CAlignParam::GetCopy(int iStartFm, int iNumFms)
 {
 	CAlignParam* pAlignParam = new CAlignParam;
 	pAlignParam->Create(iNumFms);
-	//---------------------------
+	//-----------------
 	int iBytes = sizeof(int) * iNumFms;
 	memcpy(pAlignParam->m_piSecIndex, m_piSecIndex+iStartFm, iBytes);
-	//---------------------------------------------------------------
+	//-----------------
 	iBytes = sizeof(float) * iNumFms;
 	memcpy(pAlignParam->m_pfTilts, m_pfTilts+iStartFm, iBytes);
 	memcpy(pAlignParam->m_pfTiltAxis, m_pfTiltAxis+iStartFm, iBytes);
 	memcpy(pAlignParam->m_pfShiftXs, m_pfShiftXs+iStartFm, iBytes);
 	memcpy(pAlignParam->m_pfShiftYs, m_pfShiftYs+iStartFm, iBytes);
-	//-------------------------------------------------------------
+	//-----------------
 	pAlignParam->m_fX0 = m_fX0;
 	pAlignParam->m_fY0 = m_fY0;
 	pAlignParam->m_fZ0 = m_fZ0;
@@ -357,10 +367,10 @@ void CAlignParam::Set(CAlignParam* pAlignParam)
 	if(m_iNumFrames != pAlignParam->m_iNumFrames)
 	{	this->Create(pAlignParam->m_iNumFrames);
 	}
-	//----------------------------------------------
+	//-----------------
 	int iBytes = sizeof(int) * m_iNumFrames;
 	memcpy(m_piSecIndex, pAlignParam->m_piSecIndex, iBytes);
-	//------------------------------------------------------
+	//-----------------
 	iBytes = sizeof(float) * m_iNumFrames;
 	memcpy(m_pfTilts, pAlignParam->m_pfTilts, iBytes);
 	memcpy(m_pfTiltAxis, pAlignParam->m_pfTiltAxis, iBytes);
@@ -373,22 +383,22 @@ void CAlignParam::Set(CAlignParam* pAlignParam)
 void CAlignParam::mSwap(int iFrame1, int iFrame2)
 {
 	if(iFrame1 == iFrame2) return;
-	//----------------------------
+	//-----------------
 	int iSecIdx1 = this->GetSecIndex(iFrame1);
 	int iSecIdx2 = this->GetSecIndex(iFrame2);
 	this->SetSecIndex(iFrame1, iSecIdx2);
 	this->SetSecIndex(iFrame2, iSecIdx1);
-	//-----------------------------------
+	//-----------------
 	float fTiltAxis1 = this->GetTiltAxis(iFrame1);
 	float fTiltAxis2 = this->GetTiltAxis(iFrame2);
 	this->SetTiltAxis(iFrame1, fTiltAxis2);
 	this->SetTiltAxis(iFrame2, fTiltAxis1);
-	//-------------------------------------
+	//-----------------
 	float fTilt1 = this->GetTilt(iFrame1);
 	float fTilt2 = this->GetTilt(iFrame2);
 	this->SetTilt(iFrame1, fTilt2);
 	this->SetTilt(iFrame2, fTilt1);
-	//-----------------------------
+	//-----------------
 	float afShift1[2] = {0.0f}, afShift2[2] = {0.0f};
 	this->GetShift(iFrame1, afShift1);
 	this->GetShift(iFrame2, afShift2);

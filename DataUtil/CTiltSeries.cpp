@@ -14,6 +14,7 @@ CTiltSeries::CTiltSeries(void)
 {
 	m_pfTilts = 0L;
 	m_piAcqIndices = 0L;
+	m_piSecIndices = 0L;
 	m_ppfCenters = 0L;
 	m_ppfImages = 0L;
 }
@@ -24,6 +25,7 @@ CTiltSeries::~CTiltSeries(void)
 	if(m_piAcqIndices != 0L) delete[] m_piAcqIndices;
 	m_pfTilts = 0L;
 	m_piAcqIndices = 0L;
+	m_piSecIndices = 0L;
 	//--------------------------------------------
 	// do NOT free each image. They will be freed
 	// in the base class (m_ppvFrames).
@@ -51,8 +53,9 @@ void CTiltSeries::Create(int* piImgSize, int iNumTilts)
 	memset(m_pfTilts, 0, sizeof(float) * iNumTilts);
 	//----------------
 	if(m_piAcqIndices != 0L) delete[] m_piAcqIndices;
-	m_piAcqIndices = new int[iNumTilts];
-	memset(m_piAcqIndices, 0, sizeof(int) * iNumTilts);
+	m_piAcqIndices = new int[iNumTilts * 2];
+	m_piSecIndices = &m_piAcqIndices[iNumTilts];
+	memset(m_piAcqIndices, 0, sizeof(int) * iNumTilts * 2);
 	//----------------
 	m_ppfCenters = new float*[m_aiStkSize[2]];
 	for(int i=0; i<m_aiStkSize[2]; i++)
@@ -107,8 +110,15 @@ void CTiltSeries::SetTilts(float* pfTilts)
 void CTiltSeries::SetAcqs(int* piAcqIndices)
 {
 	int iBytes = sizeof(int) * m_aiStkSize[2];
-	if(iBytes == 0) return;
+	if(iBytes <= 0) return;
 	memcpy(m_piAcqIndices, piAcqIndices, iBytes);
+}
+
+void CTiltSeries::SetSecs(int* piSecIndices)
+{
+	int iBytes = sizeof(int) * m_aiStkSize[2];
+	if(iBytes <= 0) return;
+	memcpy(m_piSecIndices, piSecIndices, iBytes);
 }
 
 void CTiltSeries::SetImage(int iTilt, void* pvImage)
@@ -170,6 +180,7 @@ void CTiltSeries::RemoveFrame(int iFrame)
 		m_ppfCenters[k] = m_ppfCenters[i];
 		m_pfTilts[k] = m_pfTilts[i];
 		m_piAcqIndices[k] = m_piAcqIndices[i];
+		m_piSecIndices[k] = m_piSecIndices[i];
 	};
 	//-----------------
 	int iLast = m_aiStkSize[2] - 1;
@@ -205,22 +216,40 @@ float** CTiltSeries::GetImages(void)
 	return m_ppfImages;
 }
 
+//--------------------------------------------------------------------
+// 1. This is called in CProcessThread::mProcessTsPackage().
+// 2. Since the tilt series is sorted by tilt angles and then saved
+//    into MRC files, its section indices are in ascending order
+//    as the tilt angles.
+// 3. If not sorted by tilt angles, the section indices should be
+//    the same as acquisition indices.
+//--------------------------------------------------------------------
+void CTiltSeries::ResetSecIndices(void)
+{
+	for(int i=0; i<m_aiStkSize[2]; i++)
+	{	m_piSecIndices[i] = i;
+	}
+}
+
 void CTiltSeries::mSwap(int k1, int k2)
 {
 	if(k1 == k2) return;
 	//-----------------
 	float fTilt1 = m_pfTilts[k1];
 	int iAcqIdx1 = m_piAcqIndices[k1];
+	int iSecIdx1 = m_piSecIndices[k1];
 	void* pvFrm1 = m_ppvFrames[k1];
 	float* pfImg1 = m_ppfImages[k1];
 	//-----------------
 	m_pfTilts[k1] = m_pfTilts[k2];
 	m_piAcqIndices[k1] = m_piAcqIndices[k2];
+	m_piSecIndices[k1] = m_piSecIndices[k2];
 	m_ppvFrames[k1] = m_ppvFrames[k2];
 	m_ppfImages[k1] = m_ppfImages[k2];
 	//-----------------
 	m_pfTilts[k2] = fTilt1;
 	m_piAcqIndices[k2] = iAcqIdx1;
+	m_piSecIndices[k2] = iSecIdx1;
 	m_ppvFrames[k2] = pvFrm1;
 	m_ppfImages[k2] = pfImg1;
 	//-----------------

@@ -23,21 +23,21 @@ void CSaveXtilts::DoIt
 )
 {	FILE* pFile = fopen(pcFileName, "wt");
 	if(pFile == 0L) return;
-	//---------------------
+	//-----------------
 	CAtInput* pInput = CAtInput::GetInstance();
 	MAM::CDarkFrames* pDarkFrames = 
 	   MAM::CDarkFrames::GetInstance(iNthGpu);
 	MAM::CAlignParam* pAlnParam =
 	   MAM::CAlignParam::GetInstance(iNthGpu);
+	//-----------------
 	int iTilts = pAlnParam->m_iNumFrames;
-	if(pInput->m_iOutImod == 2) 
+	if(pInput->m_iOutImod == 1) 
 	{	iTilts = pDarkFrames->m_aiRawStkSize[2];
 	}
-	//----------------------------------------------
+	//-----------------
 	int iLast = iTilts - 1;
-	for(int i=0; i<iLast; i++)
+	for(int i=0; i<=iLast; i++)
 	{	fprintf(pFile, "0\n");
 	}
-	if(iLast > 0) fprintf(pFile, "0");
 	fclose(pFile);
 }

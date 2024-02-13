@@ -12,18 +12,33 @@ namespace MAM = McAreTomo::AreTomo::MrcUtil;
 
 CSaveTilts::CSaveTilts(void)
 {
+	m_iLineSize = 256;
+	m_pcOrderedList = 0L;
+	m_pbDarkImgs = 0L;
 	m_pFile = 0L;
+
 }
 
 CSaveTilts::~CSaveTilts(void)
 {
 	if(m_pFile != 0L) fclose(m_pFile);
+	mClean();
 }
 
+//-----------------------------------------------------------------------------
+// 1. This generates a single-column text file that lists the tilt angles
+//    in the same order as the tilt images in the input MRC file.
+// 2. For Relion4 (-OutImod 1), the tilt angles of dark images must be 
+//    included since it works on the raw tilt series.
+// 3. For -OutImod 2 or 3, dark-image tilt angles need to be excluded since
+//    a new tilt series is generated with dark images. Subtomo averaging
+//    is expected to work on the dark-image removed tilt series.
+//-----------------------------------------------------------------------------
 void CSaveTilts::DoIt(int iNthGpu, const char* pcFileName)
 {
 	m_pFile = fopen(pcFileName, "wt");
 	if(m_pFile == 0L) return;
+	//-----------------
 	m_iNthGpu = iNthGpu;
 	//-----------------
 	CAtInput* pInput = CAtInput::GetInstance();
@@ -36,13 +51,12 @@ void CSaveTilts::DoIt(int iNthGpu, const char* pcFileName)
 }
 
 //-----------------------------------------------------------------------------
-// Relion 4 requires line return at the last line per Ge Peng of UCLA
+// 1. -OutImod = 3 used for aligned tilt series where the tilt images are
+//    ordered according to the tilt angles.
+// 2. This is why we use MAM::CAlignParam to generate tilt angle list. 
 //-----------------------------------------------------------------------------
 void CSaveTilts::mSaveForAligned(void)
 {
-	//------------------------------------
-	// aligned & dark-removed tilt series
-	//------------------------------------
 	MAM::CAlignParam* pAlnParam = 
 	   MAM::CAlignParam::GetInstance(m_iNthGpu);
 	int iLast = pAlnParam->m_iNumFrames - 1;
@@ -52,6 +66,11 @@ void CSaveTilts::mSaveForAligned(void)
 	}
 }
 
+//-----------------------------------------------------------------------------
+// 1. -OutImod = 2 used for dark-removed tilt series. Since this tilt series
+//    gets saved after being sorted by tilt angle. We should use CAlignParam
+//    as in mSaveForAligned.
+//-----------------------------------------------------------------------------
 void CSaveTilts::mSaveForWarp(void)
 {
 	this->mSaveForAligned();	
@@ -62,33 +81,43 @@ void CSaveTilts::mSaveForWarp(void)
 //-----------------------------------------------------------------------------
 void CSaveTilts::mSaveForRelion(void)
 {
-	//--------------------------------------
-	// raw tilt series as input to Relion 4
-	//--------------------------------------
-	MAM::CAlignParam* pAlnParam = 
-	   MAM::CAlignParam::GetInstance(m_iNthGpu);
+	mGenList();
+	//-----------------
+	for(int i=0; i<m_iAllTilts; i++)
+	{	char* pcLine = m_pcOrderedList + i * m_iLineSize;
+		fprintf(m_pFile, "%s\n", pcLine);
+	}
+	//-----------------
+	mClean();
+}
+
+void CSaveTilts::mGenList(void)
+{
 	MAM::CDarkFrames* pDarkFrames =
 	   MAM::CDarkFrames::GetInstance(m_iNthGpu);
 	//-----------------
-	int iAllTilts = pDarkFrames->m_aiRawStkSize[2];
-	char* pcLines = new char[iAllTilts * 256];
-	for(int i=0; i<pAlnParam->m_iNumFrames; i++)
-	{	float fTilt = pAlnParam->GetTilt(i);
-		int iSecIdx = pAlnParam->GetSecIndex(i);
-		char* pcLine = pcLines + iSecIdx * 256;
-		sprintf(pcLine, "%8.2f", fTilt);
-	}
-	for(int i=0; i<pDarkFrames->m_iNumDarks; i++)
+	m_iAllTilts = pDarkFrames->m_aiRawStkSize[2];
+	m_pcOrderedList = new char[m_iAllTilts * m_iLineSize];
+	m_pbDarkImgs = new bool[m_iAllTilts];
+	//-----------------
+	for(int i=0; i<m_iAllTilts; i++)
 	{	float fTilt = pDarkFrames->GetTilt(i);
 		int iSecIdx = pDarkFrames->GetSecIdx(i);
-		char* pcLine = pcLines + iSecIdx * 256;
+		char* pcLine = m_pcOrderedList + iSecIdx * m_iLineSize;
 		sprintf(pcLine, "%8.2f", fTilt);
+		//----------------
+		m_pbDarkImgs[iSecIdx] = pDarkFrames->IsDarkFrame(i);
 	}
-	//-----------------
-	int iLast = iAllTilts - 1;
-	for(int i=0; i<=iLast; i++)
-	{	char* pcLine = pcLines + i * 256;
-		fprintf(m_pFile, "%s\n", pcLine);
+}
+
+void CSaveTilts::mClean(void)
+{
+	if(m_pcOrderedList != 0L)
+	{	delete[] m_pcOrderedList;
+		m_pcOrderedList = 0L;
 	}
-	if(pcLines != 0L) delete[] pcLines;
+	if(m_pbDarkImgs != 0L)
+	{	delete[] m_pbDarkImgs;
+		m_pbDarkImgs = 0L;
+	}
 }

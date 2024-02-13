@@ -56,14 +56,31 @@ void CSaveAlignFile::mSaveHeader(void)
 	   pDarkFrames->m_aiRawStkSize[1],
 	   pDarkFrames->m_aiRawStkSize[2]);
 	fprintf(m_pFile, "# NumPatches = %d\n", m_iNumPatches);
-	//-----------------
+	//-----------------------------------------------
+	// 1) Track section IDs of dark images here so
+	// that we know which dark images are discarded
+	// in the raw tilt series. 
+	// 2) This info is needed when a tilt series 
+	// needs to be reconstructed again without 
+	// repeating the alignment process.
+	//-----------------------------------------------
 	for(int i=0; i<pDarkFrames->m_iNumDarks; i++)
-	{	int iFrmIdx = pDarkFrames->GetFrmIdx(i);
-		int iSecIdx = pDarkFrames->GetSecIdx(i);
-		float fTilt = pDarkFrames->GetTilt(i);
+	{	int iDarkFm = pDarkFrames->GetDarkIdx(i);
+		int iSecIdx = pDarkFrames->GetSecIdx(iDarkFm);
+		float fTilt = pDarkFrames->GetTilt(iDarkFm);
 		fprintf(m_pFile, "# DarkFrame =  %4d %4d %8.2f\n",
-		   iFrmIdx, iSecIdx, fTilt);
+		   iDarkFm, iSecIdx, fTilt);
 	}
+	//-----------------------------------------------
+	// 1) Tracking whether or not the alpha and beta
+	// tilt offsets are applied to tilt angle.
+	// 2) This information is needed in the future
+	// for determine per-particle defocus.
+	//-----------------------------------------------
+	fprintf(m_pFile, "# AlphaOffset = %8.2f\n",
+	   m_pAlignParam->m_fAlphaOffset);
+	fprintf(m_pFile, "# BetaOffset = %8.2f\n",
+	   m_pAlignParam->m_fBetaOffset);	
 }
 
 void CSaveAlignFile::mSaveGlobal(void)

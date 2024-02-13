@@ -61,7 +61,7 @@ void CRemoveDarkFrames::mRemove(float* pfMeans, float* pfStds)
 	CAlignParam* pAlnParam = CAlignParam::GetInstance(m_iNthGpu);
 	//-----------------
 	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
-	pDarkFrames->Setup(pTiltSeries->m_aiStkSize);
+	pDarkFrames->Setup(pTiltSeries);
 	//-----------------
 	int iSize = (m_iAllFrms + 16) * 64;
 	char* pcLog = new char[iSize];
@@ -90,10 +90,7 @@ void CRemoveDarkFrames::mRemove(float* pfMeans, float* pfStds)
 	for(int i=0; i<m_iAllFrms; i++)
 	{	float fRatio = (float)fabs(pfMeans[i]) / (pfStds[i] + 0.000001f);
 		if(fRatio > fTol) continue;
-		//----------------
-		int iSecIdx = pAlnParam->GetSecIndex(i);
-		float fTilt = pAlnParam->GetTilt(i);
-		pDarkFrames->Add(i, iSecIdx, fTilt);
+		else pDarkFrames->AddDark(i);
 	}
 	if(pDarkFrames->m_iNumDarks <= 0) 
 	{	printf("GPU %d: no dark images detected.\n\n", m_iNthGpu);
@@ -106,7 +103,7 @@ void CRemoveDarkFrames::mRemove(float* pfMeans, float* pfStds)
 	}
 	//-----------------
 	for(int i=pDarkFrames->m_iNumDarks-1; i>=0; i--)
-	{	int iFrmIdx = pDarkFrames->GetFrmIdx(i);
+	{	int iFrmIdx = pDarkFrames->GetDarkIdx(i);
 		pAlnParam->RemoveFrame(iFrmIdx);
 	}
 }
@@ -126,9 +123,9 @@ void CRemoveDarkFrames::mRemoveSeries(int iSeries)
 	//-----------------
 	char acBuf[64] = {'\0'};
 	for(int i=pDarkFrames->m_iNumDarks-1; i>=0; i--)
-	{	int iFrmIdx = pDarkFrames->GetFrmIdx(i);
-		float fTilt = pAlnParam->GetTilt(iFrmIdx);
-		pTiltSeries->RemoveFrame(iFrmIdx);
+	{	int iDarkIdx = pDarkFrames->GetDarkIdx(i);
+		float fTilt = pAlnParam->GetTilt(iDarkIdx);
+		pTiltSeries->RemoveFrame(iDarkIdx);
 		sprintf(acBuf, "Remove image at %.2f deg \n", fTilt);
 		strcat(pcLog, acBuf);
 	}

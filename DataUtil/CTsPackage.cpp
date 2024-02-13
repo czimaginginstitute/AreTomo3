@@ -100,6 +100,14 @@ void CTsPackage::SetAcqIdx(int iTilt, int iAcqIdx)
 	}
 }
 
+void CTsPackage::SetSecIdx(int iTilt, int iSecIdx)
+{
+	for(int i=0; i<CAlnSums::m_iNumSums; i++)
+	{	CTiltSeries* pSeries = this->GetSeries(i);
+		pSeries->m_piSecIndices[iTilt] = iSecIdx;
+	}
+}
+
 void CTsPackage::SetSums(int iTilt, CAlnSums* pAlnSums)
 {
 	for(int i=0; i<CAlnSums::m_iNumSums; i++)
@@ -130,6 +138,14 @@ void CTsPackage::SortTiltSeries(int iOrder)
 		if(iOrder == 0) pSeries->SortByTilt();
 		else pSeries->SortByAcq();
 	}
+}
+
+void CTsPackage::ResetSectionIndices(void)
+{
+	for(int i=0; i<CAlnSums::m_iNumSums; i++)
+	{	CTiltSeries* pSeries = this->GetSeries(i);
+		pSeries->ResetSecIndices();
+        }
 }
 
 void CTsPackage::SaveVol(CTiltSeries* pVol, int iVol)

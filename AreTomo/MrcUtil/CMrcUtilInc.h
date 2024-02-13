@@ -11,8 +11,8 @@ namespace McAreTomo::AreTomo::MrcUtil
 // an input tilt series.
 // 1. Since tilt images may not be in order in the input MRC file,
 //    CAlignParam maintains two indices: 1) Frame index orders
-//    frames according to tilt angles; 2) Section index tracks the
-//    order of tilt images in the input MRC file.
+//    frames according to tilt angles; 2) Section index tracks
+//    the order of tilt images in MRC files.
 // 2. Dark images are removed after loading the MRC file. There are
 //    no entries for the dark frames.
 //-------------------------------------------------------------------
@@ -46,7 +46,8 @@ public:
 	float GetMinTilt(void);
 	float GetMaxTilt(void);
 	//-----------------
-	void AddTiltOffset(float fTiltOffset);
+	void AddAlphaOffset(float fTiltOffset);
+	void AddBetaOffset(float fTiltOffset);
 	void AddShift(int iFrame, float* pfShift);
 	void AddShift(float* pfShift);
 	void MultiplyShift(float fFactX, float fFactY);
@@ -77,16 +78,22 @@ public:
 	void Set(CAlignParam* pAlignParam);
 	//-----------------
 	void LogShift(char* pcLogFile);
+	//-----------------
+	float m_fAlphaOffset;
+	float m_fBetaOffset;
+	//-----------------
 	int m_iNumFrames;
 	int m_iNthGpu;
 private:
 	void mSwap(int iFrame1, int iFrame2);
+	//-----------------
 	int* m_piSecIndex;
 	float* m_pfTilts;
 	float* m_pfTiltAxis;
 	float* m_pfShiftXs;
 	float* m_pfShiftYs;
 	float* m_pfDoses; // accumulated dose
+	//-----------------
 	float m_afCenter[2];
 	float m_afTiltRange[2];
 	float m_fX0;
@@ -193,13 +200,17 @@ public:
 	static CDarkFrames* GetInstance(int iNthGpu);
 	//-----------------
 	~CDarkFrames(void);
-	void Setup(int* piRawStkSize); // original tilts
-	void Add(int iFrmIdx, int iSecIdx, float fTilt);
+	void Setup                 // including dark images
+	( MD::CTiltSeries* pSeries  // sorted by tilt angles
+	);                         // hence frame idx is angle idx
+	void AddDark(int iFrmIdx);
 	void AddTiltOffset(float fTiltOffset);
-	int GetFrmIdx(int iNthDark);
-	int GetSecIdx(int iNthDark);
-	float GetTilt(int iNthDark);
-	bool IsDarkSection(int iSection); // index in input MRC
+	//-----------------
+	int GetAcqIdx(int iFrame);
+	int GetSecIdx(int iFrame);
+	float GetTilt(int iFrame);
+	int GetDarkIdx(int iDark); // iDark in [0, m_iNumDarks)
+	//-----------------
 	bool IsDarkFrame(int iFrame);
 	void GenImodExcludeList(char* pcLine, int iSize);
 	int m_aiRawStkSize[3];
@@ -208,9 +219,11 @@ public:
 private:
 	CDarkFrames(void);
 	void mClean(void);
-	int* m_piFrmIdxs; // frame index ordered by tilts
-	int* m_piSecIdxs; // section index ordered in orginal MRC file
-	float* m_pfTilts; // tilt angles of dark images
+	int* m_piAcqIdxs; // ordered chronologically in acquisition, or z-value
+	int* m_piSecIdxs; // indices of images in MRC files
+	float* m_pfTilts; // tilt angles of all images
+	bool* m_pbDarkImgs; // flag of dark images
+	int* m_piDarkIdxs;
 	static CDarkFrames* m_pInstances;
 	static int m_iNumGpus;
 };
