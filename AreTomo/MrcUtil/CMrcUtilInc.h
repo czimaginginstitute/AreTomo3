@@ -192,6 +192,17 @@ public:
 	void DoIt( MD::CTiltSeries* pTiltSeries, float* pfStats);
 };
 
+//--------------------------------------------------------------------
+// 1. m_pfTilts in CDarkFrames should be sorted in ascending order.
+// 2. m_piAcqIdxs stores the acquisition index at each tilt angle.
+//    This allows us to generate the ordered list needed by Relion4.
+// 3. m_piSecIdxs stores the mrc index of each tilt image since tilt
+//    images can be ordered in a MRC file according to tilt angle
+//    or acquisition index. This allows to save the section indices
+//    in .aln file where entries are ordered according to tilt angle.
+// 4. IMPORTANT: The tilt series (pSeries) passed into Setup must
+//    be sorted by tilt angle first!!! (Done in CProcessThread).
+//--------------------------------------------------------------------
 class CDarkFrames
 {
 public:

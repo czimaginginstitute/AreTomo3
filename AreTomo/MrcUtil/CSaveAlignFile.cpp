@@ -60,7 +60,9 @@ void CSaveAlignFile::mSaveHeader(void)
 	// 1) Track section IDs of dark images here so
 	// that we know which dark images are discarded
 	// in the raw tilt series. 
-	// 2) This info is needed when a tilt series 
+	// 2) When tilt images are sorted by tilt angles,
+	// iDarkFm shows which tilt image is dark.
+	// 3) This info is needed when a tilt series 
 	// needs to be reconstructed again without 
 	// repeating the alignment process.
 	//-----------------------------------------------

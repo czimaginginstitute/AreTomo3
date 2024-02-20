@@ -36,6 +36,8 @@ CSaveTilts::~CSaveTilts(void)
 //-----------------------------------------------------------------------------
 void CSaveTilts::DoIt(int iNthGpu, const char* pcFileName)
 {
+	mClean();
+	//-----------------
 	m_pFile = fopen(pcFileName, "wt");
 	if(m_pFile == 0L) return;
 	//-----------------

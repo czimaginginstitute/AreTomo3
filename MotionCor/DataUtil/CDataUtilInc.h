@@ -64,6 +64,7 @@ private:
         void mClean(void);
         void mAllocate(void);
 	void mCalcIntFmCenters(void);
+	void mDisplay(void);
 	//-----------------
         int* m_piIntFmStart;
         int* m_piIntFmSize;

@@ -157,7 +157,7 @@ char* CReadMdoc::mExtractFramePath(char* pcLine)
 	if(pcPath == 0L) return 0L;
 	//-----------------
 	char* pcEqual = strrchr(pcLine, '=');
-	pcPath = new char[128];
+	pcPath = new char[256];
 	if(pcEqual[1] == ' ') strcpy(pcPath, &pcEqual[2]);
 	else strcpy(pcPath, &pcEqual[1]);
 	//-----------------

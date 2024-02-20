@@ -39,4 +39,14 @@ AreTomo3 1.0.2: [02/10/2024]
 6. AreTomo/FindCtf: Bug fix
    1) When -OutImod = 1, CTF estimation needs to be done on all tilt images.
       Otherwise, it is done on dark removed images.
+7. DataUtil/CReadMdoc.cpp: using 256 chars for file name instead of 128 that
+   likely causes crash.
 
+AreTomo3 1.0.3: [02-19-2024]
+----------------------------
+1. DataUtil/CTsPackage.cpp: Check if iAcqIdx is 0-based. If yes, add 1 to
+   it before saving them into TLT file.
+2. ImodUtil/CSaveCsv.cpp: When iAcqIdx becomes 1-based, it cannot be used
+   as line number in m_pcOrderedList. The line number should be 0-based.
+3. DataUtil/CBufferPool::Adjust: m_pPatBuffer will be NULL when patch
+   align is not specified. Check NULL before calling Adjust.
