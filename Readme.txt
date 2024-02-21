@@ -48,5 +48,18 @@ AreTomo3 1.0.3: [02-19-2024]
    it before saving them into TLT file.
 2. ImodUtil/CSaveCsv.cpp: When iAcqIdx becomes 1-based, it cannot be used
    as line number in m_pcOrderedList. The line number should be 0-based.
-3. DataUtil/CBufferPool::Adjust: m_pPatBuffer will be NULL when patch
+
+AreTomo3 1.0.4: [02-20-2024]
+----------------------------
+1. DataUtil/CBufferPool::Adjust: m_pPatBuffer will be NULL when patch
    align is not specified. Check NULL before calling Adjust.
+2. Bug fix: DataUtil/CGpuBuffer::AdjustBuffer:
+   if(iNumFrames <= m_iMaxGpuFrms)
+   {	if(iNumFrames < m_iMaxGpuFrms)  <----- wrong!
+	{	m_iNumGpuFrames = iNumFrames;
+	} <----------------------------------- wrong!    
+	m_iNumFrames = iNumFrames;
+	return;
+    }
+3. Bug fix: DataUtil/CReadMdoc::ctr: forgot initialize m_ppcFrmPath.
+4. makefile and makefile11: clean AreTomo3 

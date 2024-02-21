@@ -273,5 +273,5 @@ exe: $(OBJS)
 	@echo $< has been compiled.
 
 clean:
-	@rm -f $(OBJS) $(CUCPPS) *.h~ makefile~ McAreTomo
+	@rm -f $(OBJS) $(CUCPPS) *.h~ makefile~ AreTomo3
 
