@@ -168,6 +168,7 @@ void CCorrTomoStack::DoIt(int iNthSeries, MAM::CAlignParam* pAlignParam)
 	//-----------------
 	m_pOutSeries->SetTilts(pSeries->m_pfTilts);
 	m_pOutSeries->SetAcqs(pSeries->m_piAcqIndices);
+	m_pOutSeries->m_fPixSize = pSeries->m_fPixSize * m_afBinning[1];
 	//-----------------
 	for(int i=0; i<pSeries->m_aiStkSize[2]; i++)
 	{	mCorrectProj(i);

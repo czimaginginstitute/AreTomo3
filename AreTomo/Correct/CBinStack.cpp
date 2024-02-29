@@ -26,6 +26,7 @@ MD::CTiltSeries* CBinStack::DoReal
 	//-----------------
 	MD::CTiltSeries* pBinSeries = new MD::CTiltSeries;
 	pBinSeries->Create(aiOutSize);
+	pBinSeries->m_fPixSize = pTiltSeries->m_fPixSize * iBin;
 	//-----------------
 	MAU::GBinImage2D aGBinImg2D;
 	aGBinImg2D.SetupBinning(pTiltSeries->m_aiStkSize, !bPadded, 
@@ -61,6 +62,9 @@ MD::CTiltSeries* CBinStack::DoFFT
 	//-----------------
 	MD::CTiltSeries* pBinSeries = new MD::CTiltSeries;
 	pBinSeries->Create(aiOutSize);
+	//-----------------
+	pBinSeries->m_fPixSize = (pTiltSeries->m_fPixSize / aiOutSize[1]) *
+	   pTiltSeries->m_aiStkSize[1];
 	//-----------------
 	int aiPadSizeIn[] = {0, pTiltSeries->m_aiStkSize[1]};
 	int aiCmpSizeIn[] = {0, pTiltSeries->m_aiStkSize[1]};

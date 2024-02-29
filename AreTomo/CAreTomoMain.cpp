@@ -413,6 +413,8 @@ void CAreTomoMain::mSartRecon
 	Recon::CDoSartRecon doSartRecon;
 	MD::CTiltSeries* pVolStack = doSartRecon.DoIt(pSeries, 
 	   pAlnParam, iStartTilt, iNumTilts, iVolZ, iIters, iNumSubsets);
+	pVolStack->m_fPixSize = pSeries->m_fPixSize;
+	//-----------------
 	printf("GPU %d: SART Recon: %.2f sec\n\n", m_iNthGpu, 
 	   aTimer.GetElapsedSeconds());
 	//-----------------
@@ -438,6 +440,8 @@ void CAreTomoMain::mWbpRecon
 	Recon::CDoWbpRecon doWbpRecon;
 	MD::CTiltSeries* pVolStack = doWbpRecon.DoIt(pSeries, 
 	   pAlnParam, iVolZ);
+	pVolStack->m_fPixSize = pSeries->m_fPixSize;
+	//-----------------
 	printf("GPU %d: WBP Recon: %.2f sec\n\n", m_iNthGpu,
 	   aTimer.GetElapsedSeconds());
 	//-----------------

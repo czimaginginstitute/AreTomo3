@@ -3,6 +3,8 @@
 #include <Util/Util_Thread.h>
 #include <Mrcfile/CMrcFileInc.h>
 #include <queue>
+#include <unordered_map>
+#include <string>
 #include <cuda.h>
 
 namespace McAreTomo::DataUtil
@@ -350,11 +352,12 @@ private:
         bool mReadSingle(void);
         bool mGetDirName(void);
         bool mOpenDir(void);
-        int mReadFolder(bool bFirstTime);
+        int mReadFolder(void);
         bool mAsyncReadFolder(void);
-        char* mGetSerial(char* pcInputFile);
-        char* mGetInPrefix(void);
+	//-----------------
 	bool mCheckSkips(const char* pcString);
+	bool mFileExist(const char* pcFile);
+	//-----------------
         void mClean(void);
 	//-----------------
         char m_acDirName[256];
@@ -363,9 +366,9 @@ private:
 	char m_acSkips[256];
 	//-----------------
 	std::queue<char*> m_aFileQueue;
-        int m_ifd;
-        int m_iwd;
-        double m_dRecentFileTime;
+        std::unordered_map<std::string, int> m_aReadFiles;
+        //-----------------
+	int m_iNumChars;
 	static CStackFolder* m_pInstance;
 };
 

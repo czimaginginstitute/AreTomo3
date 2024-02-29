@@ -63,3 +63,13 @@ AreTomo3 1.0.4: [02-20-2024]
     }
 3. Bug fix: DataUtil/CReadMdoc::ctr: forgot initialize m_ppcFrmPath.
 4. makefile and makefile11: clean AreTomo3 
+
+AreTomo3 1.0.5: [02-28-2024]
+----------------------------
+1. Reported Bugs:
+   1) Some tilt series are left out without being processed.
+   2) Pixel size are not saved into MRC files
+   3) FlipVol is not working.
+2. Fixed (1). Dropped timestamp based check of new mdoc files. It is not reliable
+   since the mdoc files are the copied version.
+3. Fixed (2) in Correct/CCorrTomoStack and CBinStack.
