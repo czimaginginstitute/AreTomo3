@@ -243,6 +243,22 @@ void CStackFolder::mClean(void)
 	m_aReadFiles.clear();
 }
 
+void CStackFolder::mLogFiles(void)
+{
+	char acFile[256] = {'\0'};
+	CInput* pInput = CInput::GetInstance();
+	strcpy(acFile, pInput->m_acOutDir);
+	strcat(acFile, "MdocList.txt");
+	FILE* pFile = fopen(acFile, "wt");
+	if(pFile == 0L) return;
+	//-----------------
+	for(auto x : m_aReadFiles)
+	{	fprintf(pFile, "%s  %d\n", x.first.c_str(), x.second);
+		printf("%s  %d\n", x.first.c_str(), x.second);
+	}
+	fclose(pFile);
+}
+
 bool CStackFolder::mAsyncReadFolder(void)
 {
 	this->Start();
@@ -275,4 +291,5 @@ void CStackFolder::ThreadMain(void)
 		if(iLeftSec <= 0) break;
 		else continue;
 	}
+	mLogFiles();
 }

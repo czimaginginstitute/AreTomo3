@@ -26,6 +26,7 @@ CMcAreTomoMain::CMcAreTomoMain(void)
 	AreTomo::CAtInstances::CreateInstances(iNumGpus);
 	//-----------------
 	CProcessThread::CreateInstances(iNumGpus);
+	m_pLogFile = 0L;
 }
 
 CMcAreTomoMain::~CMcAreTomoMain(void)
@@ -34,6 +35,7 @@ CMcAreTomoMain::~CMcAreTomoMain(void)
 	MD::CDuInstances::DeleteInstances();
 	MotionCor::CMcInstances::DeleteInstances();
 	AreTomo::CAtInstances::DeleteInstances();
+	if(m_pLogFile != 0L) fclose(m_pLogFile);
 }
 
 bool CMcAreTomoMain::DoIt(void)
@@ -90,11 +92,33 @@ void CMcAreTomoMain::mProcess(void)
 	}
 	int iNthGpu = pProcessThread->m_iNthGpu; 
 	//-----------------
+	char acMdoc[256] = {'\0'};
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(iNthGpu);
 	char* pcMdocFile = s_pStackFolder->GetFile(true);
+	strcpy(acMdoc, pcMdocFile);
+	//-----------------
 	pTsPackage->SetMdoc(pcMdocFile);
 	if(pcMdocFile != 0L) delete[] pcMdocFile;
 	//-----------------
-	pProcessThread->DoIt();
+	bool bSuccess = pProcessThread->DoIt();
+	//-----------------
+	if(bSuccess) strcat(acMdoc, "  processed");
+	else strcat(acMdoc, "   failed");
+	mLogMdoc(acMdoc);
+	//-----------------
+	if(bSuccess) return;
 }
 
+void CMcAreTomoMain::mLogMdoc(char* pcMdocFile)
+{
+	if(m_pLogFile == 0L)
+	{	CInput* pInput = CInput::GetInstance();
+		char acLogFile[256] = {'\0'};
+		strcpy(acLogFile, pInput->m_acOutDir);
+		strcat(acLogFile, "MdocProcess.txt");
+		m_pLogFile = fopen(acLogFile, "wt");
+	}
+	if(m_pLogFile == 0L) return;
+	//-----------------
+	fprintf(m_pLogFile, "%s\n", pcMdocFile);
+}

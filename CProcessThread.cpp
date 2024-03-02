@@ -15,6 +15,7 @@ using namespace McAreTomo;
 
 CProcessThread* CProcessThread::m_pInstances = 0L;
 int CProcessThread::m_iNumGpus = 0;
+std::unordered_map<std::string, int>* CProcessThread::m_pMdocFiles = 0L;
 
 void CProcessThread::CreateInstances(int iNumGpus)
 {
@@ -27,6 +28,11 @@ void CProcessThread::CreateInstances(int iNumGpus)
 	{	m_pInstances[i].m_iNthGpu = i;
 	}
 	m_iNumGpus = iNumGpus;
+	//--------------------------------------------------
+	// store reading-failed mdoc files and the number
+	// of attempts.
+	//--------------------------------------------------
+	m_pMdocFiles = new std::unordered_map<std::string, int>;
 }
 
 void CProcessThread::DeleteInstances(void)
@@ -35,6 +41,10 @@ void CProcessThread::DeleteInstances(void)
 	delete[] m_pInstances;
 	m_pInstances = 0L;
 	m_iNumGpus = 0;
+	//-----------------
+	m_pMdocFiles->clear();
+	delete m_pMdocFiles;
+	m_pMdocFiles = 0L;	
 }
 
 CProcessThread* CProcessThread::GetFreeThread(void)
@@ -76,16 +86,33 @@ CProcessThread::~CProcessThread(void)
 {
 }
 
-void CProcessThread::DoIt(void)
+bool CProcessThread::DoIt(void)
 {
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
-	if(!pReadMdoc->DoIt(pTsPackage->m_pcMdocFile))
-	{	printf("Warning: failed to read mdoc file.\n");
-		printf("   mdoc file: %s\n\n", pTsPackage->m_pcMdocFile);
-		return;
+	bool bLoaded = pReadMdoc->DoIt(pTsPackage->m_pcMdocFile);
+	if(bLoaded)
+	{	this->Start();
+		return true;
 	}
-	this->Start();
+	//-----------------
+	MD::CStackFolder* pStackFolder = MD::CStackFolder::GetInstance();
+	auto item = m_pMdocFiles->find(pTsPackage->m_pcMdocFile);
+	if(item == m_pMdocFiles->end())
+	{	m_pMdocFiles->insert({pTsPackage->m_pcMdocFile, 1});
+		pStackFolder->PushFile(pTsPackage->m_pcMdocFile);
+		return true;
+	}
+	//-----------------
+	if(item->second < 10)
+	{	item->second = item->second + 1;
+		pStackFolder->PushFile(pTsPackage->m_pcMdocFile);
+		return true;
+	}
+	//-----------------
+	printf("Warning: failed to read mdoc file.\n");
+	printf("   mdoc file: %s\n\n", pTsPackage->m_pcMdocFile);
+	return false;
 }
 
 void CProcessThread::ThreadMain(void)

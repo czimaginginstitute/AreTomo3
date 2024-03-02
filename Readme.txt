@@ -73,3 +73,14 @@ AreTomo3 1.0.5: [02-28-2024]
 2. Fixed (1). Dropped timestamp based check of new mdoc files. It is not reliable
    since the mdoc files are the copied version.
 3. Fixed (2) in Correct/CCorrTomoStack and CBinStack.
+4. 03-01-2024: Bug (1) is not fixed. Add log files to save all the mdoc file names
+   added to the queue and mdoc files failed in reading.
+
+AreTomo3 1.0.6: [03-02-2024]
+----------------------------
+1. Bug: missing some mdoc files.
+   1) A mdoc file can be incomplete when it is loaded, causing error in loading.
+      In this case, it is pushed back to the queue for next loading.
+   2) Added two log files MdocList.txt and MdocProcessed.txt to track both
+      mdoc files loaded from directory and those being processed.
+   3) The affected files are CMcAreTomoMain and CProcessThread.

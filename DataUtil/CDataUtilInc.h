@@ -356,8 +356,8 @@ private:
         bool mAsyncReadFolder(void);
 	//-----------------
 	bool mCheckSkips(const char* pcString);
-	bool mFileExist(const char* pcFile);
 	//-----------------
+	void mLogFiles(void);
         void mClean(void);
 	//-----------------
         char m_acDirName[256];

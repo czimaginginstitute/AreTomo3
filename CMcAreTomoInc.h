@@ -2,6 +2,8 @@
 #include "MaUtil/CMaUtilInc.h"
 #include "DataUtil/CDataUtilInc.h"
 #include <Util/Util_Thread.h>
+#include <unordered_map>
+#include <string>
 #include <stdio.h>
 #include <cufft.h>
 
@@ -232,7 +234,7 @@ public:
 	static CProcessThread* GetFreeThread(void);
 	static bool WaitExitAll(float fSeconds);
 	~CProcessThread(void);
-	void DoIt(void);
+	bool DoIt(void);
 	void ThreadMain(void);
 	int m_iNthGpu;
 private:
@@ -245,6 +247,7 @@ private:
 	//-----------------
 	static CProcessThread* m_pInstances;
 	static int m_iNumGpus;
+	static std::unordered_map<std::string, int> *m_pMdocFiles;
 };
 
 class CGenStarFile
@@ -277,6 +280,8 @@ public:
 	bool DoIt(void);
 private:
 	void mProcess(void);
+	void mLogMdoc(char* pcMdocFile);
+	FILE* m_pLogFile;
 };
 
 }
