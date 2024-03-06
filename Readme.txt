@@ -84,3 +84,7 @@ AreTomo3 1.0.6: [03-02-2024]
    2) Added two log files MdocList.txt and MdocProcessed.txt to track both
       mdoc files loaded from directory and those being processed.
    3) The affected files are CMcAreTomoMain and CProcessThread.
+
+AreTomo3 1.0.7: [03-06-2024]
+----------------------------
+1. Restored FlipVol function.

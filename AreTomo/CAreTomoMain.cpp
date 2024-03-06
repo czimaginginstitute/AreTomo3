@@ -418,6 +418,8 @@ void CAreTomoMain::mSartRecon
 	printf("GPU %d: SART Recon: %.2f sec\n\n", m_iNthGpu, 
 	   aTimer.GetElapsedSeconds());
 	//-----------------
+	mFlipVol(&pVolStack);
+	//-----------------
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	pTsPackage->SaveVol(pVolStack, iSeries);
 	//-----------------
@@ -441,9 +443,10 @@ void CAreTomoMain::mWbpRecon
 	MD::CTiltSeries* pVolStack = doWbpRecon.DoIt(pSeries, 
 	   pAlnParam, iVolZ);
 	pVolStack->m_fPixSize = pSeries->m_fPixSize;
-	//-----------------
 	printf("GPU %d: WBP Recon: %.2f sec\n\n", m_iNthGpu,
 	   aTimer.GetElapsedSeconds());
+	//-----------------
+	mFlipVol(&pVolStack);
 	//-----------------
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
         pTsPackage->SaveVol(pVolStack, iSeries);
@@ -460,37 +463,37 @@ void CAreTomoMain::mFlipInt(void)
 	aFlipInt.DoIt(m_pTomoStack);
 }
 */
-/*
-void CAreTomoMain::mFlipVol(void)
+
+void CAreTomoMain::mFlipVol(MD::CTiltSeries** ppVolSeries)
 {
-	CInput* pInput = CInput::GetInstance();
+	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->m_iFlipVol == 0) return;
-	//---------------------------------
-	printf("Flip volume from xzy view to xyz view.\n");
-	int* piOldSize = m_pTomoStack->m_aiStkSize;
+	//-----------------
+	printf("GPU %d: Flip volume from xzy view to xyz view.\n", m_iNthGpu);
+	MD::CTiltSeries* pVolSeries = ppVolSeries[0];
+	int* piOldSize = pVolSeries->m_aiStkSize;
 	int aiNewSize[] = {piOldSize[0], piOldSize[2], piOldSize[1]};
-	MrcUtil::CTomoStack* pNewStack = new MrcUtil::CTomoStack;
-	pNewStack->Create(aiNewSize, true);
-	//---------------------------------
+	//-----------------
+	MD::CTiltSeries* pNewSeries = new MD::CTiltSeries;
+	pNewSeries->Create(aiNewSize);
+	pNewSeries->m_fPixSize = pVolSeries->m_fPixSize;
+	//-----------------
 	int iBytes = aiNewSize[0] * sizeof(float);
 	int iEndOldY = piOldSize[1] - 1;
-	//------------------------------
+	//-----------------
 	for(int y=0; y<piOldSize[1]; y++)
-	{	float* pfDstFrm = pNewStack->GetFrame(iEndOldY - y);
+	{	float* pfDstFrm = (float*)pNewSeries->GetFrame(iEndOldY - y);
 		for(int z=0; z<piOldSize[2]; z++)
-		{	float* pfSrcFrm = m_pTomoStack->GetFrame(z);
+		{	float* pfSrcFrm = (float*)pVolSeries->GetFrame(z);
 			memcpy(pfDstFrm + z * aiNewSize[0],
 			  pfSrcFrm + y * aiNewSize[0], iBytes);
 		}
-		if((y % 100) != 0) continue;
-		printf("...... %5d slices flipped, %5d left.\n",
-			y + 1, piOldSize[1] - 1 - y);
 	}
-	delete m_pTomoStack;
-	m_pTomoStack = pNewStack;
-	printf("flip volume completed.\n\n");
+	printf("GPU %d: Flip volume completed.\n\n", m_iNthGpu);
+	//-----------------
+	delete pVolSeries;
+	ppVolSeries[0] = pNewSeries;
 }
-*/
 
 void CAreTomoMain::mSaveAlignment(void)
 {
