@@ -232,7 +232,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 OBJS = $(patsubst %.cpp, %.o, $(SRCS))
 #-------------------------------------
 CC = g++ -std=c++11
-CFLAG = -c -g -pthread -m64
+CFLAG = -c -g -pthread -m64 -O0
 NVCC = $(CUDAHOME)/bin/nvcc -std=c++11
 CUFLAG = -Xptxas -dlcm=ca -O2 \
 	-gencode arch=compute_86,code=sm_86 \

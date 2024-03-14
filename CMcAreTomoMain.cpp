@@ -121,4 +121,5 @@ void CMcAreTomoMain::mLogMdoc(char* pcMdocFile)
 	if(m_pLogFile == 0L) return;
 	//-----------------
 	fprintf(m_pLogFile, "%s\n", pcMdocFile);
+	fflush(m_pLogFile);
 }

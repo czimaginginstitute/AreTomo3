@@ -88,3 +88,6 @@ AreTomo3 1.0.6: [03-02-2024]
 AreTomo3 1.0.7: [03-06-2024]
 ----------------------------
 1. Restored FlipVol function.
+2. DataUtil/CCtfResults::Clean: memory leak. Added delete[] m_ppfSpects.
+3. AreTomo/ProjAlign/CCalcReproj::mFindProjRange: m_aiProjRange[0] and
+   m_aiProjRange[1] can be -1. Added check of -1 indices.

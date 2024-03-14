@@ -137,6 +137,6 @@ void CCentralXcf::mCorrelate(void)
 	m_projXcf.DoIt(gRefCmp, gImgCmp, m_fBFactor, m_fPower);
 	//-----------------------------------------------------
 	bool bClean = true;
-	m_projXcf.SearchPeak();
+	m_projXcf.SearchPeak1();
 	m_projXcf.GetShift(m_afShift, 1.0f);
 }

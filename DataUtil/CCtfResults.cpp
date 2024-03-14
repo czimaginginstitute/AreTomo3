@@ -82,6 +82,7 @@ void CCtfResults::Clean(void)
 		delete[] m_ppfSpects[i];
 		m_ppfSpects[i] = 0L;
 	}
+	if(m_ppfSpects != 0L) delete[] m_ppfSpects;
 	mInit();
 }
 
