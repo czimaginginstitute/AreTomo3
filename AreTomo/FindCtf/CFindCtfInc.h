@@ -299,6 +299,25 @@ private:
 	float m_fBFactor;
 };
 
+//--------------------------------------------------------------------
+// 1. It calculates the Thon resolution and return the first shell
+//    at which the CC drops to 0.143.
+// 2. gfSpect is the half spectrum whose DC is at (0, iSpectY / 2).
+//    The Nyqust in x is at iSpectX - 1.
+// 3. If the real image has size of (Nx, Ny), iSpectX = iNx / 2 + 1,
+//    iSpectY = Ny.
+//--------------------------------------------------------------------
+class GSpectralCC2D
+{
+public:
+	GSpectralCC2D(void);
+	~GSpectralCC2D(void);
+	void SetSize(int* piSpectSize);
+	int DoIt(float* gfCTF, float* gfSpect);
+private:
+	int m_aiSpectSize[2];
+	float* m_pfCC;
+};
 
 class CGenAvgSpectrum
 {

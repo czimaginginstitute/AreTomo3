@@ -298,7 +298,10 @@ public:
 	//-----------------
 	~CTsPackage(void);
 	void SetMdoc(char* pcMdocFile);
+	//-----------------
 	void CreateTiltSeries(void);
+	bool LoadTiltSeries(void);
+	//-----------------
 	void SetTiltAngle(int iTilt, float fTiltAngle);
 	void SetAcqIdx(int iTilt, int iAcqIdx);
 	void SetSecIdx(int iTilt, int iSecIdx);
@@ -317,15 +320,16 @@ public:
 	char m_acMrcMain[256];
 	int m_iNthGpu;
 private:
-	void mSaveTiltFile
-	( const char* pcFileName,
-	  CTiltSeries* pTiltSeries
-	);
-	void mSaveMrc
-	( const char* pcFileName, 
-	  const char* pcExt,
-	  CTiltSeries* pTiltSeries
-	); 
+	void mCreateTiltSeries(int* piImgSize, 
+	   int iNumTilts, float fPixSize);
+	//-----------------
+	void mSaveTiltFile(CTiltSeries* pTiltSeries);
+	void mSaveMrc(const char* pcExt,CTiltSeries* pTiltSeries); 
+	//-----------------
+	bool mLoadMrc(const char* pcExt, CTiltSeries* pTiltSeries);
+	bool mLoadTiltFile(void);
+	//-----------------
+	void mGenFullPath(const char* pcSuffix, char* pcFullPath);
 	//-----------------
 	CTsPackage(void);
 	CTiltSeries** m_ppTsStacks;
@@ -372,6 +376,39 @@ private:
 	static CStackFolder* m_pInstance;
 };
 
+class CReadMdocDone
+{
+public:
+	static CReadMdocDone* GetInstance(void);
+	static void DeleteInstance(void);
+	static char m_acMdocDone[64];
+	//-----------------
+	~CReadMdocDone(void);
+	void DoIt(void);
+	bool bExist(const char* pcMdocFile);
+private:
+	CReadMdocDone(void);
+	void mClean(void);
+	//-----------------
+	int m_iNumChars;
+	std::unordered_map<std::string, int> *m_pMdocFiles;
+	static CReadMdocDone* m_pInstance;
+};
+
+class CSaveMdocDone
+{
+public:
+	static CSaveMdocDone* GetInstance(void);
+	static void DeleteInstance(void);
+	//-----------------
+	~CSaveMdocDone(void);
+	void DoIt(const char* pcMdocFile);
+private:
+	CSaveMdocDone(void);
+	FILE* m_pLogFile;
+	static CSaveMdocDone* m_pInstance;
+};
+	
 class CLogFiles
 {
 public:

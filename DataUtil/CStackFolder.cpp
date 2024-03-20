@@ -155,6 +155,8 @@ int CStackFolder::mReadFolder(void)
 	strcpy(acFullFile, m_acDirName);
 	char* pcMainFile = acFullFile + strlen(m_acDirName);
 	//-----------------
+	CReadMdocDone* pReadMdocDone = CReadMdocDone::GetInstance();
+	//-----------------
 	while(true)
 	{	pDirent = readdir(pDir);
 		if(pDirent == 0L) break;
@@ -175,6 +177,12 @@ int CStackFolder::mReadFolder(void)
 		{	bool bSkip = mCheckSkips(pDirent->d_name);
 			if(bSkip) continue;
 		}
+		//--------------------------------------------------------
+		// 1) Note: CReadMdocDone has already considered the
+		// -Cmd = 0 and -Resume 1 combination. When it is given
+		// in the command line, CReadMdocDone checklist is empty.
+		//--------------------------------------------------------
+		if(pReadMdocDone->bExist(pDirent->d_name)) continue;
 		//----------------
 		if(m_aReadFiles.find(pDirent->d_name) ==
 		   m_aReadFiles.end())
@@ -248,7 +256,7 @@ void CStackFolder::mLogFiles(void)
 	char acFile[256] = {'\0'};
 	CInput* pInput = CInput::GetInstance();
 	strcpy(acFile, pInput->m_acOutDir);
-	strcat(acFile, "MdocList.txt");
+	strcat(acFile, "MdocFound.txt");
 	FILE* pFile = fopen(acFile, "wt");
 	if(pFile == 0L) return;
 	//-----------------

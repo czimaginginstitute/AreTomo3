@@ -26,7 +26,6 @@ CMcAreTomoMain::CMcAreTomoMain(void)
 	AreTomo::CAtInstances::CreateInstances(iNumGpus);
 	//-----------------
 	CProcessThread::CreateInstances(iNumGpus);
-	m_pLogFile = 0L;
 }
 
 CMcAreTomoMain::~CMcAreTomoMain(void)
@@ -35,11 +34,23 @@ CMcAreTomoMain::~CMcAreTomoMain(void)
 	MD::CDuInstances::DeleteInstances();
 	MotionCor::CMcInstances::DeleteInstances();
 	AreTomo::CAtInstances::DeleteInstances();
-	if(m_pLogFile != 0L) fclose(m_pLogFile);
 }
 
 bool CMcAreTomoMain::DoIt(void)
 {
+	//---------------------------------------------------------
+	// 1) Load MdocDone.txt from the output folder if there 
+	// is one. 2) This is used for resuming processing without
+	// reppcessing those that have been processed.
+	//--------------------------------------------------
+	MD::CReadMdocDone* pReadMdocDone = MD::CReadMdocDone::GetInstance();
+	pReadMdocDone->DoIt();
+	//---------------------------------------------------------
+	// 1) If -Resume 1 and -Cmd 0 are both specified,
+	// CStackFolder checks a mdoc file name is in the list of 
+	// processed mdoc files. If yes, this mdoc will not be 
+	// processed.
+	//---------------------------------------------------------
 	s_pStackFolder = MD::CStackFolder::GetInstance();
 	bool bSuccess = s_pStackFolder->ReadFiles();
 	if(!bSuccess)
@@ -95,31 +106,13 @@ void CMcAreTomoMain::mProcess(void)
 	char acMdoc[256] = {'\0'};
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(iNthGpu);
 	char* pcMdocFile = s_pStackFolder->GetFile(true);
-	strcpy(acMdoc, pcMdocFile);
+	char* pcMainFile = strrchr(pcMdocFile, '/');
+	if(pcMainFile == 0L) strcpy(acMdoc, pcMdocFile);
+	else strcpy(acMdoc, &pcMainFile[1]);
 	//-----------------
 	pTsPackage->SetMdoc(pcMdocFile);
 	if(pcMdocFile != 0L) delete[] pcMdocFile;
 	//-----------------
-	bool bSuccess = pProcessThread->DoIt();
-	//-----------------
-	if(bSuccess) strcat(acMdoc, "  processed");
-	else strcat(acMdoc, "   failed");
-	mLogMdoc(acMdoc);
-	//-----------------
-	if(bSuccess) return;
+	pProcessThread->DoIt();
 }
 
-void CMcAreTomoMain::mLogMdoc(char* pcMdocFile)
-{
-	if(m_pLogFile == 0L)
-	{	CInput* pInput = CInput::GetInstance();
-		char acLogFile[256] = {'\0'};
-		strcpy(acLogFile, pInput->m_acOutDir);
-		strcat(acLogFile, "MdocProcess.txt");
-		m_pLogFile = fopen(acLogFile, "wt");
-	}
-	if(m_pLogFile == 0L) return;
-	//-----------------
-	fprintf(m_pLogFile, "%s\n", pcMdocFile);
-	fflush(m_pLogFile);
-}

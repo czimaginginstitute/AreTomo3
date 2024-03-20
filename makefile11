@@ -67,6 +67,7 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/FindCtf/GCalcSpectrum.cu \
 	./AreTomo/FindCtf/GCC1D.cu \
 	./AreTomo/FindCtf/GCC2D.cu \
+	./AreTomo/FindCtf/GSpectralCC2D.cu \
 	./AreTomo/FindCtf/GRadialAvg.cu \
 	./AreTomo/FindCtf/GRemoveMean.cu \
 	./AreTomo/FindCtf/GRmBackground2D.cu \
@@ -102,6 +103,8 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./DataUtil/CMrcStack.cpp \
 	./DataUtil/CReadMdoc.cpp \
 	./DataUtil/CStackBuffer.cpp \
+	./DataUtil/CReadMdocDone.cpp \
+	./DataUtil/CSaveMdocDone.cpp \
 	./DataUtil/CStackFolder.cpp \
 	./DataUtil/CTiltSeries.cpp \
 	./DataUtil/CTsPackage.cpp \
@@ -232,7 +235,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 OBJS = $(patsubst %.cpp, %.o, $(SRCS))
 #-------------------------------------
 CC = g++ -std=c++11
-CFLAG = -c -g -pthread -m64 -O0
+CFLAG = -c -g -pthread -m64
 NVCC = $(CUDAHOME)/bin/nvcc -std=c++11
 CUFLAG = -Xptxas -dlcm=ca -O2 \
 	-gencode arch=compute_86,code=sm_86 \

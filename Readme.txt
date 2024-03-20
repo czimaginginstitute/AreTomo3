@@ -88,6 +88,26 @@ AreTomo3 1.0.6: [03-02-2024]
 AreTomo3 1.0.7: [03-06-2024]
 ----------------------------
 1. Restored FlipVol function.
-2. DataUtil/CCtfResults::Clean: memory leak. Added delete[] m_ppfSpects.
-3. AreTomo/ProjAlign/CCalcReproj::mFindProjRange: m_aiProjRange[0] and
-   m_aiProjRange[1] can be -1. Added check of -1 indices.
+2. Segmentation Fault [03-11-2024]:
+   1) It happened after processing 281 tilt series using 4 GPUs. Need to fix
+      it in version 1.0.8.
+   2) The MdocProcess was generated without any content. Need to flush it
+      immediately.
+   3) AreTomo/ProjAlign/CCalcReproj::mFindProjRange: m_aiProjRange[0] and
+      m_aiProjRange[1] can be -1. Added check of -1 indices.
+
+AreTomo3 1.0.8: [03-08-2024]
+----------------------------
+1. Plan to add an entry point that starts from processing tomographic tilt
+   series.
+2. Revision: 
+   1) Renamed MdocList.txt to MdocFound.txt in CStackFolder.cpp
+      to show mdoc files found the input directory. 
+   2) Renamed MdocProcess.txt to MdocDone.txt in CMcAreTomoMain.cpp.
+   3) flush the content immediately.
+3. Add -Resume 1 to skipped the mdoc files that have been processed.
+   -Resume 1 and -Cmd 0 should be used together for resumed operation.
+4. Add -Cmd 1 to skip motion correction and to start from tomo
+   alignment. -Resume 1 is ignored in this case.   
+5. Add in AreTomo/FindCtf/GSpectralCC2D.cu to calculate Thon ring
+   resolution at 0.143.

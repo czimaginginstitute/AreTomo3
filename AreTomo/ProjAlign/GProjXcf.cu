@@ -125,7 +125,7 @@ void GProjXcf::DoIt
 	cudaMemcpy(m_pfXcfImg, gCmp2, tBytes, cudaMemcpyDefault);
 }
 
-float GProjXcf::SearchPeak1(void)
+float GProjXcf::SearchPeak(void)
 {
 	float fPeak = (float)-1e20;
 	int aiPeak[] = {0, 0};

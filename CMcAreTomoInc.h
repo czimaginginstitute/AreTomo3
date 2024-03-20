@@ -36,6 +36,8 @@ public:
 	float m_fPixSize;
 	float m_fFmDose;
 	//-----------------
+	int m_iCmd;
+	int m_iResume;
 	int m_iSerial;
 	//-----------------
 	char m_acInMdocTag[32];
@@ -52,6 +54,8 @@ public:
 	char m_acPixSizeTag[32];
 	char m_acFmDoseTag[32];
 	//-----------------
+	char m_acCmdTag[32];
+	char m_acResumeTag[32];
 	char m_acSerialTag[32];
 private:
         CInput(void);
@@ -207,25 +211,6 @@ private:
 	int m_iPid;
 };
 
-class CProcessMovie
-{
-public:
-	CProcessMovie(void);
-	~CProcessMovie(void);
-	bool DoIt(void* pvMvPackage, int iNthGpu);
-private:
-	bool mCheckGain(void);
-	void mApplyRefs(void);
-	void mDetectBadPixels(void);
-	void mCorrectBadPixels(void);
-	void mAlignStack(void);
-	//-----------------
-	void* m_pvMvPackage;
-	int m_iNthGpu;
-	void* m_pvBadDetect;
-	void* m_pvBadCorrect;
-};
-
 class CProcessThread : public Util_Thread
 {
 public:
@@ -234,13 +219,15 @@ public:
 	static CProcessThread* GetFreeThread(void);
 	static bool WaitExitAll(float fSeconds);
 	~CProcessThread(void);
-	bool DoIt(void);
+	int DoIt(void);
 	void ThreadMain(void);
 	int m_iNthGpu;
 private:
 	CProcessThread(void);
 	void mProcessTsPackage(void);
-	bool mLoadMovie(int iTilt);
+	void mProcessMovies(void);
+	bool mLoadTiltSeries(void);
+	//-----------------
 	void mProcessMovie(int iTilt);
 	void mAssembleTiltSeries(int iTilt);
 	void mProcessTiltSeries(void);
@@ -280,8 +267,6 @@ public:
 	bool DoIt(void);
 private:
 	void mProcess(void);
-	void mLogMdoc(char* pcMdocFile);
-	FILE* m_pLogFile;
 };
 
 }

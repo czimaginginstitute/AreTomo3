@@ -39,6 +39,8 @@ CInput::CInput(void)
 	strcpy(m_acPixSizeTag, "-PixSize");
 	strcpy(m_acFmDoseTag, "-FmDose");
 	//-----------------
+	strcpy(m_acCmdTag, "-Cmd");
+	strcpy(m_acResumeTag, "-Resume");
 	strcpy(m_acSerialTag, "-Serial");
 	//-----------------
 	m_iNumGpus = 0;
@@ -48,6 +50,8 @@ CInput::CInput(void)
 	m_fCs = 2.7f;
 	m_fPixSize = 0.0f;
 	//-----------------
+	m_iCmd = 0;
+	m_iResume = 0;
 	m_iSerial = 0;
 }
 
@@ -85,35 +89,38 @@ void CInput::ShowTags(void)
 	   "     and alignment files.\n\n",
 	   m_acOutDirTag, m_acSerialTag);
 	//-----------------
-	printf
-	( "%-15s\n"
-	  "  1. Pixel size in A of input stack in angstrom.\n\n",
-	  m_acPixSizeTag
-	);
+	printf("%-15s\n"
+	   "  1. Pixel size in A of input stack in angstrom.\n\n",
+	   m_acPixSizeTag);
 	//-----------------
-	printf
-	( "%-15s\n"
-	   " 1. High tension in kV needed for dose weighting.\n"
-	   " 2. Default is 300.\n\n", m_acKvTag
-	);
+	printf("%-15s\n"
+	   "  1. High tension in kV needed for dose weighting.\n"
+	   "  2. Default is 300.\n\n", m_acKvTag);
 	//-----------------
-	printf
-	( "%-15s\n"
-	  "  1. Spherical aberration in mm for CTF estimation.\n\n",
-	  m_acCsTag
-	);
+	printf("%-15s\n"
+	   "  1. Spherical aberration in mm for CTF estimation.\n\n",
+	   m_acCsTag);
 	//-----------------
-	printf
-	( "%-15s\n"
-	  "  1. Per frame dose in e/A2.\n\n", m_acFmDoseTag
-	);
+	printf("%-15s\n"
+	   "  1. Per frame dose in e/A2.\n\n", m_acFmDoseTag);
+	//-----------------
+	printf("%-15s\n"
+	   "  1. Default 0 starts processing from motion correction.\n"
+	   "  2. -Cmd 1 starts processing from tilt series alignment.\n"
+	   "  3. -Cmd 1 processes all tilt series and ignores -Resume.\n\n",
+	   m_acCmdTag);
+	//-----------------
+	printf("%-15s\n"
+	   "  1. Default 0 processes all the data.\n"
+	   "  2. -Resume 1 starts from what are left by skipping all the mdoc\n"
+	   "     files in MdocDone.txt file in the output folder.\n\n",
+	   m_acResumeTag); 
 	//-----------------
 	printf("%-15s\n", m_acGpuIDTag);
 	printf("   GPU IDs. Default 0.\n");
 	printf("   For multiple GPUs, separate IDs by space.\n");
 	printf("   For example, %s 0 1 2 3 specifies 4 GPUs.\n\n",
 		   m_acGpuIDTag);
-	//-----------------------
 }
 
 void CInput::Parse(int argc, char* argv[])
@@ -185,6 +192,14 @@ void CInput::Parse(int argc, char* argv[])
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_iSerial);
 	//-----------------
+	aParseArgs.FindVals(m_acCmdTag, aiRange);
+	if(aiRange[1] > 1) aiRange[1] = 1;
+	aParseArgs.GetVals(aiRange, &m_iCmd);
+	//-----------------
+	aParseArgs.FindVals(m_acResumeTag, aiRange);
+	if(aiRange[1] > 1) aiRange[1] = 1;
+	aParseArgs.GetVals(aiRange, &m_iResume);
+	//-----------------
 	mExtractInDir();
 	mAddEndSlash(m_acOutDir);
 	mAddEndSlash(m_acLogDir);
@@ -198,13 +213,19 @@ void CInput::mPrint(void)
 	printf("%-15s  %s\n", m_acInSuffixTag, m_acInSuffix);
 	printf("%-15s  %s\n", m_acInSkipsTag, m_acInSkips);
 	printf("%-15s  %s\n", m_acOutDirTag, m_acOutDir);
+	//-----------------
 	printf("%-15s  %s\n", m_acTmpFileTag, m_acTmpFile);
 	printf("%-15s  %s\n", m_acLogDirTag, m_acLogDir);
-	printf("%-15s  %d\n", m_acSerialTag, m_iSerial);
+	//-----------------
 	printf("%-15s  %.2f\n", m_acPixSizeTag, m_fPixSize);
 	printf("%-15s  %d\n", m_acKvTag, m_iKv);
 	printf("%-15s  %.2f\n", m_acCsTag, m_fCs);
 	printf("%-15s  %.5f\n", m_acFmDoseTag, m_fFmDose);
+	//-----------------
+	printf("%-15s  %d\n", m_acSerialTag, m_iSerial);
+	printf("%-15s  %d\n", m_acCmdTag, m_iCmd);
+	printf("%-15s  %d\n", m_acResumeTag, m_iResume);
+	//-----------------
 	printf("%-15s", m_acGpuIDTag);
 	for(int i=0; i<m_iNumGpus; i++)
 	{	printf("  %d", m_piGpuIDs[i]);

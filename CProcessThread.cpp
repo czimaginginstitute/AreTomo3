@@ -86,14 +86,14 @@ CProcessThread::~CProcessThread(void)
 {
 }
 
-bool CProcessThread::DoIt(void)
+int CProcessThread::DoIt(void)
 {
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
 	bool bLoaded = pReadMdoc->DoIt(pTsPackage->m_pcMdocFile);
 	if(bLoaded)
 	{	this->Start();
-		return true;
+		return 1;
 	}
 	//-----------------
 	MD::CStackFolder* pStackFolder = MD::CStackFolder::GetInstance();
@@ -101,18 +101,18 @@ bool CProcessThread::DoIt(void)
 	if(item == m_pMdocFiles->end())
 	{	m_pMdocFiles->insert({pTsPackage->m_pcMdocFile, 1});
 		pStackFolder->PushFile(pTsPackage->m_pcMdocFile);
-		return true;
+		return 0;
 	}
 	//-----------------
 	if(item->second < 10)
 	{	item->second = item->second + 1;
 		pStackFolder->PushFile(pTsPackage->m_pcMdocFile);
-		return true;
+		return 0;
 	}
 	//-----------------
 	printf("Warning: failed to read mdoc file.\n");
 	printf("   mdoc file: %s\n\n", pTsPackage->m_pcMdocFile);
-	return false;
+	return -1;
 }
 
 void CProcessThread::ThreadMain(void)
@@ -125,15 +125,32 @@ void CProcessThread::ThreadMain(void)
 	pLogFiles->Create(pReadMdoc->m_acMdocFile);
 	//-----------------	
 	mProcessTsPackage();
+	//-----------------
+	MD::CSaveMdocDone* pSaveMdocDone = MD::CSaveMdocDone::GetInstance();
+	pSaveMdocDone->DoIt(pReadMdoc->m_acMdocFile);
+	//-----------------
 	printf("GPU %d: process thread exiting.\n\n", m_iNthGpu);
 }
 
 void CProcessThread::mProcessTsPackage(void)
 {
+	CInput* pInput = CInput::GetInstance();
+	if(pInput->m_iCmd == 0) 
+	{	mProcessMovies();
+		mProcessTiltSeries();
+	}
+	else 
+	{	bool bLoaded = mLoadTiltSeries();
+		if(!bLoaded) return;
+		mProcessTiltSeries();
+	}
+}
+
+void CProcessThread::mProcessMovies(void)
+{
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
 	//-----------------
-	bool bSuccess = true;
 	for(int i=0; i<pReadMdoc->m_iNumTilts; i++)
 	{	mProcessMovie(i);
 		mAssembleTiltSeries(i);
@@ -147,17 +164,33 @@ void CProcessThread::mProcessTsPackage(void)
 	pTsPackage->SortTiltSeries(0);
 	pTsPackage->SaveTiltSeries();
 	//--------------------------------------------------
-	// 1) Since the saved tilt series have been sorted
+	// 1) Resetting section indices makes the section
+	// index array in ascending order. 
+	// 2) Since the tilt series to be saved is sorted
 	// by tilt angles, its section indices should be
 	// in ascending order as the tilt angles.
-	// 2) Note: if not sorted by tilt angles, section
-	// indices should be the same as acquisition ones.
 	//--------------------------------------------------
 	pTsPackage->ResetSectionIndices();
-	//----------------------------------------------
-	// Start AreTomo processing: to be implemented.
-	//----------------------------------------------
-	mProcessTiltSeries();
+}
+
+bool CProcessThread::mLoadTiltSeries(void)
+{
+	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);	
+	bool bLoaded = pTsPackage->LoadTiltSeries();
+	if(!bLoaded) return false;
+	//---------------------------------------------------------
+	// 1) Create buffer pool since there are several classes
+	// in Correct folder use it.
+	// 2) Buffer pool is created here only for -Cmd 1.
+	// 3) This is a patch and needs improvement.
+	//---------------------------------------------------------
+	MD::CTiltSeries* pTiltSeries = pTsPackage->GetSeries(0);
+	MD::CBufferPool* pBufferPool = MD::CBufferPool::GetInstance(m_iNthGpu);
+	int aiStkSize[3] = {0};
+	memcpy(aiStkSize, pTiltSeries->m_aiStkSize, sizeof(int) * 3);
+	if(aiStkSize[2] > 10) aiStkSize[2] = 10;
+	pBufferPool->Create(aiStkSize);
+	return true;	
 }
 
 void CProcessThread::mProcessMovie(int iTilt)
