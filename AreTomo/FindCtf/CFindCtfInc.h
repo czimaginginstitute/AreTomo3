@@ -7,28 +7,6 @@
 
 namespace McAreTomo::AreTomo::FindCtf
 {
-
-class CCtfParam
-{
-public:
-	CCtfParam(void);
-	~CCtfParam(void);
-	float GetWavelength(bool bAngstrom);
-	float GetDefocusMax(bool bAngstrom);
-	float GetDefocusMin(bool bAngstrom);
-	CCtfParam* GetCopy(void);
-	float m_fWavelength; // pixel
-	float m_fCs; // pixel
-	float m_fAmpContrast;
-	float m_fAmpPhaseShift; // radian
-	float m_fExtPhase;   // radian
-	float m_fDefocusMax; // pixel
-	float m_fDefocusMin; // pixel
-	float m_fAstAzimuth; // radian
-	float m_fAstTol;     // Allowed astigmatism
-	float m_fPixelSize;  // Angstrom
-};
-
 class CCtfTheory
 {
 public:
@@ -55,8 +33,10 @@ public:
 	  float fDefocusMinPixel, // pixel
 	  float fAstAzimuthRadian // radian
 	);
-	void SetParam(CCtfParam* pCTFParam); // copy values
-	CCtfParam* GetParam(bool bCopy);  // do not free
+	//-----------------
+	void SetParam(MD::CCtfParam* pCTFParam); // copy values
+	MD::CCtfParam* GetParam(bool bCopy);     // do not free
+	//-----------------
 	float Evaluate
 	( float fFreq, // relative frequency in [-0.5, +0.5]
 	  float fAzimuth
@@ -89,7 +69,7 @@ public:
 private:
 	float mCalcWavelength(float fKv);
 	void mEnforce(void);
-	CCtfParam* m_pCtfParam;
+	MD::CCtfParam* m_pCtfParam;
 	float m_fPI;
 };
 
@@ -98,7 +78,7 @@ class GCalcCTF1D
 public:
 	GCalcCTF1D(void);
 	~GCalcCTF1D(void);
-	void SetParam(CCtfParam* pCtfParam);
+	void SetParam(MD::CCtfParam* pCtfParam);
 	void DoIt
 	( float fDefocus,  // in pixel
 	  float fExtPhase, // phase in radian from phase plate
@@ -114,14 +94,14 @@ class GCalcCTF2D
 public:
 	GCalcCTF2D(void);
 	~GCalcCTF2D(void);
-	void SetParam(CCtfParam* pCtfParam);
+	void SetParam(MD::CCtfParam* pCtfParam);
 	void DoIt
 	( float fDfMin, float fDfMax, float fAzimuth, 
 	  float fExtPhase, // phase in radian from phase plate
 	  float* gfCTF2D, int* piCmpSize
 	);
 	void DoIt
-	( CCtfParam* pCtfParam,
+	( MD::CCtfParam* pCtfParam,
 	  float* gfCtf2D,
 	  int* piCmpSize
 	);
@@ -319,6 +299,179 @@ private:
 	float* m_pfCC;
 };
 
+class GCorrCTF2D
+{
+public:
+	GCorrCTF2D(void);
+	~GCorrCTF2D(void);
+	void SetParam(MD::CCtfParam* pCtfParam);
+	void SetWeinerFilter(bool bTrue);
+	void DoIt
+	( float fDfMin, float fDfMax, // pixel
+	  float fAzimuth, float fExtPhase, // rad
+	  cufftComplex* gCmp, int* piCmpSize,
+	  cudaStream_t stream = 0
+	);
+	void DoIt
+	( MD::CCtfParam* pCtfParam,
+	  cufftComplex* gCmp, int* piCmpSize,
+	  cudaStream_t stream = 0
+	);
+private:
+	bool m_bWeiner;
+	float m_fAmpPhase;
+	float* m_gfNoise2;
+};
+
+class CTile
+{
+public:
+	CTile(void);
+	~CTile(void);
+	void Clean(void);
+	void SetTileSize(int iTileSize);
+	void SetCoreSize(int iCoreSize);
+	void SetTileStart(int iTileStartX, int iTileStartY);
+	void SetCoreStart(int iCoreStartX, int iCoreStartY);
+	void SetImgSize(int* piImgSize);
+	//-----------------
+	void Extract(float* pfImage);
+	void PasteCore(float* pfImage);
+	void PasteCore(float* gfTile, float* pfImage);
+	//-----------------
+	void GetTileCenter(float* pfCent);
+	void GetCoreCenter(float* pfCent);
+	int GetTileSize(void);
+	int GetTileBytes(void);
+	//-----------------
+	float* m_pfTile;  // [m_iPadSize, m_iTileSize], do not free
+	int m_iTileSize;
+	int m_iPadSize;
+private:
+	int m_aiTileStart[2];
+	int m_aiCoreStart[2];
+	int m_iCoreSize;
+	int m_aiImgSize[2];
+};
+
+class CExtractTiles
+{
+public:
+	CExtractTiles(void);
+	~CExtractTiles(void);
+	void Setup(int iTileSize, int iCoreSize, int* piImgSize);
+	void DoIt(float* pfImage);
+	CTile* GetTile(int iNthTile);
+	int m_iNumTiles;
+private:
+	void mCalcTileLocations(void);
+	void mCheckTileBound(int* piVal, int iImgSize);
+	void mClean(void);
+	//-----------------
+	int m_aiNumTiles[2];
+	int m_aiImgSize[2];
+	int m_iTileSize;
+	int m_iCoreSize;
+	CTile* m_pTiles;
+};
+
+class CCorrImgCtf
+{
+public:
+	CCorrImgCtf(void);
+	~CCorrImgCtf(void);
+	void Setup(int* piImgSize, int iNthGpu);
+	void DoIt(float* pfImage, float fTilt, float fTiltAxis);
+private:
+	void mTileToGpu(int iTile);
+	void mGpuToTile(int iTile);
+	float mCalcDeltaZ(int iTile);
+	void mCorrectCTF(int iTile);
+	//-----------------
+	GCorrCTF2D* m_pGCorrCTF2D;
+	CExtractTiles* m_pExtractTiles;
+	MU::CCufft2D* m_pForwardFFT;
+	MU::CCufft2D* m_pInverseFFT;
+	MD::CCtfParam* m_pImgCtfParam;
+	//-----------------
+	cudaStream_t m_streams[2];
+	float* m_ggfTiles[2];
+	//-----------------
+	int m_iTileSize;
+	int m_iCoreSize;
+	//-----------------
+	float* m_pfImage;
+	int m_aiImgSize[2];
+	float m_fTilt;
+	float m_fTiltAxis;
+	//-----------------
+	int m_iNthGpu;
+};
+
+class CTileSpectra
+{
+public:
+	static CTileSpectra* GetInstance(int iNthGpu);
+	static void CreateInstances(int iNumGpus);
+	static void DeleteInstances(void);
+        //-----------------
+        ~CTileSpectra(void);
+        void Clean(void);
+        void Create(int iTilesPerTilt, int iNumTilts, int iTileSize);
+        void Adjust(int iTilesPerTilt, int iNumTilts);
+        //-----------------
+        void SetSpect(int iTile, int iTilt, float* gfSpect);
+        void SetAvgSpect(int iTilt, float* gfSpect);
+        //-----------------
+        void SetStat(int iTile, int iTilt, float* pfStat);
+        void SetXY(int iTile, int iTilt, float* pfXY);
+        //-----------------
+        float* GetSpect(int iTile, int iTilt);
+        float* GetAvgSpect(int iTilt);
+        //-----------------
+        float GetWeight(int iTile, int iTilt);
+        void GetXYZ(int iTile, int iTilt, float* pfXYZ);
+        void GetXY(int iTile, int iTilt, float* pfXY);
+        float GetZ(int iTile, int iTilt);
+        //-----------------
+        void Screen(void);
+        int GetSpectSize(void);
+        //-----------------
+        void CalcZs
+        ( float* pfTilts, float fTiltAxis,
+          float fTiltOffset, float fBetaOffset
+        );
+        //-----------------
+        int m_iTilesPerTilt;  // number of tiles per tilt
+        int m_iNumTilts;      // include dark images
+        int m_iSeriesTiles;   // m_iTilesPerTilt * m_iNumTilts
+	int m_aiSpectSize[2]; // [iTileSize/2+1, iTileSize]
+private:
+        CTileSpectra(void);
+        void mExpandBuf(void);
+        void mCalcStat(float* pfVals, float* pfStat);
+        void mCalcTiltZs(int iTilt, float fTilt);
+        //-----------------
+        float** m_ppfSpectra;
+        float* m_pfTileXs;
+        float* m_pfTileYs;
+        float* m_pfTileZs;
+        //-----------------
+        float* m_pfMeans;
+        float* m_pfStds;
+        float* m_pfWeights;
+        //-----------------
+        int m_iBufSize;
+        //-----------------
+        float m_fTiltAxis;
+        float m_fTiltOffset;
+        float m_fBetaOffset;
+        //-----------------
+	int m_iNthGpu;
+	static int m_iNumGpus;
+	static CTileSpectra* m_pInstances;
+};
+
 class CGenAvgSpectrum
 {
 public:
@@ -380,7 +533,7 @@ public:
 	CFindDefocus1D(void);
 	~CFindDefocus1D(void);
 	void Clean(void);
-	void Setup(CCtfParam* pCtfParam, int iCmpSize);
+	void Setup(MD::CCtfParam* pCtfParam, int iCmpSize);
 	void SetResRange(float afRange[2]); // angstrom
 	void DoIt
 	( float afDfRange[2],    // f0, delta angstrom
@@ -394,9 +547,11 @@ private:
 	void mBrutalForceSearch(float afResult[3]);
 	void mCalcCTF(float fDefocus, float fExtPhase);
 	float mCorrelate(void);
-	CCtfParam* m_pCtfParam;
+	//-----------------
+	MD::CCtfParam* m_pCtfParam;
 	GCC1D* m_pGCC1D;
 	GCalcCTF1D m_aGCalcCtf1D;
+	//-----------------
 	float m_afResRange[2];
 	float m_afDfRange[2];    // f0, delta in angstrom
 	float m_afPhaseRange[2]; // p0, delta in degree
@@ -411,7 +566,7 @@ public:
 	CFindDefocus2D(void);
 	~CFindDefocus2D(void);
 	void Clean(void);
-	void Setup1(CCtfParam* pCtfParam, int* piCmpSize);
+	void Setup1(MD::CCtfParam* pCtfParam, int* piCmpSize);
 	void Setup2(float afResRange[2]); // angstrom
 	void Setup3
 	( float fDfMean, float fAstRatio,
@@ -458,7 +613,7 @@ private:
         int m_aiCmpSize[2];
         GCC2D* m_pGCC2D;
         GCalcCTF2D m_aGCalcCtf2D;
-        CCtfParam* m_pCtfParam;
+	MD::CCtfParam* m_pCtfParam;
         //-----------------
         float m_fDfMean;
         float m_fAstRatio;
@@ -572,8 +727,8 @@ class CFindCtfMain
 public:
 	CFindCtfMain(void);
 	~CFindCtfMain(void);
+	static bool bCheckInput(void);
 	void Clean(void);
-	bool CheckInput(void);
 	void DoIt(int iNthGpu);
 private:
 	void mGenSpectrums(void);
@@ -589,6 +744,19 @@ private:
 	int m_iRefTilt;
 	//-----------------
 	MD::CTiltSeries* m_pTiltSeries;
+	int m_iNthGpu;
+};
+
+class CCorrCtfMain
+{
+public:
+	CCorrCtfMain(void);
+	~CCorrCtfMain(void);
+	void DoIt(int iNthGpu);
+private:
+	void mCorrTiltSeries(int iSeries);
+	//-----------------
+	CCorrImgCtf* m_pCorrImgCtf;
 	int m_iNthGpu;
 };
 

@@ -68,6 +68,7 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/FindCtf/GCC1D.cu \
 	./AreTomo/FindCtf/GCC2D.cu \
 	./AreTomo/FindCtf/GSpectralCC2D.cu \
+	./AreTomo/FindCtf/GCorrCTF2D.cu \
 	./AreTomo/FindCtf/GRadialAvg.cu \
 	./AreTomo/FindCtf/GRemoveMean.cu \
 	./AreTomo/FindCtf/GRmBackground2D.cu \
@@ -108,6 +109,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./DataUtil/CStackFolder.cpp \
 	./DataUtil/CTiltSeries.cpp \
 	./DataUtil/CTsPackage.cpp \
+	./DataUtil/CCtfParam.cpp \
 	./DataUtil/CLogFiles.cpp \
 	./MotionCor/DataUtil/CFmGroupParam.cpp \
 	./MotionCor/DataUtil/CFmIntParam.cpp \
@@ -192,9 +194,13 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/FindCtf/CFindCtfMain.cpp \
 	./AreTomo/FindCtf/CFindDefocus1D.cpp\
 	./AreTomo/FindCtf/CFindDefocus2D.cpp \
+	./AreTomo/FindCtf/CTile.cpp \
+	./AreTomo/FindCtf/CExtractTiles.cpp \
+	./AreTomo/FindCtf/CCorrImgCtf.cpp \
 	./AreTomo/FindCtf/CGenAvgSpectrum.cpp \
 	./AreTomo/FindCtf/CSaveCtfResults.cpp \
 	./AreTomo/FindCtf/CSpectrumImage.cpp \
+	./AreTomo/FindCtf/CCorrCtfMain.cpp \
 	./AreTomo/ImodUtil/CImodUtil.cpp \
 	./AreTomo/ImodUtil/CSaveCsv.cpp \
 	./AreTomo/ImodUtil/CSaveTilts.cpp \

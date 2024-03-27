@@ -185,6 +185,32 @@ private:
 	static int m_iNumGpus;
 };
 
+class CCtfParam
+{
+public:
+	CCtfParam(void);
+	~CCtfParam(void);
+	float GetWavelength(bool bAngstrom);
+	float GetDefocusMax(bool bAngstrom);
+	float GetDefocusMin(bool bAngstrom);
+	float GetDfMean(bool bAngstrom);
+	float GetDfSigma(bool bAngstrom);
+	//-----------------
+	void SetParam(CCtfParam* pCtfParam);
+	CCtfParam* GetCopy(void);
+	//-----------------
+	float m_fWavelength; // pixel
+	float m_fCs; // pixel
+	float m_fAmpContrast;
+	float m_fAmpPhaseShift; // radian
+	float m_fExtPhase;   // radian
+	float m_fDefocusMax; // pixel
+	float m_fDefocusMin; // pixel
+	float m_fAstAzimuth; // radian
+	float m_fAstTol;     // Allowed astigmatism
+	float m_fPixelSize;  // Angstrom
+};
+
 class CCtfResults
 {
 public:
@@ -193,7 +219,7 @@ public:
 	static CCtfResults* GetInstance(int iNthGpu);
 	~CCtfResults(void);
 	void Clean(void);
-	void Setup(int iNumImgs, int* piSpectSize);
+	void Setup(int iNumImgs, int* piSpectSize, CCtfParam* pCtfParam);
 	void SetTilt(int iImage, float fTilt);
 	void SetDfMin(int iImage, float fDfMin);
 	void SetDfMax(int iImage, float fDfMax);
@@ -201,7 +227,7 @@ public:
 	void SetExtPhase(int iImage, float fExtPhase);
 	void SetScore(int iImage, float fScore);
 	void SetSpect(int iImage, float* pfSpect);
-	//----------------------------------------
+	//-----------------
 	float GetTilt(int iImage);
 	float GetDfMin(int iImage);
 	float GetDfMax(int iImage);
@@ -212,17 +238,19 @@ public:
 	void SaveImod(const char* pcCtfTxtFile);
 	void Display(int iNthCtf, char* pcLog);
 	void DisplayAll(void);
-	//-----------------------
+	//-----------------
+	int GetImgIdxFromTilt(float fTilt);
+	CCtfParam* GetCtfParam(int iImage);
+	CCtfParam* GetCtfParamFromTilt(float fTilt);
+	//-----------------
 	int m_aiSpectSize[2];
 	int m_iNumImgs;
 	int m_iNthGpu;
 private:
 	CCtfResults(void);
 	void mInit(void);
-	float* m_pfDfMins;
-	float* m_pfDfMaxs;
-	float* m_pfAzimuths;
-	float* m_pfExtPhases;
+	//-----------------
+	CCtfParam* m_pCtfParams;
 	float* m_pfScores;
 	float* m_pfTilts;
 	float** m_ppfSpects;

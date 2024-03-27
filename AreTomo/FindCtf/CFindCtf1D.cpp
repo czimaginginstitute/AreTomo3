@@ -39,7 +39,7 @@ void CFindCtf1D::Setup1(CCtfTheory* pCtfTheory)
 	cudaMalloc(&m_gfRadialAvg, sizeof(float) * m_aiCmpSize[0]);
 	//---------------------------------------------------------
 	m_pFindDefocus1D = new CFindDefocus1D;
-	CCtfParam* pCtfParam = m_pCtfTheory->GetParam(false);
+	MD::CCtfParam* pCtfParam = m_pCtfTheory->GetParam(false);
 	m_pFindDefocus1D->Setup(pCtfParam, m_aiCmpSize[0]);
 	//-------------------------------------------------
 	m_pFindDefocus1D->SetResRange(m_afResRange);

@@ -67,6 +67,7 @@ bool CAreTomoMain::DoIt(int iNthGpu)
 	mRemoveSpikes();	
 	mMassNorm();
 	mAlign();
+	mCorrectCTF();
 	//-----------------
 	//mDoseWeight();
 	//mSetPositivity();
@@ -118,9 +119,9 @@ void CAreTomoMain::mRemoveSpikes(void)
 
 void CAreTomoMain::mFindCtf(void)
 {
+	if(!FindCtf::CFindCtfMain::bCheckInput()) return;
 	FindCtf::CFindCtfMain findCtfMain;
-	if(!findCtfMain.CheckInput()) return;
-	else findCtfMain.DoIt(m_iNthGpu);
+	findCtfMain.DoIt(m_iNthGpu);
 }
 
 void CAreTomoMain::mMassNorm(void)
@@ -273,13 +274,19 @@ void CAreTomoMain::mPatchAlign(void)
 	if(pInput->GetNumPatches() == 0) return;
 	//-----------------
 	MAP::CPatchTargets* pPatchTgts = 
-	   MAP::CPatchTargets::GetInstance(m_iNthGpu);
+     	   MAP::CPatchTargets::GetInstance(m_iNthGpu);
 	pPatchTgts->Detect();
 	if(pPatchTgts->m_iNumTgts < 4) return;
 	//-----------------
 	MAP::CPatchAlignMain* pPatchAlignMain = 
 	   MAP::CPatchAlignMain::GetInstance(m_iNthGpu);
 	pPatchAlignMain->DoIt(m_fTiltOffset); 
+}
+
+void CAreTomoMain::mCorrectCTF(void)
+{
+	MAF::CCorrCtfMain corrCtfMain;
+	corrCtfMain.DoIt(m_iNthGpu);
 }
 
 /*

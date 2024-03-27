@@ -62,7 +62,7 @@ float CFindDefocus2D::GetScore(void)
 	return m_fCCMax;
 }
 
-void CFindDefocus2D::Setup1(CCtfParam* pCtfParam, int* piCmpSize)
+void CFindDefocus2D::Setup1(MD::CCtfParam* pCtfParam, int* piCmpSize)
 {
 	this->Clean();
 	//------------

@@ -7,45 +7,11 @@ using namespace McAreTomo::AreTomo::FindCtf;
 
 static float s_fD2R = 0.01745329f;
 
-CCtfParam::CCtfParam(void)
-{
-	m_fPixelSize = 1.0f;
-}
-
-CCtfParam::~CCtfParam(void)
-{
-}
-
-float CCtfParam::GetWavelength(bool bAngstrom)
-{
-	if(bAngstrom) return (m_fWavelength * m_fPixelSize);
-	else return m_fWavelength;
-}
-
-float CCtfParam::GetDefocusMax(bool bAngstrom)
-{
-	if(bAngstrom) return (m_fDefocusMax * m_fPixelSize);
-	else return m_fDefocusMax;
-}
-
-float CCtfParam::GetDefocusMin(bool bAngstrom)
-{
-	if(bAngstrom) return (m_fDefocusMin * m_fPixelSize);
-	else return m_fDefocusMin;
-}
-
-CCtfParam* CCtfParam::GetCopy(void)
-{
-	CCtfParam* pCopy = new CCtfParam;
-	memcpy(pCopy, this, sizeof(CCtfParam));
-	return pCopy;
-}
-
 CCtfTheory::CCtfTheory(void)
 {
 	m_fPI = (float)(4.0 * atan(1.0));
-	m_pCtfParam = new CCtfParam;
-	memset(m_pCtfParam, 0, sizeof(CCtfParam));
+	m_pCtfParam = new MD::CCtfParam;
+	memset(m_pCtfParam, 0, sizeof(MD::CCtfParam));
 }
 
 CCtfTheory::~CCtfTheory(void)
@@ -109,17 +75,17 @@ void CCtfTheory::SetDefocusInPixel
 }
 
 void CCtfTheory::SetParam
-(	CCtfParam* pCtfParam
+(	MD::CCtfParam* pCtfParam
 )
 {	if(m_pCtfParam == pCtfParam) return;
-	memcpy(m_pCtfParam, pCtfParam, sizeof(CCtfParam));
+	memcpy(m_pCtfParam, pCtfParam, sizeof(MD::CCtfParam));
 }
 
-CCtfParam* CCtfTheory::GetParam(bool bCopy)
+MD::CCtfParam* CCtfTheory::GetParam(bool bCopy)
 {
 	if(!bCopy) return m_pCtfParam;
 	//----------------------------
-	CCtfParam* pCopy = m_pCtfParam->GetCopy();
+	MD::CCtfParam* pCopy = m_pCtfParam->GetCopy();
 	return pCopy;
 }
 
@@ -231,7 +197,7 @@ float CCtfTheory::CalcFrequency
 bool CCtfTheory::EqualTo(CCtfTheory* pCtf, float fDfTol)
 {
 	bool bCopy = true;
-	CCtfParam* pParam = pCtf->GetParam(!bCopy);
+	MD::CCtfParam* pParam = pCtf->GetParam(!bCopy);
 	float fDif = m_pCtfParam->m_fDefocusMax - pParam->m_fDefocusMax;
 	if(fabs(fDif) > fDfTol) return false;
 	//-----------------------------------

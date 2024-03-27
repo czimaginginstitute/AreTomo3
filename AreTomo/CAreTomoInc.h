@@ -91,6 +91,8 @@ private:
 	void mProjAlign(void);
 	void mPatchAlign(void);
 	//-----------------
+	void mCorrectCTF(void);
+	//-----------------
 	void mRecon(void);
 	void mSetPositivity(void);
 	void mSaveForImod(void);

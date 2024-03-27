@@ -33,7 +33,7 @@ void CFindDefocus1D::Clean(void)
 	}
 }
 
-void CFindDefocus1D::Setup(CCtfParam* pCtfParam, int iCmpSize)
+void CFindDefocus1D::Setup(MD::CCtfParam* pCtfParam, int iCmpSize)
 {
 	this->Clean();
 	//------------

@@ -6,6 +6,8 @@
 using namespace McAreTomo;
 using namespace McAreTomo::DataUtil;
 
+static float s_fD2R = 0.01745329f;
+
 CCtfResults* CCtfResults::m_pInstances = 0L;
 int CCtfResults::m_iNumGpus = 0;
 
@@ -41,7 +43,9 @@ CCtfResults::CCtfResults(void)
 void CCtfResults::mInit(void)
 {
 	m_iNumImgs = 0;
-	m_pfDfMins = 0L;
+	m_pCtfParams = 0L;
+	m_pfScores = 0L;
+	m_pfTilts = 0L;
 	m_ppfSpects = 0L;
 }
 
@@ -50,39 +54,38 @@ CCtfResults::~CCtfResults(void)
 	this->Clean();
 }
 
-void CCtfResults::Setup(int iNumImgs, int* piSpectSize)
-{
-	this->Clean();
+void CCtfResults::Setup
+(	int iNumImgs, 
+	int* piSpectSize, 
+	CCtfParam* pCtfParam
+)
+{	this->Clean();
 	m_iNumImgs = iNumImgs;
 	m_aiSpectSize[0] = piSpectSize[0];
 	m_aiSpectSize[1] = piSpectSize[1];
-	//--------------------------------------------
-	int iNumCols = 6;
-	m_pfDfMins = new float[m_iNumImgs * iNumCols];
-	m_pfDfMaxs = &m_pfDfMins[m_iNumImgs];
-	m_pfAzimuths = &m_pfDfMaxs[m_iNumImgs];
-	m_pfExtPhases = &m_pfAzimuths[m_iNumImgs];
-	m_pfScores = &m_pfExtPhases[m_iNumImgs];
+	//-----------------
+	m_pfScores = new float[m_iNumImgs * 2];
 	m_pfTilts = &m_pfScores[m_iNumImgs];
-	//-------------------------------------------------
-	int iBytes = sizeof(float) * m_iNumImgs * iNumCols;
-	memset(m_pfDfMins, 0, iBytes);
-	//-----------------------------------
+	//-----------------
+	int iBytes = sizeof(float) * m_iNumImgs * 2;
+	memset(m_pfScores, 0, iBytes);
+	//-----------------
 	m_ppfSpects = new float*[m_iNumImgs];
 	memset(m_ppfSpects, 0, sizeof(float*) * m_iNumImgs);
+	//-----------------
+	m_pCtfParams = new CCtfParam[m_iNumImgs];
+	for(int i=0; i<m_iNumImgs; i++)
+	{	m_pCtfParams[i].SetParam(pCtfParam);
+	}
 }
 
 void CCtfResults::Clean(void)
 {
 	if(m_iNumImgs == 0) return;
 	//-------------------------
-	if(m_pfDfMins != 0L) delete[] m_pfDfMins;
-	for(int i=0; i<m_iNumImgs; i++)
-	{	if(m_ppfSpects[i] == 0L) continue;
-		delete[] m_ppfSpects[i];
-		m_ppfSpects[i] = 0L;
-	}
+	if(m_pCtfParams != 0L) delete[] m_pCtfParams;
 	if(m_ppfSpects != 0L) delete[] m_ppfSpects;
+	if(m_pfScores != 0L) delete[] m_pfScores;
 	mInit();
 }
 
@@ -93,22 +96,24 @@ void CCtfResults::SetTilt(int iImage, float fTilt)
 
 void CCtfResults::SetDfMin(int iImage, float fDfMin)
 {
-	m_pfDfMins[iImage] = fDfMin;
+	m_pCtfParams[iImage].m_fDefocusMin = 
+	   fDfMin / m_pCtfParams[iImage].m_fPixelSize;
 }
 
 void CCtfResults::SetDfMax(int iImage, float fDfMax)
 {
-	m_pfDfMaxs[iImage] = fDfMax;
+	m_pCtfParams[iImage].m_fDefocusMax = 
+	   fDfMax / m_pCtfParams[iImage].m_fPixelSize;
 }
 
 void CCtfResults::SetAzimuth(int iImage, float fAzimuth)
 {
-	m_pfAzimuths[iImage] = fAzimuth;
+	m_pCtfParams[iImage].m_fAstAzimuth = fAzimuth * s_fD2R;
 }
 
 void CCtfResults::SetExtPhase(int iImage, float fExtPhase)
 {
-	m_pfExtPhases[iImage] = fExtPhase;
+	m_pCtfParams[iImage].m_fExtPhase = fExtPhase * s_fD2R;
 }
 
 void CCtfResults::SetScore(int iImage, float fScore)
@@ -129,22 +134,24 @@ float CCtfResults::GetTilt(int iImage)
 
 float CCtfResults::GetDfMin(int iImage)
 {
-	return m_pfDfMins[iImage];
+	return m_pCtfParams[iImage].m_fDefocusMin *
+	   m_pCtfParams[iImage].m_fPixelSize;
 }
 
 float CCtfResults::GetDfMax(int iImage)
 {
-	return m_pfDfMaxs[iImage];
+	return m_pCtfParams[iImage].m_fDefocusMax *
+	   m_pCtfParams[iImage].m_fPixelSize;
 }
 
 float CCtfResults::GetAzimuth(int iImage)
 {
-	return m_pfAzimuths[iImage];
+	return m_pCtfParams[iImage].m_fAstAzimuth / s_fD2R;
 }
 
 float CCtfResults::GetExtPhase(int iImage)
 {
-	return m_pfExtPhases[iImage];
+	return m_pCtfParams[iImage].m_fExtPhase / s_fD2R;
 }
 
 float CCtfResults::GetScore(int iImage)
@@ -222,4 +229,29 @@ void CCtfResults::DisplayAll(void)
 	//-----------------
 	printf("%s\n", pcLog);
 	if(pcLog != 0L) delete[] pcLog;
+}
+
+int CCtfResults::GetImgIdxFromTilt(float fTilt)
+{
+	int iMin = -1;
+	float fMin = (float)1e30;
+	for(int i=0; i<m_iNumImgs; i++)
+	{	float fDif = fabsf(fTilt - m_pfTilts[i]);
+		if(fDif < fMin)
+		{	fMin = fDif;
+			iMin = i;
+		}
+	}
+	return iMin;
+}
+
+CCtfParam* CCtfResults::GetCtfParam(int iImage)
+{
+	return &m_pCtfParams[iImage];
+}
+
+CCtfParam* CCtfResults::GetCtfParamFromTilt(float fTilt)
+{
+	int iImage = this->GetImgIdxFromTilt(fTilt);
+	return &m_pCtfParams[iImage];
 }

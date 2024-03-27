@@ -111,3 +111,9 @@ AreTomo3 1.0.8: [03-08-2024]
    alignment. -Resume 1 is ignored in this case.   
 5. Add in AreTomo/FindCtf/GSpectralCC2D.cu to calculate Thon ring
    resolution at 0.143.
+
+AreTomo3 1.0.9: [03-20-2024]
+----------------------------
+1. Add patch based CTF deconvolution
+2. Bug fix: FindCtf/GCalcCTF2D.cu and GCalcCTF1D.cu: m_fAmpPhaseShift 
+   calculation forgot taking square root. Corrected now. 

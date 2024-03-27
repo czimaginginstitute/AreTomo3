@@ -37,7 +37,7 @@ void CFindCtfMain::Clean(void)
 	m_iNumTilts = 0;
 }
 
-bool CFindCtfMain::CheckInput(void)
+bool CFindCtfMain::bCheckInput(void)
 {
 	CInput* pInput = CInput::GetInstance();
 	bool bEstimate = true;
@@ -60,12 +60,7 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	//-----------------
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	m_pTiltSeries = pTsPkg->GetSeries(0);
-	//-----------------
 	m_iNumTilts = m_pTiltSeries->m_aiStkSize[2];
-	//-----------------
-	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
-	int aiSpectSize[] = {512, 512};
-	pCtfResults->Setup(m_iNumTilts, aiSpectSize);
 	//-----------------
 	CInput* pInput = CInput::GetInstance();
 	CAtInput* pAtInput = CAtInput::GetInstance();
@@ -75,6 +70,11 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	aInputCTF.Setup(pInput->m_iKv, pInput->m_fCs,
 	   pAtInput->m_fAmpContrast, m_pTiltSeries->m_fPixSize,
 	   100.0f, fExtPhase);
+	//-----------------
+	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
+        int aiSpectSize[] = {512, 512};
+        pCtfResults->Setup(m_iNumTilts, aiSpectSize,
+	   aInputCTF.GetParam(false));
 	//-----------------
 	m_pFindCtf2D = new CFindCtf2D;
 	m_pFindCtf2D->Setup1(&aInputCTF);

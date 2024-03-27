@@ -33,7 +33,7 @@ void CFindCtf2D::Setup1(CCtfTheory* pCtfTheory)
 	CFindCtf1D::Setup1(pCtfTheory);
 	//-----------------------------
 	m_pFindDefocus2D = new CFindDefocus2D;
-	CCtfParam* pCtfParam = m_pCtfTheory->GetParam(false);
+	MD::CCtfParam* pCtfParam = m_pCtfTheory->GetParam(false);
 	m_pFindDefocus2D->Setup1(pCtfParam, m_aiCmpSize);
 	m_pFindDefocus2D->Setup2(m_afResRange);
 }

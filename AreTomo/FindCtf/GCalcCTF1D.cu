@@ -1,6 +1,7 @@
 #include "CFindCtfInc.h"
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <math.h>
 #include <stdio.h>
 
 using namespace McAreTomo::AreTomo;
@@ -27,7 +28,7 @@ static __global__ void mGCalculate
 	fs2 = fs2 * fs2;
 	float fw2 = s_gfCtfParam[0] * s_gfCtfParam[0];
 	fw2 = fExtPhase + 3.141592654f * s_gfCtfParam[0] * fs2
-	   * (fDefocus - 0.5f * fw2 * fw2 * s_gfCtfParam[1]);
+	   * (fDefocus - 0.5f * fw2 * fs2 * s_gfCtfParam[1]);
 	//---------------------------------------------------
 	gfCTF1D[i] = -sinf(fw2);
 }
@@ -40,15 +41,16 @@ GCalcCTF1D::~GCalcCTF1D(void)
 {
 }
 
-void GCalcCTF1D::SetParam(CCtfParam* pCtfParam)
+void GCalcCTF1D::SetParam(MD::CCtfParam* pCtfParam)
 {
 	float afCtfParam[2] = {0.0f};
 	afCtfParam[0] = pCtfParam->m_fWavelength;
 	afCtfParam[1] = pCtfParam->m_fCs;
 	cudaMemcpyToSymbol(s_gfCtfParam, afCtfParam, sizeof(float) * 2);
 	//--------------------------------------------------------------
-	m_fAmpPhase = (float)atanf(pCtfParam->m_fAmpContrast / (1.0f 
-	   - pCtfParam->m_fAmpContrast * pCtfParam->m_fAmpContrast));
+	m_fAmpPhase = (float)atanf(pCtfParam->m_fAmpContrast / 
+	   sqrtf(1.0f - pCtfParam->m_fAmpContrast * 
+	   pCtfParam->m_fAmpContrast));
 }
 
 void GCalcCTF1D::DoIt
