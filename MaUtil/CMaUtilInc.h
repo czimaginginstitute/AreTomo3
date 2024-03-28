@@ -242,6 +242,10 @@ public:
 	( float* gfImg, int* piSize, bool bPadded,
 	  float fPower, cudaStream_t stream = 0
 	);
+	void DoKeepCenter
+	( float* gfImg, int* piSize, bool bPadded,
+	  float fPower, cudaStream_t stream = 0
+	);
 private:
 	float m_afMaskCent[2];
 	float m_afMaskSize[2];

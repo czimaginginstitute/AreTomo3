@@ -285,6 +285,9 @@ void CAreTomoMain::mPatchAlign(void)
 
 void CAreTomoMain::mCorrectCTF(void)
 {
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	if(pAtInput->m_iCorrCTF == 0) return;
+	//-----------------
 	MAF::CCorrCtfMain corrCtfMain;
 	corrCtfMain.DoIt(m_iNthGpu);
 }

@@ -47,6 +47,7 @@ CAtInput::CAtInput(void)
 	strcpy(m_acDarkTolTag, "-DarkTol");
 	strcpy(m_acBFactorTag, "-Bft");
 	strcpy(m_acIntpCorTag, "-IntpCor");
+	strcpy(m_acCorrCTFTag, "-CorrCTF");
 	//-----------------
 	m_fTotalDose = 0.0f;
 	m_afTiltAxis[0] = 0.0f;
@@ -68,6 +69,8 @@ CAtInput::CAtInput(void)
 	m_iAlign = 1;
 	m_fDarkTol = 0.7f;
 	m_bIntpCor = false;
+	m_iCorrCTF = 1;
+	//-----------------
 	memset(m_afExtPhase, 0, sizeof(m_afExtPhase));
 	memset(m_aiAtPatches, 0, sizeof(m_aiAtPatches));
 	memset(m_aiCropVol, 0, sizeof(m_aiCropVol));
@@ -133,20 +136,20 @@ void CAtInput::ShowTags(void)
 	printf("   1. Specify number of SART iterations and number\n");
 	printf("      of projections per update. The default values\n");
 	printf("      are 15 and 5, respectively\n\n");
-	//---------------------------------------------
+	//-----------------
 	printf("%-10s\n", m_acWbpTag);
 	printf("   1. By specifying 1, weighted back projection is enabled\n");
 	printf("      to reconstruct volume.\n\n");
-	//-----------------------------------------
+	//-----------------
 	printf("%-10s\n", m_acDarkTolTag);
 	printf("   1. Set tolerance for removing dark images. The range is\n"
 	   "      in (0, 1). The default value is 0.7. The higher value is\n"
 	   "      more restrictive.\n\n");
-	//--------------------------------
+	//-----------------
 	printf("%-10s\n", m_acOutXFTag);
 	printf("   1. When set by giving no-zero value, IMOD compatible\n"
 	   "      XF file will be generated.\n\n");
-	//-----------------------------------------
+	//-----------------
 	printf("%-10s\n", m_acOutImodTag);
 	printf("   1. It generates the Imod files needed by Relion4 or Warp\n"
 	   "      for subtomogram averaging. These files are saved in the\n"
@@ -156,16 +159,21 @@ void CAtInput::ShowTags(void)
 	   "   4. 2: generate IMod files needed for WARP.\n"
 	   "   5. 3: generate IMod files when the aligned tilt series\n"
 	   "         is used as the input for Relion 4 or WARP.\n\n");
-	//------------------------------------------------------------
+	//-----------------
 	printf("%-10s\n", m_acAlignTag);
 	printf("   1. Skip alignment when followed by 0. This option is\n"
 	   "      used when the input MRC file is an aligned tilt series.\n"
 	   "      The default value is 1.\n\n");
-	//--------------------------------------
+	//-----------------
 	printf("%-10s\n", m_acIntpCorTag);
 	printf("   1. When enabled, the correction for information loss due\n"
 	   "      to linear interpolation will be perform. The default\n"
 	   "      setting value 1 enables the correction.\n\n");
+	//-----------------
+	printf("%-10s\n", m_acCorrCTFTag);
+	printf("   1. When enabled, local CTF correction is performed on\n"
+	   "      raw tilt series. By default this function is enabled.\n"
+	   "   2. Passing 0 disables this function.\n\n");
 }
 
 void CAtInput::Parse(int argc, char* argv[])
@@ -240,28 +248,32 @@ void CAtInput::Parse(int argc, char* argv[])
 	aParseArgs.FindVals(m_acOutXFTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_iOutXF);
-	//-------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acAlignTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_iAlign);
-	//-------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acCropVolTag, aiRange);
 	if(aiRange[1] > 2) aiRange[1] = 2;
 	aParseArgs.GetVals(aiRange, m_aiCropVol);
-	//---------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acOutImodTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_iOutImod);
-	//---------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acDarkTolTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_fDarkTol);
-	//---------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acIntpCorTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
-	int iIntpCor = false;
+	int iIntpCor = 0;
 	aParseArgs.GetVals(aiRange, &iIntpCor);
 	m_bIntpCor = (iIntpCor == 0) ? false : true;
+	//-----------------
+	aParseArgs.FindVals(m_acCorrCTFTag, aiRange);
+	if(aiRange[1] > 1) aiRange[1] = 1;
+	aParseArgs.GetVals(aiRange, &m_iCorrCTF);	
 	//-----------------
 	mPrint();	
 }
@@ -314,9 +326,11 @@ void CAtInput::mPrint(void)
 	printf("%-10s  %d\n", m_acAlignTag, m_iAlign);
 	printf("%-10s  %d  %d\n", m_acCropVolTag, m_aiCropVol[0],
 	   m_aiCropVol[1]);
+	//-----------------
 	printf("%-10s  %d\n", m_acOutImodTag, m_iOutImod);
 	printf("%-10s  %.2f\n", m_acDarkTolTag, m_fDarkTol);
 	printf("%-10s  %d\n", m_acIntpCorTag, m_bIntpCor);
+	printf("%-10s  %d\n", m_acCorrCTFTag, m_iCorrCTF);
 	printf("\n");
 }
 

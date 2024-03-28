@@ -17,7 +17,7 @@ using namespace McAreTomo::AreTomo::FindCtf;
 CExtractTiles::CExtractTiles(void)
 {
 	m_iTileSize = 512;
-	m_iCoreSize = 256;
+	m_iCoreSize = 64;
 	m_pTiles = 0L;
 }
 

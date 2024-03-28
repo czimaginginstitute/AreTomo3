@@ -50,7 +50,7 @@ float CCtfParam::GetDfSigma(bool bAngstrom)
 
 void CCtfParam::SetParam(CCtfParam* pCtfParam)
 {
-	memcpy(this, pCtfParam, sizeof(pCtfParam));
+	memcpy(this, pCtfParam, sizeof(CCtfParam));
 }
 
 CCtfParam* CCtfParam::GetCopy(void)

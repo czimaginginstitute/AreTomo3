@@ -114,6 +114,12 @@ AreTomo3 1.0.8: [03-08-2024]
 
 AreTomo3 1.0.9: [03-20-2024]
 ----------------------------
-1. Add patch based CTF deconvolution
+1. Added patch based CTF deconvolution
 2. Bug fix: FindCtf/GCalcCTF2D.cu and GCalcCTF1D.cu: m_fAmpPhaseShift 
-   calculation forgot taking square root. Corrected now. 
+   calculation forgot taking square root. Corrected now.
+3. Bug fix: When the gain is not provided, the motion corrected image is dark.
+   MotionCor/MrcUtil/CAppyRefs::DoIt: when there is no gain and dark 
+   references, we should continue. The subsequent operation copys the frames
+   to GPU memory.
+4. Bug fix (03-28-2024): AreTomo/FindCtf/CTile.cpp incorrectly extracts
+   tiles from the image. 

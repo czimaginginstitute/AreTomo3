@@ -18,7 +18,7 @@ static float s_fD2R = 0.0174532f;
 CCorrImgCtf::CCorrImgCtf(void)
 {
 	m_iTileSize = 512;
-	m_iCoreSize = 256;
+	m_iCoreSize = 128;
 	m_pExtractTiles = new CExtractTiles;
 	m_pGCorrCTF2D = new GCorrCTF2D;
 }
@@ -86,6 +86,16 @@ void CCorrImgCtf::DoIt
 		mGpuToTile(i);
 	}
 	cudaStreamSynchronize(m_streams[0]);
+
+	/*	
+	MU::CSaveTempMrc saveMrc;
+	saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestTile", ".mrc");
+	CTile* pTile = m_pExtractTiles->GetTile(0);
+	int aiSize[] = {pTile->m_iPadSize, pTile->m_iTileSize};
+	saveMrc.DoIt(pTile->m_pfTile, 2, aiSize);
+	printf("Tile saved.\n");
+	*/
+
 	//-----------------
 	for(int i=0; i<m_pExtractTiles->m_iNumTiles; i++)
 	{	CTile* pTile = m_pExtractTiles->GetTile(i);

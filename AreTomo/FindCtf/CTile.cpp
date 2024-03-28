@@ -79,11 +79,12 @@ void CTile::SetImgSize(int* piImgSize)
 void CTile::Extract(float* pfImage)
 {
 	int iBytes = m_iTileSize * sizeof(float);
-	int iOffset = m_aiTileStart[1] * m_aiImgSize[0] + m_aiTileStart[1];
-	float* pfSrc = &pfImage[iOffset];
+	int iOffset = m_aiTileStart[1] * m_aiImgSize[0] + m_aiTileStart[0];
+	float* pfImg = &pfImage[iOffset];
 	//-----------------
 	for(int y=0; y<m_iTileSize; y++)
 	{	float* pfTgt = &m_pfTile[y * m_iPadSize];
+		float* pfSrc = &pfImg[y * m_aiImgSize[0]];
 		memcpy(pfTgt, pfSrc, iBytes);
 	}	
 }
@@ -99,12 +100,13 @@ void CTile::PasteCore(float* gfTile, float* pfImage)
 	int iCoreStartY = m_aiCoreStart[1] - m_aiTileStart[1];
 	float* gfSrc = &gfTile[iCoreStartY * m_iPadSize + iCoreStartX];
 	//-----------------
-	float* pfDst = &pfImage[m_aiCoreStart[0] * 
+	float* pfDst = &pfImage[m_aiCoreStart[1] * 
 	   m_aiImgSize[0] + m_aiCoreStart[0]];
 	//-----------------
 	int iBytes = m_iCoreSize * sizeof(float);
 	for(int y=0; y<m_iCoreSize; y++)
-	{	cudaMemcpy(pfDst, gfSrc, iBytes, cudaMemcpyDefault);
+	{	cudaMemcpy(&pfDst[y * m_aiImgSize[0]], 
+		   &gfSrc[y * m_iPadSize], iBytes, cudaMemcpyDefault);
 	}
 }
 

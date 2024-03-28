@@ -8,8 +8,6 @@ using namespace McAreTomo::AreTomo::FindCtf;
 //----------------------------------------------------------
 // s_gfCtfParam[0]: wavelength in pixel
 // s_gfCtfParam[1]: Cs in pixel
-// s_gfCtfParam[2]: Extra phase shift from amplitude 
-//                  contrast and phase plate.
 //----------------------------------------------------------
 static __device__ __constant__ float s_gfCtfParam[2];
 
@@ -52,14 +50,14 @@ static __global__ void mGPhaseFlip
 	if(blockIdx.x == 0 && y == 0) return;
 	if(y >= iCmpY) return;
 	//-----------------
-	float fY = (y - iCmpY * 0.5f) / iCmpY;
+	float fY = y / (float)iCmpY;
 	if(fY > 0.5f) fY = fY - 1.0f;
 	//-----------------------------------------------
 	// fY is the phase now.
 	//-----------------------------------------------
 	fY = mGCalcPhase(fDfMean, fDfSigma, 
 	   fAzmuth, fExtPhase, fY);
-	fY = -sinf(fY);
+	fY = sinf(fY);
 	if(fY >= 0) return;
 	//-----------------
 	int i = y * gridDim.x + blockIdx.x;
@@ -80,22 +78,21 @@ static __global__ void mGWeinerFilter
 	if(blockIdx.x == 0 && y == 0) return;
 	if(y >= iCmpY) return;
 	//-----------------
-	float fY = (y - iCmpY * 0.5f) / iCmpY;
+	float fY = y / (float)iCmpY;
 	if(fY > 0.5f) fY = fY - 1.0f;
 	//-----------------
 	float fCTF = mGCalcPhase(fDfMean, fDfSigma,
 	   fAzmuth, fExtPhase, fY);
-	fCTF = -sinf(fCTF);
+	fCTF = sinf(fCTF);
+	//-----------------
+	float fFilter = blockIdx.x * 0.5f / (gridDim.x - 1);
+	fFilter = sqrtf(fFilter * fFilter + fY * fY);
+	fFilter = expf(-2.0f * fFilter);
+	fCTF = fCTF * fFilter / (fCTF * fCTF * fFilter + 1.0f);
 	//-----------------
 	int i = y * gridDim.x + blockIdx.x;
-	cufftComplex aCmp = gCmp[i];
-	float fAmp2 = aCmp.x * aCmp.x + aCmp.y * aCmp.y;
-	fAmp2 = gfNoise2[0] / (fAmp2 + 0.000001f);
-	if(fAmp2 < 0.2) fAmp2 = 0.2f;
-	//-----------------
-	fY = fCTF / (fAmp2 + fCTF * fCTF);
-	gCmp[i].x *= fY;
-	gCmp[i].y *= fY;
+	gCmp[i].x *= fCTF;
+	gCmp[i].y *= fCTF;
 }
 
 static __global__ void mGCalcNoise2

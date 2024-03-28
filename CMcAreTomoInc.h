@@ -158,6 +158,7 @@ public:
 	int m_iOutImod;
 	float m_fDarkTol;
 	bool m_bIntpCor;
+	int m_iCorrCTF;
 	//-----------------
 	char m_acTotalDoseTag[32];
 	char m_acTiltAxisTag[32];
@@ -180,6 +181,7 @@ public:
 	char m_acDarkTolTag[32];
 	char m_acBFactorTag[32];
 	char m_acIntpCorTag[32];
+	char m_acCorrCTFTag[32];
 private:
         CAtInput(void);
         void mPrint(void);
