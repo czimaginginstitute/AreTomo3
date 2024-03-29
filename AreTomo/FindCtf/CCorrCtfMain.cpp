@@ -30,6 +30,7 @@ void CCorrCtfMain::DoIt(int iNthGpu)
 	if(!CFindCtfMain::bCheckInput()) return;
 	//-----------------	
 	m_iNthGpu = iNthGpu;
+	printf("GPU %d local CTF correction: started ...\n\n", m_iNthGpu);
 	//-----------------
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* pTiltSeries = pTsPkg->GetSeries(0);
@@ -38,23 +39,14 @@ void CCorrCtfMain::DoIt(int iNthGpu)
 	for(int i=0; i<MD::CAlnSums::m_iNumSums; i++)
 	{	mCorrTiltSeries(i);
 	}
+	//-----------------
+	printf("GPU %d local CTF correction: done\n\n", m_iNthGpu);
 }
 
 void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 {
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* pTiltSeries = pTsPkg->GetSeries(iSeries);
-
-	if(iSeries == 0) 
-        {       MU::CSaveTempMrc saveMrc;
-                saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestNoCTF", 
-                   ".mrc");
-                void** ppvImgs = pTiltSeries->GetFrames();
-                saveMrc.DoMany(ppvImgs, 2, pTiltSeries->m_aiStkSize);
-                printf("Save CTF corrected tilt series done.\n");
-        }
-
-
 	//-----------------
 	MAM::CAlignParam* pAlignParam = 
 	   MAM::CAlignParam::GetInstance(m_iNthGpu);
@@ -65,7 +57,7 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 		float fTilt = pTiltSeries->m_pfTilts[i];
 		m_pCorrImgCtf->DoIt(pfImage, fTilt, fTiltAxis);
 	}
-	
+	/* This is debugging code	
 	if(iSeries == 0)
 	{	MU::CSaveTempMrc saveMrc;
 		saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestYesCTF", 
@@ -74,5 +66,5 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 		saveMrc.DoMany(ppvImgs, 2, pTiltSeries->m_aiStkSize);
 		printf("Save CTF corrected tilt series done.\n");
 	}
-	
+	*/
 }

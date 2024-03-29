@@ -87,7 +87,7 @@ static __global__ void mGWeinerFilter
 	//-----------------
 	float fFilter = blockIdx.x * 0.5f / (gridDim.x - 1);
 	fFilter = sqrtf(fFilter * fFilter + fY * fY);
-	fFilter = expf(-2.0f * fFilter);
+	fFilter = expf(-10.0f * fFilter) * 50.0f;
 	fCTF = fCTF * fFilter / (fCTF * fCTF * fFilter + 1.0f);
 	//-----------------
 	int i = y * gridDim.x + blockIdx.x;

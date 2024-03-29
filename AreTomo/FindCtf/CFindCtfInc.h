@@ -341,6 +341,8 @@ public:
 	//-----------------
 	void GetTileCenter(float* pfCent);
 	void GetCoreCenter(float* pfCent);
+	void GetTileStart(int* piStart);
+	void GetCoreStart(int* piStart);
 	int GetTileSize(void);
 	int GetTileBytes(void);
 	//-----------------

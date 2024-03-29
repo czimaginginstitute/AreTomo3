@@ -110,6 +110,18 @@ void CTile::PasteCore(float* gfTile, float* pfImage)
 	}
 }
 
+void CTile::GetTileStart(int* piStart)
+{
+	piStart[0] = m_aiTileStart[0];
+	piStart[1] = m_aiTileStart[1];
+}
+
+void CTile::GetCoreStart(int* piStart)
+{
+	piStart[0] = m_aiCoreStart[0];
+	piStart[1] = m_aiCoreStart[1];
+}
+
 void CTile::GetTileCenter(float* pfCent)
 {
 	pfCent[0] = m_aiTileStart[0] + m_iTileSize * 0.5f;

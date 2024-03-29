@@ -51,9 +51,6 @@ void CExtractTiles::Setup(int iTileSize, int iCoreSize, int* piImgSize)
 	for(int i=0; i<m_iNumTiles; i++)
 	{	m_pTiles[i].SetTileSize(m_iTileSize);
 		m_pTiles[i].SetCoreSize(m_iCoreSize);
-		if(i % 100 != 0) continue;
-		printf("CTF correction: extracting tiles, %d left\n",
-		   m_iNumTiles - 1 - i);
 	}
 	//-----------------
 	mCalcTileLocations();
