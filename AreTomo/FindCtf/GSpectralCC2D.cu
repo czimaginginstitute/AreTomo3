@@ -18,9 +18,11 @@ static __global__ void mGCalc2D
 	float* gfCC
 )
 {	extern __shared__ float s_afShared[];
-	float* s_afSumStd1 = &s_afShared[blockDim.y];
-	float* s_afSumStd2 = &s_afShared[blockDim.y * 2];
-	float* s_afCount = &s_afShared[blockDim.y * 3];	
+	float* s_afMeanC = &s_afShared[blockDim.y];
+	float* s_afMeanS = &s_afShared[blockDim.y * 2];
+	float* s_afStdC = &s_afShared[blockDim.y * 3];
+	float* s_afStdS = &s_afShared[blockDim.y * 4];
+	float* s_afCount = &s_afShared[blockDim.y * 5];	
 	//-----------------
 	int iLow = blockIdx.x - iWidth / 2;
 	int iHigh = iLow + iWidth;
@@ -33,9 +35,11 @@ static __global__ void mGCalc2D
 		iHigh = iSpectX; 
 	}
 	//-----------------
-	float fSumCC = 0.0f; 
-	float fSumStd1 = 0.0f;
-	float fSumStd2 = 0.0f;
+	float fSumCS = 0.0f;
+	float fSumMeanC = 0.0f;
+	float fSumMeanS = 0.0f;
+	float fSumStdC = 0.0f;
+	float fSumStdS = 0.0f;
 	float fCount = 0.0f;
 	//-----------------
 	for(int y=threadIdx.y; y<iSpectY; y+=blockDim.y)
@@ -51,15 +55,19 @@ static __global__ void mGCalc2D
 			int i = y * iSpectX + x;
 			float fC = gfCTF2D[i];
 			float fS = gfSpect[i];
-			fSumCC += (fC * fS);
-			fSumStd1 += (fC * fC);
-			fSumStd2 += (fS * fS);
+			fSumMeanC += fC;
+			fSumMeanS += fS;
+			fSumCS += (fC * fS);
+			fSumStdC += (fC * fC);
+			fSumStdS += (fS * fS);
 			fCount += 1.0f;
 		}
 	}
-	s_afShared[threadIdx.y] = fSumCC;
-	s_afSumStd1[threadIdx.y] = fSumStd1;
-	s_afSumStd2[threadIdx.y] = fSumStd2;
+	s_afShared[threadIdx.y] = fSumCS;
+	s_afMeanC[threadIdx.y] = fSumMeanC;
+	s_afMeanS[threadIdx.y] = fSumMeanS;
+	s_afStdC[threadIdx.y] = fSumStdC;
+	s_afStdS[threadIdx.y] = fSumStdS;
 	s_afCount[threadIdx.y] = fCount;
 	__syncthreads();
 	//-----------------
@@ -68,8 +76,10 @@ static __global__ void mGCalc2D
 	{	if(threadIdx.y < iOffset)
 		{	int i = iOffset + threadIdx.y;
 			s_afShared[threadIdx.y] += s_afShared[i];
-			s_afSumStd1[threadIdx.y] += s_afSumStd1[i];
-			s_afSumStd2[threadIdx.y] += s_afSumStd2[i];
+			s_afMeanC[threadIdx.y] += s_afMeanC[i];
+			s_afMeanS[threadIdx.y] += s_afMeanS[i];
+			s_afStdC[threadIdx.y] += s_afStdC[i];
+			s_afStdS[threadIdx.y] += s_afStdS[i];
 			s_afCount[threadIdx.y] += s_afCount[i];
 		}
 		__syncthreads();
@@ -79,33 +89,56 @@ static __global__ void mGCalc2D
 	//-----------------
 	if(s_afCount[0] == 0)
 	{	gfCC[blockIdx.x] = 0.0f;
+		return;
 	}
-	else
-	{	gfCC[blockIdx.x] = s_afShared[0] / 
-		   sqrtf(s_afSumStd1[0] * s_afSumStd2[0]);
+	//-----------------
+	s_afMeanC[0] /= s_afCount[0];
+	s_afMeanS[0] /= s_afCount[0];
+	s_afShared[0] /= s_afCount[0];
+	s_afStdC[0] /= s_afCount[0];
+	s_afStdS[0] /= s_afCount[0];
+	//-----------------
+	s_afStdC[0] -= (s_afMeanC[0] * s_afMeanC[0]);
+	s_afStdS[0] -= (s_afMeanS[0] * s_afMeanS[0]);
+	if(s_afStdC[0] <= 0 || s_afStdS[0] <= 0)
+	{	gfCC[blockIdx.x] = 0.0f;
+		return;
 	}
+	//-----------------
+	s_afShared[0] -= (s_afMeanC[0] * s_afMeanS[0]);
+	gfCC[blockIdx.x] = s_afShared[0] / sqrtf(s_afStdC[0] * s_afStdS[0]);
 }
 
 GSpectralCC2D::GSpectralCC2D(void)
 {
+	m_gfCC = 0L;
 	m_pfCC = 0L;
+	m_aiSpectSize[0] = 0;
+	m_aiSpectSize[1] = 0;
 }
 
 GSpectralCC2D::~GSpectralCC2D(void)
 {
-	if(m_pfCC != 0L) cudaFreeHost(m_pfCC);
+	if(m_gfCC != 0L) cudaFree(m_gfCC);
+	if(m_pfCC != 0L) delete[] m_pfCC;
 }
 
 //--------------------------------------------------------------------
 // 1. piSpectSize is the size of half spectrum.
 //--------------------------------------------------------------------
 void GSpectralCC2D::SetSize(int* piSpectSize)
-{
+{	
+	int iOldSize = m_aiSpectSize[0] * m_aiSpectSize[1];
+	int iNewSize = piSpectSize[0] * piSpectSize[1];
+	//-----------------
 	m_aiSpectSize[0] = piSpectSize[0];
 	m_aiSpectSize[1] = piSpectSize[1];
+	if(iOldSize > iNewSize) return;
 	//-----------------
-	if(m_pfCC != 0L) cudaFree(m_pfCC);
-	cudaMallocHost(&m_pfCC, m_aiSpectSize[0] * sizeof(float));
+	if(m_gfCC != 0L) cudaFree(m_gfCC);
+	if(m_pfCC != 0L) delete[] m_pfCC;
+	cudaMalloc(&m_gfCC, m_aiSpectSize[0] * sizeof(float));
+	m_pfCC = new float[m_aiSpectSize[0]];
 }
 
 int GSpectralCC2D::DoIt
@@ -114,19 +147,27 @@ int GSpectralCC2D::DoIt
 )
 {	dim3 aBlockDim(1, 512);
 	dim3 aGridDim(m_aiSpectSize[0], 1);
-	size_t tSmBytes = sizeof(float) * aBlockDim.y * 4;
+	size_t tSmBytes = sizeof(float) * aBlockDim.y * 6;
 	//-----------------
 	mGCalc2D<<<aGridDim, aBlockDim, tSmBytes>>>(gfCTF, gfSpect, 
-	   m_aiSpectSize[0], m_aiSpectSize[1], 3, m_pfCC);
+	   m_aiSpectSize[0], m_aiSpectSize[1], 10, m_gfCC);
+	cudaMemcpy(m_pfCC, m_gfCC, m_aiSpectSize[0] * sizeof(float),
+	   cudaMemcpyDefault);
         //-----------------
-	int iMin = 0;
-	float fMin = 1000.0f;
-	for(int i=0; i<m_aiSpectSize[0]; i++)
-	{	float fDif = fabsf(m_pfCC[i] - 0.143f);
-		if(fDif >= fMin) continue;
-		fMin = fDif;
-		iMin = i;
+	int iMax = 1;
+	float fMax = (float)-1e30;
+	for(int i=1; i<m_aiSpectSize[0]; i++)
+	{	if(m_pfCC[i] <= fMax) continue;
+		fMax = m_pfCC[i];
+		iMax = i;
 	}
-	return iMin;	
+	if(fMax < 0.143f) return iMax;
+	//-----------------
+	int iShell = iMax;
+	for(int i=iMax; i<m_aiSpectSize[0]; i++)
+	{	if(m_pfCC[i] < 0.143f) break;
+		iShell = i;
+	}
+	return iShell;
 }
 

@@ -62,6 +62,11 @@ float CFindDefocus2D::GetScore(void)
 	return m_fCCMax;
 }
 
+float CFindDefocus2D::GetCtfRes(void)
+{
+	return m_fCtfRes;
+}
+
 void CFindDefocus2D::Setup1(MD::CCtfParam* pCtfParam, int* piCmpSize)
 {
 	this->Clean();
@@ -110,7 +115,8 @@ void CFindDefocus2D::DoIt(float* gfSpect, float* pfPhaseRange)
 	m_afAngRange[1] = 90.0f;
 	memcpy(m_afPhaseRange, pfPhaseRange, sizeof(float) * 2);
 	//-----------------
-	mIterate();	
+	mIterate();
+	mCalcCtfRes();	
 }
 
 void CFindDefocus2D::Refine
@@ -139,6 +145,7 @@ void CFindDefocus2D::Refine
 	m_afPhaseRange[1] = fminf(m_fExtPhase + fHalfR, 179.0f);
 	//-----------------
 	mIterate();
+	mCalcCtfRes();
 }
 
 void CFindDefocus2D::mIterate(void)
@@ -301,6 +308,26 @@ float CFindDefocus2D::mCorrelate
 	   m_gfCtf2D, m_aiCmpSize);
 	float fCC = m_pGCC2D->DoIt(m_gfCtf2D, m_gfSpect);
 	return fCC;
+}
+
+void CFindDefocus2D::mCalcCtfRes(void)
+{       
+	float fExtPhaseRad = m_fExtPhase * s_fD2R;
+	float fAstRad = m_fAstAngle * s_fD2R;
+	//-----------------
+	float fDfMin = CFindCtfHelp::CalcDfMin(m_fDfMean, m_fAstRatio)
+	   / m_pCtfParam->m_fPixelSize;
+	float fDfMax = CFindCtfHelp::CalcDfMax(m_fDfMean, m_fAstRatio)
+	   / m_pCtfParam->m_fPixelSize;
+	//-----------------
+	m_aGCalcCtf2D.DoIt(fDfMin, fDfMax, fAstRad, fExtPhaseRad,
+	   m_gfCtf2D, m_aiCmpSize);
+	//-----------------
+	GSpectralCC2D gSpectCC;
+	gSpectCC.SetSize(m_aiCmpSize);
+	int iShell = gSpectCC.DoIt(m_gfCtf2D, m_gfSpect);
+	//-----------------
+	m_fCtfRes = m_aiCmpSize[1] * m_pCtfParam->m_fPixelSize / iShell;
 }
 
 void CFindDefocus2D::mGetRange

@@ -181,6 +181,7 @@ float CFindCtfMain::mGetResults(int iTilt)
 	pCtfResults->SetAzimuth(iTilt, m_pFindCtf2D->m_fAstAng);
 	pCtfResults->SetExtPhase(iTilt, m_pFindCtf2D->m_fExtPhase);
 	pCtfResults->SetScore(iTilt, m_pFindCtf2D->m_fScore);
+	pCtfResults->SetCtfRes(iTilt, m_pFindCtf2D->m_fCtfRes);
 	//-----------------
 	float* pfSpect = m_pFindCtf2D->GenFullSpectrum();
 	pCtfResults->SetSpect(iTilt, pfSpect);

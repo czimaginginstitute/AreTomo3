@@ -6,6 +6,12 @@
 
 using namespace McAreTomo::AreTomo::MrcUtil;
 
+char CSaveAlignFile::m_acRawSizeTag[] = "# RawSize";
+char CSaveAlignFile::m_acNumPatchesTag[] = "# NumPatches";
+char CSaveAlignFile::m_acDarkFrameTag[] = "# DarkFrame";
+char CSaveAlignFile::m_acAlphaOffsetTag[] = "# AlphaOffset";
+char CSaveAlignFile::m_acBetaOffsetTag[] = "# BetaOffset";
+char CSaveAlignFile::m_acLocalAlignTag[] = "# Local Alignment";
 CSaveAlignFile::CSaveAlignFile(void)
 {
 	m_pFile = 0L;
@@ -51,11 +57,11 @@ void CSaveAlignFile::mSaveHeader(void)
 	m_iNumPatches = m_pLocalParam->m_iNumPatches;
 	//-----------------
 	fprintf(m_pFile, "# AreTomo Alignment / Priims bprmMn \n");
-	fprintf(m_pFile, "# RawSize = %d %d %d\n", 
+	fprintf(m_pFile, "# %s = %d %d %d\n", m_acRawSizeTag, 
 	   pDarkFrames->m_aiRawStkSize[0],
 	   pDarkFrames->m_aiRawStkSize[1],
 	   pDarkFrames->m_aiRawStkSize[2]);
-	fprintf(m_pFile, "# NumPatches = %d\n", m_iNumPatches);
+	fprintf(m_pFile, "%s = %d\n", m_acNumPatchesTag, m_iNumPatches);
 	//-----------------------------------------------
 	// 1) Track section IDs of dark images here so
 	// that we know which dark images are discarded
@@ -70,7 +76,7 @@ void CSaveAlignFile::mSaveHeader(void)
 	{	int iDarkFm = pDarkFrames->GetDarkIdx(i);
 		int iSecIdx = pDarkFrames->GetSecIdx(iDarkFm);
 		float fTilt = pDarkFrames->GetTilt(iDarkFm);
-		fprintf(m_pFile, "# DarkFrame =  %4d %4d %8.2f\n",
+		fprintf(m_pFile, "%s =  %4d %4d %8.2f\n", m_acDarkFrameTag,
 		   iDarkFm, iSecIdx, fTilt);
 	}
 	//-----------------------------------------------
@@ -79,9 +85,9 @@ void CSaveAlignFile::mSaveHeader(void)
 	// 2) This information is needed in the future
 	// for determine per-particle defocus.
 	//-----------------------------------------------
-	fprintf(m_pFile, "# AlphaOffset = %8.2f\n",
+	fprintf(m_pFile, "%s = %8.2f\n", m_acAlphaOffsetTag,
 	   m_pAlignParam->m_fAlphaOffset);
-	fprintf(m_pFile, "# BetaOffset = %8.2f\n",
+	fprintf(m_pFile, "%s = %8.2f\n", m_acBetaOffsetTag,
 	   m_pAlignParam->m_fBetaOffset);	
 }
 
@@ -107,7 +113,7 @@ void CSaveAlignFile::mSaveLocal(void)
 {
 	if(m_iNumPatches <= 0) return;
 	//-----------------
-	fprintf(m_pFile, "# Local Alignment\n");
+	fprintf(m_pFile, "%s\n", m_acLocalAlignTag);
 	int iSize = m_iNumPatches * m_iNumTilts;
 	for(int i=0; i<iSize; i++)
 	{	int t = i / m_iNumPatches;

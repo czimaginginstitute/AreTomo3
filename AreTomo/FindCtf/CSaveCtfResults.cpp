@@ -80,7 +80,7 @@ void CSaveCtfResults::mSaveFittings(const char* pcCtfFile)
 		   pCtfResults->GetAzimuth(i),
 		   pCtfResults->GetExtPhase(i) * s_fD2R,
 		   pCtfResults->GetScore(i),
-		   10.0f); // 10.0f temporary
+		   pCtfResults->GetCtfRes(i));
 	}
 	fclose(pFile);
 	//-----------------

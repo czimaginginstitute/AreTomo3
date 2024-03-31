@@ -84,11 +84,15 @@ static __global__ void mGWeinerFilter
 	float fCTF = mGCalcPhase(fDfMean, fDfSigma,
 	   fAzmuth, fExtPhase, fY);
 	fCTF = sinf(fCTF);
+	float fSign = (fCTF > 0) ? 1.0f : -1.0f;
+	fCTF = (fabsf(fCTF) + 2.0f) / 3.0f * fSign;
 	//-----------------
 	float fFilter = blockIdx.x * 0.5f / (gridDim.x - 1);
 	fFilter = sqrtf(fFilter * fFilter + fY * fY);
-	fFilter = expf(-10.0f * fFilter) * 50.0f;
+	fCTF = expf(-10.0f * fFilter) * 1.0f / fCTF;
+	/*
 	fCTF = fCTF * fFilter / (fCTF * fCTF * fFilter + 1.0f);
+	*/
 	//-----------------
 	int i = y * gridDim.x + blockIdx.x;
 	gCmp[i].x *= fCTF;

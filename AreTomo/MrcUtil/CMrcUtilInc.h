@@ -245,6 +245,13 @@ public:
 	CSaveAlignFile(void);
 	~CSaveAlignFile(void);
 	void DoIt(int iNthGpu);
+	//-----------------
+	static char m_acRawSizeTag[32];
+	static char m_acNumPatchesTag[32];
+	static char m_acDarkFrameTag[32];
+	static char m_acAlphaOffsetTag[32];
+	static char m_acBetaOffsetTag[32];
+	static char m_acLocalAlignTag[32];
 private:
 	void mSaveHeader(void);
 	void mSaveGlobal(void);

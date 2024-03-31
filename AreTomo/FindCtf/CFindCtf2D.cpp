@@ -66,5 +66,6 @@ void CFindCtf2D::mGetResults(void)
 	m_fDfMax = m_pFindDefocus2D->GetDfMax();
 	m_fAstAng = m_pFindDefocus2D->GetAngle();
 	m_fExtPhase = m_pFindDefocus2D->GetExtPhase();
-	m_fScore = m_pFindDefocus2D->GetScore();	
+	m_fScore = m_pFindDefocus2D->GetScore();
+	m_fCtfRes = m_pFindDefocus2D->GetCtfRes();	
 }

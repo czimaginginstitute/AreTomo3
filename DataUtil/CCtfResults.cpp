@@ -64,8 +64,9 @@ void CCtfResults::Setup
 	m_aiSpectSize[0] = piSpectSize[0];
 	m_aiSpectSize[1] = piSpectSize[1];
 	//-----------------
-	m_pfScores = new float[m_iNumImgs * 2];
-	m_pfTilts = &m_pfScores[m_iNumImgs];
+	m_pfScores = new float[m_iNumImgs * 3];
+	m_pfCtfRes = &m_pfScores[m_iNumImgs];
+	m_pfTilts = &m_pfScores[m_iNumImgs * 2];
 	//-----------------
 	int iBytes = sizeof(float) * m_iNumImgs * 2;
 	memset(m_pfScores, 0, iBytes);
@@ -121,6 +122,11 @@ void CCtfResults::SetScore(int iImage, float fScore)
 	m_pfScores[iImage] = fScore;
 }
 
+void CCtfResults::SetCtfRes(int iImage, float fRes)
+{
+	m_pfCtfRes[iImage] = fRes;
+}
+
 void CCtfResults::SetSpect(int iImage, float* pfSpect)
 {
 	if(m_ppfSpects[iImage] != 0L) delete[] m_ppfSpects[iImage];
@@ -157,6 +163,11 @@ float CCtfResults::GetExtPhase(int iImage)
 float CCtfResults::GetScore(int iImage)
 {
 	return m_pfScores[iImage];
+}
+
+float CCtfResults::GetCtfRes(int iImage)
+{
+	return m_pfCtfRes[iImage];
 }
 
 float* CCtfResults::GetSpect(int iImage, bool bClean)
@@ -205,11 +216,13 @@ void CCtfResults::SaveImod(const char* pcCtfTxtFile)
 void CCtfResults::Display(int iNthCtf, char* pcLog)
 {
 	char acBuf[128] = {'\0'};
-	sprintf(acBuf, "%4d  %8.2f  %8.2f  %6.2f %6.2f %9.5f\n", 
+	sprintf(acBuf, "%4d  %8.2f  %8.2f  %6.2f "
+	   "%6.2f %6.2f %9.5f\n", 
 	   iNthCtf+1, this->GetDfMin(iNthCtf), 
 	   this->GetDfMax(iNthCtf), 
 	   this->GetAzimuth(iNthCtf), 
 	   this->GetExtPhase(iNthCtf),
+	   this->GetCtfRes(iNthCtf),
 	   this->GetScore(iNthCtf));
 	strcat(pcLog, acBuf);
 }
@@ -221,7 +234,8 @@ void CCtfResults::DisplayAll(void)
 	memset(pcLog, 0, sizeof(char) * iSize);
 	//-----------------
 	sprintf(pcLog, "GPU %d: Estimated CTFs\n", m_iNthGpu);
-        strcat(pcLog, "Index  dfmin     dfmax    azimuth  phase   score\n");
+        strcat(pcLog, "Index  dfmin     dfmax    azimuth  phase  "
+	   "res   score\n");
 	//-----------------
 	for(int i=0; i<m_iNumImgs; i++) 
 	{	this->Display(i, pcLog);

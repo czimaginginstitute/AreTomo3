@@ -124,3 +124,8 @@ AreTomo3 1.0.9: [03-20-2024]
 4. Bug fix (03-28-2024): AreTomo/FindCtf/CTile.cpp incorrectly extracts
    tiles from the image.
 5. Implemented Dmitry Tegunov filter in AreTomo/FindCtf/GCorrCTF2D.cu.
+
+AreTomo3 1.0.10: [03-30-2024]
+-----------------------------
+1. Revised AreTomo/FindCtf/GCorrCtf2D.cu. Invented a segmented CTF function
+   to avoid large amplification near zero.

@@ -296,6 +296,7 @@ public:
 	int DoIt(float* gfCTF, float* gfSpect);
 private:
 	int m_aiSpectSize[2];
+	float* m_gfCC;
 	float* m_pfCC;
 };
 
@@ -574,6 +575,7 @@ public:
 	( float fDfMean, float fAstRatio,
 	  float fAstAngle, float fExtPhase
 	);
+	//-----------------
 	void DoIt
 	( float* gfSpect,
 	  float* pfPhaseRange
@@ -583,12 +585,14 @@ public:
 	  float fAstRange, float fAngRange,
 	  float fPhaseRange
 	);
+	//-----------------
 	float GetDfMin(void);    // angstrom
 	float GetDfMax(void);    // angstrom
 	float GetAstRatio(void);
 	float GetAngle(void);    // degree
 	float GetExtPhase(void); // degree
 	float GetScore(void);
+	float GetCtfRes(void); // angstrom
 private:
 	void mIterate(void);
 	void mDoIt
@@ -604,7 +608,12 @@ private:
 	float mRefineDfMean(float* pfDfRange);
 	float mRefinePhase(float* pfPhaseRange);
         //-----------------
-        float mCorrelate(float fAzimu, float fAstig, float fExtPhase);
+        float mCorrelate
+	( float fAzimu, float fAstig, 
+	  float fExtPhase
+	);
+	void mCalcCtfRes(void);
+	//-----------------
         void mGetRange
         ( float fCentVal, float fRange,
           float* pfMinMax, float* pfRange
@@ -621,6 +630,7 @@ private:
         float m_fAstRatio;
         float m_fAstAngle;
         float m_fExtPhase;
+	float m_fCtfRes; // angstrom
         float m_fCCMax;
         //-----------------
         float m_afDfRange[2];
@@ -650,6 +660,7 @@ public:
 	float m_fAstAng;   // degree
 	float m_fExtPhase; // degree
 	float m_fScore;
+	float m_fCtfRes;
 protected:
 	void mRemoveBackground(void);
 	void mInitPointers(void);

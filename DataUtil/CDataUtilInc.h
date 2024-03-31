@@ -226,6 +226,7 @@ public:
 	void SetAzimuth(int iImage, float fAzimuth);
 	void SetExtPhase(int iImage, float fExtPhase);
 	void SetScore(int iImage, float fScore);
+	void SetCtfRes(int iImage, float fRes);
 	void SetSpect(int iImage, float* pfSpect);
 	//-----------------
 	float GetTilt(int iImage);
@@ -234,6 +235,7 @@ public:
 	float GetAzimuth(int iImage);
 	float GetExtPhase(int iImage);
 	float GetScore(int iImage);
+	float GetCtfRes(int iImage);
 	float* GetSpect(int iImage, bool bClean);
 	void SaveImod(const char* pcCtfTxtFile);
 	void Display(int iNthCtf, char* pcLog);
@@ -252,6 +254,7 @@ private:
 	//-----------------
 	CCtfParam* m_pCtfParams;
 	float* m_pfScores;
+	float* m_pfCtfRes;
 	float* m_pfTilts;
 	float** m_ppfSpects;
 	static CCtfResults* m_pInstances;

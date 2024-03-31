@@ -57,7 +57,7 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 		float fTilt = pTiltSeries->m_pfTilts[i];
 		m_pCorrImgCtf->DoIt(pfImage, fTilt, fTiltAxis);
 	}
-	/* This is debugging code	
+	/*	
 	if(iSeries == 0)
 	{	MU::CSaveTempMrc saveMrc;
 		saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestYesCTF", 
