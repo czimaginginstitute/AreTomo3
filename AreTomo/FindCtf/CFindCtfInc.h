@@ -726,13 +726,25 @@ class CSaveCtfResults
 public:
 	CSaveCtfResults(void);
 	~CSaveCtfResults(void);
+	static void GenFileName(int iNthGpu, char* pcCtfFile);
 	void DoIt(int iNthGpu);
 private:
 	void mSaveImages(const char* pcCtfFile);
 	void mSaveFittings(const char* pcCtfFile);
-	char m_acInMrcFile[256];
-	char m_acOutFolder[256];
 	int m_iNthGpu;
+};
+
+class CLoadCtfResults
+{
+public:
+	CLoadCtfResults(void);
+	~CLoadCtfResults(void);
+	bool DoIt(int iNthGpu);
+	//-----------------
+	bool m_bLoaded;
+	int m_iNthGpu;
+private:
+	bool mLoadFittings(const char* pcCtfFile);
 };
 
 class CFindCtfMain
@@ -743,6 +755,8 @@ public:
 	static bool bCheckInput(void);
 	void Clean(void);
 	void DoIt(int iNthGpu);
+	//-----------------
+	static int m_aiSpectSize[2];
 private:
 	void mGenSpectrums(void);
 	void mDoZeroTilt(void);

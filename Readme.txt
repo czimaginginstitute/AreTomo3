@@ -129,3 +129,7 @@ AreTomo3 1.0.10: [03-30-2024]
 -----------------------------
 1. Revised AreTomo/FindCtf/GCorrCtf2D.cu. Invented a segmented CTF function
    to avoid large amplification near zero.
+2. Added -Cmd 2 that skips motion correction, CTF estimation, and tomo
+   alignment. The processing starts from loading CTF estimation and tomo
+   alignment results followed by CTF correction and tomo reconstruction.
+3. CTF estimation is done on full tilt series before removing dark images.

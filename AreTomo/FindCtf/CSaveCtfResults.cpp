@@ -14,19 +14,21 @@ CSaveCtfResults::~CSaveCtfResults(void)
 {
 }
 
+void CSaveCtfResults::GenFileName(int iNthGpu, char* pcCtfFile)
+{
+	CInput* pInput = CInput::GetInstance();
+	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(iNthGpu);
+	strcpy(pcCtfFile, pInput->m_acOutDir);
+	strcat(pcCtfFile, pTsPackage->m_acMrcMain);
+	strcat(pcCtfFile, "_CTF");
+}
+		
 void CSaveCtfResults::DoIt(int iNthGpu)
 {
 	m_iNthGpu = iNthGpu;
-	CInput* pInput = CInput::GetInstance();
-	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
-	//-----------------
-	strcpy(m_acOutFolder, pInput->m_acOutDir);
-	strcpy(m_acInMrcFile, pTsPackage->m_acMrcMain);	
 	//-----------------
 	char acCtfFile[256] = {'\0'};
-        strcpy(acCtfFile, m_acOutFolder);
-        strcat(acCtfFile, m_acInMrcFile);
-        strcat(acCtfFile, "_CTF");
+	CSaveCtfResults::GenFileName(m_iNthGpu, acCtfFile);
 	//-----------------
 	mSaveImages(acCtfFile);
 	mSaveFittings(acCtfFile);

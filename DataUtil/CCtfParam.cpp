@@ -10,10 +10,29 @@ static float s_fD2R = 0.01745329f;
 CCtfParam::CCtfParam(void)
 {
 	m_fPixelSize = 1.0f;
+	m_fExtPhase = 0.0f;
+	m_fDefocusMin = 0.0f;
+	m_fDefocusMax = 0.0f;
+	m_fTilt = 0.0f;
+	m_fScore = 0.0f;
+	m_fCtfRes = 10.0f;
 }
 
 CCtfParam::~CCtfParam(void)
 {
+}
+
+void CCtfParam::Setup(int iKv, float fCs, float fAC, float fPixSize)
+{
+	m_fAmpContrast = fAC;
+	m_fPixelSize = fPixSize;
+	//-----------------
+	double dWl = 12.26 / sqrt(iKv * 1000 + 0.9784 * iKv * iKv);
+	m_fWavelength = (float)(dWl / m_fPixelSize);
+	//-----------------
+	m_fCs = (float)(fCs * 1e7 / m_fPixelSize);
+	//-----------------
+	m_fAmpPhaseShift = atan(fAC / sqrt(1 - fAC * fAC));
 }
 
 float CCtfParam::GetWavelength(bool bAngstrom)

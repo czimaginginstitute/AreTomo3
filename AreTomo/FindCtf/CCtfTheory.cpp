@@ -34,7 +34,6 @@ void CCtfTheory::Setup
 	   fAmpContrast * fAmpContrast));
 	m_pCtfParam->m_fPixelSize = fPixelSize;
 	m_pCtfParam->m_fExtPhase = fmodf(fExtPhase, m_fPI);
-	m_pCtfParam->m_fAstTol = fAstTol / m_pCtfParam->m_fPixelSize;
 }
 
 void CCtfTheory::SetExtPhase(float fExtPhase, bool bDegree)

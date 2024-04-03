@@ -51,43 +51,78 @@ CAreTomoMain::~CAreTomoMain(void)
 
 bool CAreTomoMain::DoIt(int iNthGpu)
 {
-	m_iNthGpu = iNthGpu;	
+	m_iNthGpu = iNthGpu;
+	//-----------------
+	CInput* pInput = CInput::GetInstance();
+	if(pInput->m_iCmd == 0 || pInput->m_iCmd == 1) mDoFull();
+	else if(pInput->m_iCmd == 2) mSkipAlign();
+	//-----------------
+	printf("Process thread exits.\n\n");
+	return true;
+}
+
+void CAreTomoMain::mDoFull(void)
+{
+	//--------------------------------------------------
+	// 1) This runs on the full tilt series. 2) In the
+	// future, refinement will be performed on dark
+	// removed tilt series to determine alpha and
+	// beta tilt offset.
+	//--------------------------------------------------
+	mFindCtf();
+	mRemoveDarkFrames();
 	mCreateAlnParams();
-	//-----------------
-	CAtInput* pAtInput = CAtInput::GetInstance();
-	if(pAtInput->m_iOutImod == 1)
-	{	mFindCtf();
-		mRemoveDarkFrames();
-	}
-	else
-	{	mRemoveDarkFrames();
-		mFindCtf();
-	}
-	//-----------------
 	mRemoveSpikes();	
 	mMassNorm();
+	//-----------------
 	mAlign();
 	mCorrectCTF();
 	//-----------------
 	//mDoseWeight();
-	//mSetPositivity();
 	mSaveAlignment();
 	mRecon();
-	//mCropVol();
-	//mFlipInt();
-        //mSaveCentralSlices();
-        //mFlipVol();
-	//mSaveStack();
+}
+
+void CAreTomoMain::mSkipAlign(void)
+{
+	MAM::CRemoveDarkFrames remDarkFrames;
+        remDarkFrames.Setup(m_iNthGpu);
+	//---------------------------------------------------------
+	// 1) When loading alignment file is successful, the dark
+	// frames are saved in CDarkFrames. 2) CAlignParam and
+	// CLocalAlignParam objects are created. 3) We need to
+	// remove dark frames from tilt series, and corresponding
+	// entries in CCtfResults.
+	//---------------------------------------------------------
+	MAM::CLoadAlignFile loadAlnFile;
+	bool bLoaded = loadAlnFile.DoIt(m_iNthGpu);
+	if(!bLoaded) return;
 	//-----------------
-	printf("Process thread exits.\n\n");
-	return true;
+	FindCtf::CLoadCtfResults loadCtfResults;
+	loadCtfResults.DoIt(m_iNthGpu);
+	//-----------------
+	MD::CCtfResults* pCtfResults = 
+	   MD::CCtfResults::GetInstance(m_iNthGpu);
+	pCtfResults->RemoveDarkCTFs();
+	remDarkFrames.Remove();
+	//-----------------
+	mRemoveSpikes();
+	mMassNorm();
+	mCorrectCTF();
+	mRecon();
 }
 
 void CAreTomoMain::mRemoveDarkFrames(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	MAM::CRemoveDarkFrames remDarkFrames;
-	remDarkFrames.DoIt(m_iNthGpu, pAtInput->m_fDarkTol);
+	remDarkFrames.Setup(m_iNthGpu);
+	remDarkFrames.Detect(pAtInput->m_fDarkTol);
+	remDarkFrames.Remove();
+	//-----------------
+	MD::CCtfResults* pCtfResults = 
+	   MD::CCtfResults::GetInstance(m_iNthGpu);
+	pCtfResults->RemoveDarkCTFs();
 }
 
 void CAreTomoMain::mCreateAlnParams(void)
@@ -288,6 +323,10 @@ void CAreTomoMain::mCorrectCTF(void)
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	if(pAtInput->m_iCorrCTF == 0) return;
 	//-----------------
+	MD::CCtfResults* pCtfResults = 
+	   MD::CCtfResults::GetInstance(m_iNthGpu);
+	if(!pCtfResults->bHasCTF()) return;
+	//-----------------
 	MAF::CCorrCtfMain corrCtfMain;
 	corrCtfMain.DoIt(m_iNthGpu);
 }
@@ -380,24 +419,9 @@ void CAreTomoMain::mReconSeries(int iSeries)
 	if(pBinSeries != 0L) delete pBinSeries;
 }
 
-/*
-void CAreTomoMain::mCropVol(void)
-{
-	CInput* pInput = CInput::GetInstance();
-	if(pInput->m_iVolZ == 0) return;
-	if(pInput->m_aiCropVol[0] < 10) return;
-	if(pInput->m_aiCropVol[1] < 10) return;
-	if(m_pLocalParam == 0L) return;
-	//-----------------------------
-	MrcUtil::CCropVolume aCropVolume;
-	MrcUtil::CTomoStack* pCroppedVol = aCropVolume.DoIt(m_pTomoStack,
-	   pInput->m_fOutBin, m_pAlignParam, m_pLocalParam,
-	   pInput->m_aiCropVol);
-	delete m_pTomoStack;
-	m_pTomoStack = pCroppedVol;
-} 
-*/
-
+//--------------------------------------------------------------------
+// 1. Missing setting positivity.
+//--------------------------------------------------------------------
 void CAreTomoMain::mSartRecon
 (	int iVolZ, int iSeries, 
 	MD::CTiltSeries* pSeries
@@ -463,16 +487,6 @@ void CAreTomoMain::mWbpRecon
 	//-----------------
 	if(pVolStack != 0L) delete pVolStack;
 }
-
-/*
-void CAreTomoMain::mFlipInt(void)
-{
-	CInput* pInput = CInput::GetInstance();
-	if(pInput->m_iFlipInt == 0) return;
-	MassNorm::CFlipInt3D aFlipInt;
-	aFlipInt.DoIt(m_pTomoStack);
-}
-*/
 
 void CAreTomoMain::mFlipVol(MD::CTiltSeries** ppVolSeries)
 {

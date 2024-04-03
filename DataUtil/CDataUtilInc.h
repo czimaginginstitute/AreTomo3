@@ -50,6 +50,7 @@ public:
 	void SetImage(int iTilt, void* pvImage);
 	void SetCenter(int iFrame, float* pfCent);
 	void GetCenter(int iFrame, float* pfCent);
+	int GetTiltIdx(float fTilt);
 	//-----------------
 	CTiltSeries* GetSubSeries(int* piStart, int* piSize);
 	void RemoveFrame(int iFrame);
@@ -190,6 +191,13 @@ class CCtfParam
 public:
 	CCtfParam(void);
 	~CCtfParam(void);
+	void Setup
+	( int iKv,        // in kV
+	  float fCs,      // in mm
+	  float fAC,      // amplitude contrast
+	  float fPixSize  // in A
+	);
+	//-----------------
 	float GetWavelength(bool bAngstrom);
 	float GetDefocusMax(bool bAngstrom);
 	float GetDefocusMin(bool bAngstrom);
@@ -203,12 +211,16 @@ public:
 	float m_fCs; // pixel
 	float m_fAmpContrast;
 	float m_fAmpPhaseShift; // radian
+	float m_fPixelSize;  // angstrom
+	//-----------------
 	float m_fExtPhase;   // radian
 	float m_fDefocusMax; // pixel
 	float m_fDefocusMin; // pixel
 	float m_fAstAzimuth; // radian
-	float m_fAstTol;     // Allowed astigmatism
-	float m_fPixelSize;  // Angstrom
+	//-----------------
+	float m_fScore;
+	float m_fCtfRes;     // angstrom
+	float m_fTilt;
 };
 
 class CCtfResults
@@ -220,6 +232,8 @@ public:
 	~CCtfResults(void);
 	void Clean(void);
 	void Setup(int iNumImgs, int* piSpectSize, CCtfParam* pCtfParam);
+	bool bHasCTF(void);
+	//----------------
 	void SetTilt(int iImage, float fTilt);
 	void SetDfMin(int iImage, float fDfMin);
 	void SetDfMax(int iImage, float fDfMax);
@@ -245,17 +259,16 @@ public:
 	CCtfParam* GetCtfParam(int iImage);
 	CCtfParam* GetCtfParamFromTilt(float fTilt);
 	//-----------------
+	void RemoveDarkCTFs(void);
+	//-----------------
 	int m_aiSpectSize[2];
 	int m_iNumImgs;
 	int m_iNthGpu;
 private:
 	CCtfResults(void);
-	void mInit(void);
+	void mRemoveEntry(int iEntry);
 	//-----------------
-	CCtfParam* m_pCtfParams;
-	float* m_pfScores;
-	float* m_pfCtfRes;
-	float* m_pfTilts;
+	CCtfParam** m_ppCtfParams;
 	float** m_ppfSpects;
 	static CCtfResults* m_pInstances;
 	static int m_iNumGpus;

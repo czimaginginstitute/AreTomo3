@@ -169,6 +169,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/MrcUtil/CPatchShifts.cpp \
 	./AreTomo/MrcUtil/CRemoveDarkFrames.cpp \
 	./AreTomo/MrcUtil/CSaveAlignFile.cpp \
+	./AreTomo/MrcUtil/CLoadAlignFile.cpp \
 	./AreTomo/MrcUtil/CSaveStack.cpp \
 	./AreTomo/MrcUtil/CMuInstances.cpp \
 	./AreTomo/CommonLine/CCalcScore.cpp \
@@ -199,6 +200,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/FindCtf/CCorrImgCtf.cpp \
 	./AreTomo/FindCtf/CGenAvgSpectrum.cpp \
 	./AreTomo/FindCtf/CSaveCtfResults.cpp \
+	./AreTomo/FindCtf/CLoadCtfResults.cpp \
 	./AreTomo/FindCtf/CSpectrumImage.cpp \
 	./AreTomo/FindCtf/CCorrCtfMain.cpp \
 	./AreTomo/ImodUtil/CImodUtil.cpp \

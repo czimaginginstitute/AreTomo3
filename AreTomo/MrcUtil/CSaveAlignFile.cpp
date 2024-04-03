@@ -6,12 +6,13 @@
 
 using namespace McAreTomo::AreTomo::MrcUtil;
 
-char CSaveAlignFile::m_acRawSizeTag[] = "# RawSize";
-char CSaveAlignFile::m_acNumPatchesTag[] = "# NumPatches";
-char CSaveAlignFile::m_acDarkFrameTag[] = "# DarkFrame";
-char CSaveAlignFile::m_acAlphaOffsetTag[] = "# AlphaOffset";
-char CSaveAlignFile::m_acBetaOffsetTag[] = "# BetaOffset";
-char CSaveAlignFile::m_acLocalAlignTag[] = "# Local Alignment";
+char CSaveAlignFile::m_acRawSizeTag[] = "RawSize";
+char CSaveAlignFile::m_acNumPatchesTag[] = "NumPatches";
+char CSaveAlignFile::m_acDarkFrameTag[] = "DarkFrame";
+char CSaveAlignFile::m_acAlphaOffsetTag[] = "AlphaOffset";
+char CSaveAlignFile::m_acBetaOffsetTag[] = "BetaOffset";
+char CSaveAlignFile::m_acLocalAlignTag[] = "Local Alignment";
+
 CSaveAlignFile::CSaveAlignFile(void)
 {
 	m_pFile = 0L;
@@ -22,26 +23,34 @@ CSaveAlignFile::~CSaveAlignFile(void)
 	mCloseFile();
 }
 
+void CSaveAlignFile::GenFileName(int iNthGpu, char* pcAlnFile)
+{
+	McAreTomo::CInput* pInput = McAreTomo::CInput::GetInstance();
+	MD::CTsPackage* pPackage = MD::CTsPackage::GetInstance(iNthGpu);
+	//-----------------
+	strcpy(pcAlnFile, pInput->m_acOutDir);
+	strcat(pcAlnFile, pPackage->m_acMrcMain);
+	strcat(pcAlnFile, ".aln");
+}
+
 void CSaveAlignFile::DoIt(int iNthGpu)
 {
 	m_iNthGpu = iNthGpu;
 	//-----------------	
-	McAreTomo::CInput* pInput = McAreTomo::CInput::GetInstance();
-	MD::CTsPackage* pPackage = MD::CTsPackage::GetInstance(iNthGpu);
-	m_pAlignParam = CAlignParam::GetInstance(iNthGpu);
-	m_pLocalParam = CLocalAlignParam::GetInstance(iNthGpu);
-	//-----------------
 	char acAlnFile[256] = {'\0'};
-	strcpy(acAlnFile, pInput->m_acOutDir);
-	strcat(acAlnFile, pPackage->m_acMrcMain);
-	strcat(acAlnFile, ".aln");
+	CSaveAlignFile::GenFileName(iNthGpu, acAlnFile);
 	//-----------------
 	m_pFile = fopen(acAlnFile, "wt");
 	if(m_pFile == 0L)
-	{	printf("Unable to open %s.\n", acAlnFile);
-		printf("Alignment data will not be saved\n\n");
+	{	printf("GPU %d: Alignment data will not be saved\n"
+		   "   Unable to open aln file %s\n\n", m_iNthGpu, acAlnFile);
 		return;
 	}
+	//-----------------
+	McAreTomo::CInput* pInput = McAreTomo::CInput::GetInstance();
+        MD::CTsPackage* pPackage = MD::CTsPackage::GetInstance(iNthGpu);
+        m_pAlignParam = CAlignParam::GetInstance(iNthGpu);
+        m_pLocalParam = CLocalAlignParam::GetInstance(iNthGpu);
 	//-----------------
 	mSaveHeader();
 	mSaveGlobal();
@@ -61,7 +70,7 @@ void CSaveAlignFile::mSaveHeader(void)
 	   pDarkFrames->m_aiRawStkSize[0],
 	   pDarkFrames->m_aiRawStkSize[1],
 	   pDarkFrames->m_aiRawStkSize[2]);
-	fprintf(m_pFile, "%s = %d\n", m_acNumPatchesTag, m_iNumPatches);
+	fprintf(m_pFile, "# %s = %d\n", m_acNumPatchesTag, m_iNumPatches);
 	//-----------------------------------------------
 	// 1) Track section IDs of dark images here so
 	// that we know which dark images are discarded
@@ -76,7 +85,7 @@ void CSaveAlignFile::mSaveHeader(void)
 	{	int iDarkFm = pDarkFrames->GetDarkIdx(i);
 		int iSecIdx = pDarkFrames->GetSecIdx(iDarkFm);
 		float fTilt = pDarkFrames->GetTilt(iDarkFm);
-		fprintf(m_pFile, "%s =  %4d %4d %8.2f\n", m_acDarkFrameTag,
+		fprintf(m_pFile, "# %s =  %4d %4d %8.2f\n", m_acDarkFrameTag,
 		   iDarkFm, iSecIdx, fTilt);
 	}
 	//-----------------------------------------------
@@ -85,9 +94,9 @@ void CSaveAlignFile::mSaveHeader(void)
 	// 2) This information is needed in the future
 	// for determine per-particle defocus.
 	//-----------------------------------------------
-	fprintf(m_pFile, "%s = %8.2f\n", m_acAlphaOffsetTag,
+	fprintf(m_pFile, "# %s = %8.2f\n", m_acAlphaOffsetTag,
 	   m_pAlignParam->m_fAlphaOffset);
-	fprintf(m_pFile, "%s = %8.2f\n", m_acBetaOffsetTag,
+	fprintf(m_pFile, "# %s = %8.2f\n", m_acBetaOffsetTag,
 	   m_pAlignParam->m_fBetaOffset);	
 }
 
@@ -113,7 +122,7 @@ void CSaveAlignFile::mSaveLocal(void)
 {
 	if(m_iNumPatches <= 0) return;
 	//-----------------
-	fprintf(m_pFile, "%s\n", m_acLocalAlignTag);
+	fprintf(m_pFile, "# %s\n", m_acLocalAlignTag);
 	int iSize = m_iNumPatches * m_iNumTilts;
 	for(int i=0; i<iSize; i++)
 	{	int t = i / m_iNumPatches;

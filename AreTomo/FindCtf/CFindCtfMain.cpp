@@ -7,6 +7,8 @@
 using namespace McAreTomo::AreTomo;
 using namespace McAreTomo::AreTomo::FindCtf;
 
+int CFindCtfMain::m_aiSpectSize[] = {512, 512};
+
 CFindCtfMain::CFindCtfMain(void)
 {
 	m_ppfHalfSpects = 0L;
@@ -72,8 +74,7 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	   100.0f, fExtPhase);
 	//-----------------
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
-        int aiSpectSize[] = {512, 512};
-        pCtfResults->Setup(m_iNumTilts, aiSpectSize,
+        pCtfResults->Setup(m_iNumTilts, CFindCtfMain::m_aiSpectSize,
 	   aInputCTF.GetParam(false));
 	//-----------------
 	m_pFindCtf2D = new CFindCtf2D;
@@ -115,9 +116,7 @@ void CFindCtfMain::mGenSpectrums(void)
 
 void CFindCtfMain::mDoZeroTilt(void)
 {
-	MAM::CAlignParam* pAlignParam = 
-	   MAM::CAlignParam::GetInstance(m_iNthGpu);
-	m_iRefTilt = pAlignParam->GetFrameIdxFromTilt(0.0f);
+	m_iRefTilt = m_pTiltSeries->GetTiltIdx(0.0f);
 	//-----------------
 	CAtInput* pAtInput = CAtInput::GetInstance();
         float fPhaseRange = fmaxf(pAtInput->m_afExtPhase[1], 0.0f);
@@ -169,9 +168,7 @@ void CFindCtfMain::mDo2D(void)
 
 float CFindCtfMain::mGetResults(int iTilt)
 {
-	MAM::CAlignParam* pAlignParam =
-           MAM::CAlignParam::GetInstance(m_iNthGpu);
-	float fTilt = pAlignParam->GetTilt(iTilt);
+	float fTilt = m_pTiltSeries->m_pfTilts[iTilt];
 	//-----------------
 	MD::CCtfResults* pCtfResults = 
 	   MD::CCtfResults::GetInstance(m_iNthGpu);

@@ -211,6 +211,20 @@ float* CTiltSeries::GetAccDose(void)
 	return pfAccDose;
 }
 
+int CTiltSeries::GetTiltIdx(float fTilt)
+{
+	int iMin = 0;
+	float fMin = (float)fabs(m_pfTilts[0] - fTilt);
+	for(int i=1; i<m_aiStkSize[2]; i++)
+	{	float fDif = (float)fabs(m_pfTilts[i] - fTilt);
+		if(fDif < fMin)
+		{	fMin = fDif;
+			iMin = i;
+		}
+	}
+	return iMin;
+}
+
 float** CTiltSeries::GetImages(void)
 {
 	return m_ppfImages;

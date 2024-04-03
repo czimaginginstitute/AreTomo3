@@ -76,6 +76,9 @@ public:
 	~CAreTomoMain(void);
 	bool DoIt(int iNthGpu);
 private:
+	void mDoFull(void);
+	void mSkipAlign(void);
+	//-----------------
 	void mRemoveDarkFrames(void);
 	void mRemoveSpikes(void);
 	void mCreateAlnParams(void);

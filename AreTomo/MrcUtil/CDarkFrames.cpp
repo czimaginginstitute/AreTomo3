@@ -86,11 +86,30 @@ void CDarkFrames::Setup(MD::CTiltSeries* pSeries)
 	memset(m_pbDarkImgs, 0, sizeof(bool) * m_aiRawStkSize[2]);
 }
 
+void CDarkFrames::Setup(int iNthGpu)
+{
+	MD::CTsPackage* pPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
+	MD::CTiltSeries* pTiltSeries = pPackage->GetSeries(0);
+	this->Setup(pTiltSeries);
+}
+
 void CDarkFrames::AddDark(int iFrmIdx)
 {
 	m_pbDarkImgs[iFrmIdx] = true;
 	m_piDarkIdxs[m_iNumDarks] = iFrmIdx;
 	m_iNumDarks += 1;
+}
+
+//--------------------------------------------------------------------
+// 1. This method is specifically for AreTomo/MrcUtil/CLoadAlignFile
+//    so that it places the dark-image information loaded from .aln
+//    file in here.
+//--------------------------------------------------------------------
+void CDarkFrames::AddDark(int iFrmIdx, int iSecIdx, float fTilt)
+{
+	this->AddDark(iFrmIdx);
+	m_piSecIdxs[iFrmIdx] = iSecIdx;
+	m_pfTilts[iFrmIdx] = fTilt;
 }
 
 void CDarkFrames::AddTiltOffset(float fTiltOffset)
@@ -118,6 +137,13 @@ float CDarkFrames::GetTilt(int iFrame)
 int CDarkFrames::GetDarkIdx(int iDark)
 {
 	return m_piDarkIdxs[iDark];
+}
+
+int CDarkFrames::GetNumAlnTilts(void)
+{
+	int iNumAlnTilts = m_aiRawStkSize[2] - m_iNumDarks;
+	if(iNumAlnTilts < 0) iNumAlnTilts = 0;
+	return iNumAlnTilts;
 }
 
 bool CDarkFrames::IsDarkFrame(int iFrame)

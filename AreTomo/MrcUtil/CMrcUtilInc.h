@@ -174,14 +174,20 @@ class CRemoveDarkFrames
 public:
 	CRemoveDarkFrames(void);
 	~CRemoveDarkFrames(void);
-	void DoIt(int iNthGpu, float fThreshold);
+	void Setup(int iNthGpu);
+	void Detect(float fThreshold);
+	void Remove(void);
+	int m_iNthGpu;
 private:
+	void mDetect(void);
 	void mRemove(float* pfMeans, float* pfStds);
 	void mRemoveSeries(int iSeries);
+	void mCalcStats(void);
 	//-----------------
 	int m_iAllFrms;
-	int m_iNthGpu;
 	float m_fThreshold;
+	float* m_pfMeans;
+	float* m_pfStds;
 };
 
 class CCalcStackStats
@@ -214,13 +220,19 @@ public:
 	void Setup                 // including dark images
 	( MD::CTiltSeries* pSeries  // sorted by tilt angles
 	);                         // hence frame idx is angle idx
+	void Setup(int iNthGpu);
+	//-----------------
 	void AddDark(int iFrmIdx);
-	void AddTiltOffset(float fTiltOffset);
+	void AddDark(int iFrmIdx, int iSecIdx, float fTilt);
+	void AddTiltOffset(float fTiltOffset); // seems not necessary since
+					       // dark images are removed
+					       // from raw tilt series.
 	//-----------------
 	int GetAcqIdx(int iFrame);
 	int GetSecIdx(int iFrame);
 	float GetTilt(int iFrame);
 	int GetDarkIdx(int iDark); // iDark in [0, m_iNumDarks)
+	int GetNumAlnTilts(void);
 	//-----------------
 	bool IsDarkFrame(int iFrame);
 	void GenImodExcludeList(char* pcLine, int iSize);
@@ -246,6 +258,8 @@ public:
 	~CSaveAlignFile(void);
 	void DoIt(int iNthGpu);
 	//-----------------
+	static void GenFileName(int iNthGpu, char* pcAlnFile);
+	//-----------------
 	static char m_acRawSizeTag[32];
 	static char m_acNumPatchesTag[32];
 	static char m_acDarkFrameTag[32];
@@ -265,6 +279,36 @@ private:
 	int m_iNumTilts;
 	int m_iNumPatches;
 	int m_iNthGpu;
+};
+
+class CLoadAlignFile
+{
+public:
+	CLoadAlignFile(void);
+	~CLoadAlignFile(void);
+	bool DoIt(int iNthGpu);
+	//-----------------
+	bool m_bLoaded;
+	int m_iNthGpu;
+private:
+	bool mParseHeader(void);
+	bool mParseRawSize(char* pcLine);
+	bool mParseDarkFrame(char* pcLine);
+	bool mParseNumPatches(char* pcLine);
+	bool mParseAlphaOffset(char* pcLine);
+	bool mParseBetaOffset(char* pcLine);
+	//-----------------
+	void mLoadGlobal(void);
+	void mLoadLocal(void);
+	void mClean(void);
+	//-----------------
+	int m_aiRawSize[3];
+	int m_iNumPatches;
+	float m_fAlphaOffset;
+	float m_fBetaOffset;
+	//-----------------
+	std::queue<char*> m_aHeaderQueue;
+	std::queue<char*> m_aDataQueue;
 };
 
 class CSaveStack

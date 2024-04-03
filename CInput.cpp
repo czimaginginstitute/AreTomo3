@@ -106,8 +106,12 @@ void CInput::ShowTags(void)
 	//-----------------
 	printf("%-15s\n"
 	   "  1. Default 0 starts processing from motion correction.\n"
-	   "  2. -Cmd 1 starts processing from tilt series alignment.\n"
-	   "  3. -Cmd 1 processes all tilt series and ignores -Resume.\n\n",
+	   "  2. -Cmd 1 starts processing from tilt series alignment\n"
+	   "     including CTF estimation, correction, tomographic\n"
+	   "     alignment and reconstruction.\n"
+	   "  3. -Cmd 2 starts processing from CTF correction and\n"
+	   "     then tomographic reconstruction.\n"
+	   "  4. -Cmd 1 and -Cmd 2 ignore -Resume.\n\n",
 	   m_acCmdTag);
 	//-----------------
 	printf("%-15s\n"
