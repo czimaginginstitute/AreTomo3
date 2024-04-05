@@ -99,16 +99,20 @@ bool CTsPackage::LoadTiltSeries(void)
 	//-----------------
 	float fPixSize = loadMrc.GetPixelSize();
 	if(fPixSize <= 0) fPixSize = 1.0f;
-	//-----------------
+	//--------------------------------------------------
+	// 1) Full tilt series must exist for subsequent
+	// processing. 2) ODD and EVN tilt series can be
+	// missing. If so, no ODD and EVN tomograms will
+	// be reconstructed.
+	//--------------------------------------------------
 	loadMrc.CloseFile();
 	mCreateTiltSeries(aiStkSize, aiStkSize[2], fPixSize);
 	//-----------------
         bLoaded = mLoadMrc(".mrc", m_ppTsStacks[0]);
 	if(!bLoaded) return false;
-        bLoaded = mLoadMrc("_EVN.mrc", m_ppTsStacks[1]);
-	if(!bLoaded) return false;
-        bLoaded = mLoadMrc("_ODD.mrc", m_ppTsStacks[2]);
-	if(!bLoaded) return false;
+	//-----------------
+	mLoadMrc("_EVN.mrc", m_ppTsStacks[1]);
+        mLoadMrc("_ODD.mrc", m_ppTsStacks[2]);
 	//-----------------
 	bLoaded = mLoadTiltFile();
 	if(!bLoaded) return false;

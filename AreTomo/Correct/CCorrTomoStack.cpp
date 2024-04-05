@@ -165,6 +165,7 @@ void CCorrTomoStack::DoIt(int iNthSeries, MAM::CAlignParam* pAlignParam)
 	//-----------------
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* pSeries = pTsPkg->GetSeries(m_iSeries);
+	if(pSeries == 0L || pSeries->bEmpty()) return;
 	//-----------------
 	m_pOutSeries->SetTilts(pSeries->m_pfTilts);
 	m_pOutSeries->SetAcqs(pSeries->m_piAcqIndices);

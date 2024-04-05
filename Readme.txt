@@ -133,3 +133,16 @@ AreTomo3 1.0.10: [03-30-2024]
    alignment. The processing starts from loading CTF estimation and tomo
    alignment results followed by CTF correction and tomo reconstruction.
 3. CTF estimation is done on full tilt series before removing dark images.
+
+AreTomo3 1.0.11: [04-03-2024]
+-----------------------------
+1. Add -FlipVol 2 that rotates volume from yzx (x fastest dimention, y
+   slowest dimension) to zyx without changing handedness.
+2. Make -Cmd 2 more lenient: If ODD and EVN tilt series are not present,
+   proceed to reconstruct full tilt series.
+3. Bug fix: CAreTomoMain::mRecon: the number of patches should be retrieved
+   from AreTomo/MrcUtil/CLocalAlignParam, not from CAtInput, since when
+   -Cmd 2 is used, the number of patches is read from .aln file instead 
+   of command line.
+4. Bug fix: CTF estimation checks existence of pixel size in the object
+   of DataUtil/CTiltSeries instead of CInput.

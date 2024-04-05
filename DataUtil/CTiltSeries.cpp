@@ -17,6 +17,7 @@ CTiltSeries::CTiltSeries(void)
 	m_piSecIndices = 0L;
 	m_ppfCenters = 0L;
 	m_ppfImages = 0L;
+	memset(m_aiStkSize, 0, sizeof(m_aiStkSize));
 }
 
 CTiltSeries::~CTiltSeries(void)
@@ -225,6 +226,15 @@ int CTiltSeries::GetTiltIdx(float fTilt)
 	return iMin;
 }
 
+bool CTiltSeries::bEmpty(void)
+{
+	if(m_aiStkSize[0] == 0) return true;
+	if(m_aiStkSize[1] == 0) return true;
+	if(m_aiStkSize[0] == 0) return true;
+	if(m_ppfImages == 0L) return true;
+	return false;
+}
+
 float** CTiltSeries::GetImages(void)
 {
 	return m_ppfImages;
@@ -243,6 +253,35 @@ void CTiltSeries::ResetSecIndices(void)
 	for(int i=0; i<m_aiStkSize[2]; i++)
 	{	m_piSecIndices[i] = i;
 	}
+}
+
+//--------------------------------------------------------------------
+// 1. Generate a new volume that swaps y and z dimensions by flipping
+//    of rotation.
+// 2. When flipping is used, the handedness will be changed. Rotation
+//    maintains the handedness.
+// 3. Flipping generates a volume that matches the one by rotation
+//    around X axis in IMOD user interface.
+//--------------------------------------------------------------------
+CTiltSeries* CTiltSeries::FlipVol(bool bFlip)
+{
+	CTiltSeries* pNewSeries = mGenVolXZY();
+	int* piNewSize = pNewSeries->m_aiStkSize;
+	//-----------------
+	int iBytes = m_aiStkSize[0] * sizeof(float);
+	int iEndOldY = m_aiStkSize[1] - 1;
+	//-----------------
+	for(int y=0; y<m_aiStkSize[1]; y++)
+	{	int iNewFrm = bFlip ? (iEndOldY - y) : y;
+		float* pfNewFrm = (float*)pNewSeries->GetFrame(iNewFrm);
+		for(int z=0; z<m_aiStkSize[2]; z++)
+		{	float* pfOldFrm = (float*)this->GetFrame(z);
+			memcpy(pfNewFrm + z * piNewSize[0],
+			   pfOldFrm + y * m_aiStkSize[0], iBytes);
+		}
+	}
+	//-----------------
+	return pNewSeries;
 }
 
 void CTiltSeries::mSwap(int k1, int k2)
@@ -281,4 +320,15 @@ void CTiltSeries::mCleanCenters(void)
 	}
 	delete[] m_ppfCenters;
 	m_ppfCenters = 0L;
+}
+
+CTiltSeries* CTiltSeries::mGenVolXZY(void)
+{
+	CTiltSeries* pNewSeries = new CTiltSeries;
+	int aiNewSize[] = {m_aiStkSize[0], 
+	   m_aiStkSize[2], m_aiStkSize[1]};
+	//-----------------
+	pNewSeries->Create(aiNewSize);
+	pNewSeries->m_fPixSize = m_fPixSize;
+	return pNewSeries;
 }

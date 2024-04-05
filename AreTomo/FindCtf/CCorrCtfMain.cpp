@@ -47,6 +47,12 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 {
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* pTiltSeries = pTsPkg->GetSeries(iSeries);
+	if(pTiltSeries->bEmpty()) return;
+	if(pTiltSeries->m_fPixSize < 0.0001f) 
+	{	printf("Warning (GPU %d): pixel size is not given, "
+		   "CTF correction is skipped.\n\n", m_iNthGpu);
+		return;
+	}
 	//-----------------
 	MAM::CAlignParam* pAlignParam = 
 	   MAM::CAlignParam::GetInstance(m_iNthGpu);

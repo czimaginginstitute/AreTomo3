@@ -45,7 +45,11 @@ bool CFindCtfMain::bCheckInput(void)
 	bool bEstimate = true;
 	if(pInput->m_fCs == 0.0) bEstimate = false;
 	else if(pInput->m_iKv == 0) bEstimate = false;
-	else if(pInput->m_fPixSize == 0) bEstimate = false;
+	//--------------------------------------------------
+	// 1) Pixel size is needed. 2) We will check each
+	// CTiltSeries object since CTF estimation is 
+	// performed on it. 3) CInput is not checked.
+	//--------------------------------------------------
 	if(bEstimate) return true;
 	//------------------------
 	printf("Skip CTF estimation. Need the following parameters.\n");
@@ -63,6 +67,14 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	m_pTiltSeries = pTsPkg->GetSeries(0);
 	m_iNumTilts = m_pTiltSeries->m_aiStkSize[2];
+	//---------------------------------------------------------
+	// 1) Check whether pixel size is given in CTiltSeries.
+	//---------------------------------------------------------
+	if(m_pTiltSeries->m_fPixSize < 0.001f) 
+	{	printf("(Warning (GPU %d): pixel size is not given, "
+		   "CTF estimation is skipped.\n\n", m_iNthGpu);
+		return;
+	}
 	//-----------------
 	CInput* pInput = CInput::GetInstance();
 	CAtInput* pAtInput = CAtInput::GetInstance();

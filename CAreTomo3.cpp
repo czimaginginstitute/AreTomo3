@@ -33,8 +33,8 @@ int main(int argc, char* argv[])
 	if(argc == 2)
 	{	if(strcasecmp(argv[1], "--version") == 0 ||
 		   strcasecmp(argv[1], "-v") == 0)
-		{	printf("AreTomo3 version 1.0.10\n"
-			   "Built on Apr 03 2024\n");
+		{	printf("AreTomo3 version 1.0.11\n"
+			   "Built on Apr 05 2024\n");
 		}
 		else if(strcasecmp(argv[1], "--help") == 0)
 		{	printf("\nUsage: AreTomo3 Tags\n");

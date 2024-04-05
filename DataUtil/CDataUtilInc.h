@@ -51,6 +51,7 @@ public:
 	void SetCenter(int iFrame, float* pfCent);
 	void GetCenter(int iFrame, float* pfCent);
 	int GetTiltIdx(float fTilt);
+	bool bEmpty(void);
 	//-----------------
 	CTiltSeries* GetSubSeries(int* piStart, int* piSize);
 	void RemoveFrame(int iFrame);
@@ -59,6 +60,7 @@ public:
 	float** GetImages(void); // do not free;
 	//-----------------
 	void ResetSecIndices(void); // make sec indices ascending
+	CTiltSeries* FlipVol(bool bFlip);
 	//-----------------
 	float* m_pfTilts;
 	int* m_piAcqIndices; // acquistion index, same as mdoc z value.
@@ -66,6 +68,7 @@ public:
 	float m_fImgDose;
 private:
 	void mSwap(int iIdx1, int iIdx2);
+	CTiltSeries* mGenVolXZY(void);
 	void mCleanCenters(void);
 	float** m_ppfCenters;
 	float** m_ppfImages;

@@ -112,7 +112,7 @@ private:
 	void mDoseWeight(void);
 	void mSaveAlignment(void);
 	//-----------------
-	void mFlipVol(MD::CTiltSeries** ppVolSeries);
+	MD::CTiltSeries* mFlipVol(MD::CTiltSeries* pVolSeries);
 	//-----------------
 	void mLogGlobalShift(void);
 	void mLogLocalShift(void);
