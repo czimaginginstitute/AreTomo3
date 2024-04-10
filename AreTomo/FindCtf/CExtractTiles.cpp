@@ -61,6 +61,16 @@ CTile* CExtractTiles::GetTile(int iTile)
 	return &m_pTiles[iTile];
 }
 
+bool CExtractTiles::bEdgeTile(int iTile)
+{
+	int iX = iTile % m_aiNumTiles[0];
+	int iY = iTile / m_aiNumTiles[0];
+	if(iX == 0 || iY == 0) return true;
+	if(iX == (m_aiNumTiles[0] - 1)) return true;
+	if(iY == (m_aiNumTiles[1] - 1)) return true;
+	return false;
+}
+
 void CExtractTiles::DoIt(float* pfImage)
 {
 	for(int i=0; i<m_iNumTiles; i++)

@@ -327,8 +327,11 @@ void CAreTomoMain::mCorrectCTF(void)
 	   MD::CCtfResults::GetInstance(m_iNthGpu);
 	if(!pCtfResults->bHasCTF()) return;
 	//-----------------
+	bool bPhaseFlip = false;
+	if(pAtInput->m_iCorrCTF == 2) bPhaseFlip = true;
+	//-----------------
 	MAF::CCorrCtfMain corrCtfMain;
-	corrCtfMain.DoIt(m_iNthGpu);
+	corrCtfMain.DoIt(m_iNthGpu, bPhaseFlip);
 }
 
 /*

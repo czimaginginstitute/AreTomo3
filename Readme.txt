@@ -146,3 +146,12 @@ AreTomo3 1.0.11: [04-03-2024]
    of command line.
 4. Bug fix: CTF estimation checks existence of pixel size in the object
    of DataUtil/CTiltSeries instead of CInput.
+
+AreTomo3 1.0.12: [04-08-2024]
+-----------------------------
+1. Bug: When a frame integration file has an empty line at the end, AreTomo3
+   fails with segmentation fault. (Fixed 04-08-2024)
+2. Deconvolution kernel (FindCtf/GCorrCTF2D.cu) takes into account of less
+   ocillation in higher frequency regime.
+3. Added generation of a Json file containing session information.
+4. Added -CorrCTF 2 for phase flipping

@@ -18,7 +18,7 @@ static float s_fD2R = 0.0174532f;
 CCorrImgCtf::CCorrImgCtf(void)
 {
 	m_iTileSize = 512;
-	m_iCoreSize = 256;
+	m_iCoreSize = 512;
 	m_pExtractTiles = new CExtractTiles;
 	m_pGCorrCTF2D = new GCorrCTF2D;
 }
@@ -60,7 +60,8 @@ void CCorrImgCtf::Setup(int* piImgSize, int iNthGpu)
 void CCorrImgCtf::DoIt
 (	float* pfImage,	
 	float fTilt,
-	float fTiltAxis
+	float fTiltAxis,
+	bool bPhaseFlip
 )
 {	m_pfImage = pfImage;
 	m_fTilt = fTilt;
@@ -71,6 +72,7 @@ void CCorrImgCtf::DoIt
 	m_pImgCtfParam = pCtfResults->GetCtfParamFromTilt(m_fTilt);
 	//-----------------
 	m_pGCorrCTF2D->SetParam(m_pImgCtfParam);
+	m_pGCorrCTF2D->SetPhaseFlip(bPhaseFlip);
 	//-----------------
 	m_pExtractTiles->DoIt(m_pfImage);
 	//-----------------
@@ -168,5 +170,6 @@ void CCorrImgCtf::mCorrectCTF(int iTile)
 	cufftComplex* gCmp = (cufftComplex*)m_ggfTiles[iTile % 2];	
 	//-----------------
 	m_pGCorrCTF2D->DoIt(fDfMin, fDfMax, m_pImgCtfParam->m_fAstAzimuth,
-	   m_pImgCtfParam->m_fExtPhase, gCmp, aiCmpSize, m_streams[0]);
+	   m_pImgCtfParam->m_fExtPhase, m_fTilt, 
+	   gCmp, aiCmpSize, m_streams[0]);
 }

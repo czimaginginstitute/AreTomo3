@@ -306,20 +306,21 @@ public:
 	GCorrCTF2D(void);
 	~GCorrCTF2D(void);
 	void SetParam(MD::CCtfParam* pCtfParam);
-	void SetWeinerFilter(bool bTrue);
+	void SetPhaseFlip(bool bValue);
 	void DoIt
 	( float fDfMin, float fDfMax, // pixel
 	  float fAzimuth, float fExtPhase, // rad
-	  cufftComplex* gCmp, int* piCmpSize,
+	  float fTilt, cufftComplex* gCmp, // dgree 
+	  int* piCmpSize,
 	  cudaStream_t stream = 0
 	);
 	void DoIt
-	( MD::CCtfParam* pCtfParam,
+	( MD::CCtfParam* pCtfParam, float fTilt,
 	  cufftComplex* gCmp, int* piCmpSize,
 	  cudaStream_t stream = 0
 	);
 private:
-	bool m_bWeiner;
+	bool m_bPhaseFlip;
 	float m_fAmpPhase;
 	float* m_gfNoise2;
 };
@@ -365,6 +366,7 @@ public:
 	void Setup(int iTileSize, int iCoreSize, int* piImgSize);
 	void DoIt(float* pfImage);
 	CTile* GetTile(int iNthTile);
+	bool bEdgeTile(int iNthTile);
 	int m_iNumTiles;
 private:
 	void mCalcTileLocations(void);
@@ -384,7 +386,10 @@ public:
 	CCorrImgCtf(void);
 	~CCorrImgCtf(void);
 	void Setup(int* piImgSize, int iNthGpu);
-	void DoIt(float* pfImage, float fTilt, float fTiltAxis);
+	void DoIt
+	( float* pfImage, float fTilt, 
+	  float fTiltAxis, bool bPhaseFlip
+	);
 private:
 	void mTileToGpu(int iTile);
 	void mGpuToTile(int iTile);
@@ -779,12 +784,13 @@ class CCorrCtfMain
 public:
 	CCorrCtfMain(void);
 	~CCorrCtfMain(void);
-	void DoIt(int iNthGpu);
+	void DoIt(int iNthGpu, bool bPhaseFlip);
 private:
 	void mCorrTiltSeries(int iSeries);
 	//-----------------
 	CCorrImgCtf* m_pCorrImgCtf;
 	int m_iNthGpu;
+	bool m_bPhaseFlip;
 };
 
 }

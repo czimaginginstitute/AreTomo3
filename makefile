@@ -236,6 +236,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./CInput.cpp \
 	./CMcInput.cpp \
 	./CAtInput.cpp \
+	./CAreTomo3Json.cpp \
 	./CProcessThread.cpp \
 	./CMcAreTomoMain.cpp \
 	./CAreTomo3.cpp \

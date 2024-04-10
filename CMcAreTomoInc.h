@@ -190,6 +190,34 @@ private:
         static CAtInput* m_pInstance;
 };
 
+class CAreTomo3Json
+{
+public:
+	CAreTomo3Json(void);
+	~CAreTomo3Json(void);
+	void Create(char* pcVersion);
+private:
+	void mAddInput(void);
+	void mAddMcInput(void);
+	void mAddAtInput(void);
+	//-----------------
+	void mAddLine(char* pcLine);
+	void mAddLine(char* pcKey, char* pcVal);
+	void mAddLine(char* pcKey, int iVal);
+	void mAddLine(char* pcKey, float fVal);
+	void mAddLine(char* pcKey, int* piVals, int iNumVals);
+	void mAddLine(char* pcKey, float* pfVals, int iNumVals);
+	//-----------------
+	void mCreateVal(int* piVals, int iNumVals, char* pcVal);
+	void mCreateVal(float* pfVals, int iNumVals, char* pcVal);
+	//-----------------
+	int m_iNumLines;
+	int m_iLineSize;
+	int m_iLineCount;
+	int m_iIndent;
+	char* m_pcJson;
+};
+
 class CCheckFreeGpus
 {
 public:

@@ -25,11 +25,12 @@ CCorrCtfMain::~CCorrCtfMain(void)
 // 3. The tilt angles must be raw, not ones corrected with tilt
 //    angle offset.
 //--------------------------------------------------------------------
-void CCorrCtfMain::DoIt(int iNthGpu)
+void CCorrCtfMain::DoIt(int iNthGpu, bool bPhaseFlip)
 {
 	if(!CFindCtfMain::bCheckInput()) return;
 	//-----------------	
 	m_iNthGpu = iNthGpu;
+	m_bPhaseFlip = bPhaseFlip;
 	printf("GPU %d local CTF correction: started ...\n\n", m_iNthGpu);
 	//-----------------
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
@@ -61,9 +62,9 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 	for(int i=0; i<pTiltSeries->m_aiStkSize[2]; i++)
 	{	float* pfImage = (float*)pTiltSeries->GetFrame(i);
 		float fTilt = pTiltSeries->m_pfTilts[i];
-		m_pCorrImgCtf->DoIt(pfImage, fTilt, fTiltAxis);
+		m_pCorrImgCtf->DoIt(pfImage, fTilt, fTiltAxis, m_bPhaseFlip);
 	}
-	/*		
+					
 	if(iSeries == 0)
 	{	MU::CSaveTempMrc saveMrc;
 		saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestYesCTF", 
@@ -72,5 +73,5 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 		saveMrc.DoMany(ppvImgs, 2, pTiltSeries->m_aiStkSize);
 		printf("Save CTF corrected tilt series done.\n");
 	}
-	*/
+
 }

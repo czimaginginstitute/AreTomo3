@@ -146,8 +146,9 @@ void CReadFmIntFile::DoIt(void)
 		entryQueue.push(pEntry);
 		if(feof(pFile)) break;
 		//----------------
+		memset(acBuf, 0, sizeof(acBuf));
 		char* pcRet = fgets(acBuf, 256, pFile);
-		if(pcRet == 0L) break;
+		if(pcRet == 0L || strlen(acBuf) < 3) break;
 		//--------------------
 		if(bTwoItems) 
 		{	iItems = sscanf(acBuf, "%d  %d", 

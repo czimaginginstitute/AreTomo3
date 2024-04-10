@@ -70,7 +70,7 @@ static __global__ void mGWeinerFilter
 	float fDfSigma,
 	float fAzmuth,
 	float fExtPhase,
-	float* gfNoise2,
+	float fBFactor,
 	cufftComplex* gCmp,
 	int iCmpY
 )
@@ -78,27 +78,59 @@ static __global__ void mGWeinerFilter
 	if(blockIdx.x == 0 && y == 0) return;
 	if(y >= iCmpY) return;
 	//-----------------
+	float fX = blockIdx.x * 0.5f / (gridDim.x - 1.0f);
 	float fY = y / (float)iCmpY;
 	if(fY > 0.5f) fY = fY - 1.0f;
+	float fR2 = (fX * fX + fY * fY);
 	//-----------------
 	float fCTF = mGCalcPhase(fDfMean, fDfSigma,
 	   fAzmuth, fExtPhase, fY);
 	fCTF = sinf(fCTF);
-	float fSign = (fCTF > 0) ? 1.0f : -1.0f;
-	fCTF = (fabsf(fCTF) + 2.0f) / 3.0f * fSign;
 	//-----------------
-	float fFilter = blockIdx.x * 0.5f / (gridDim.x - 1);
-	fFilter = sqrtf(fFilter * fFilter + fY * fY);
-	fCTF = expf(-10.0f * fFilter) * 1.0f / fCTF;
-	/*
-	fCTF = fCTF * fFilter / (fCTF * fCTF * fFilter + 1.0f);
-	*/
+	float fSign = (fCTF > 0) ? 1.0f : -1.0f;
+	fX = 9.0f * expf(fR2);
+	fCTF = (fabsf(fCTF) + fX) / (fX + 1.0f) * fSign;
+	fCTF = expf(-fBFactor * fR2) / fCTF;
 	//-----------------
 	int i = y * gridDim.x + blockIdx.x;
 	gCmp[i].x *= fCTF;
 	gCmp[i].y *= fCTF;
 }
 
+/*
+static __global__ void mGWeinerFilter
+(       float fDfMean,
+        float fDfSigma,
+        float fAzmuth,
+        float fExtPhase,
+        float* gfNoise2,
+        cufftComplex* gCmp,
+        int iCmpY
+)
+{       int y = blockIdx.y * blockDim.y + threadIdx.y;
+        if(blockIdx.x == 0 && y == 0) return;
+        if(y >= iCmpY) return;
+	int i = y * gridDim.x + blockIdx.x;
+        //-----------------
+        float fY = y / (float)iCmpY;
+        if(fY > 0.5f) fY = fY - 1.0f;
+        //-----------------
+        float fCTF = mGCalcPhase(fDfMean, fDfSigma,
+           fAzmuth, fExtPhase, fY);
+        fCTF = sinf(fCTF);
+        //-----------------
+        float fFilter = blockIdx.x * 0.5f / (gridDim.x - 1);
+        fFilter = expf(-10.0 * (fFilter * fFilter + fY * fY));
+	//-----------------
+	float fAmp2 = gCmp[i].x * gCmp[i].x + gCmp[i].y * gCmp[i].y;
+       	fCTF = fAmp2 * fCTF / (fAmp2 * fCTF * fCTF + gfNoise2[0] + 1.0f);
+	fCTF *= fFilter;
+        //-----------------
+        gCmp[i].x *= fCTF;
+        gCmp[i].y *= fCTF;
+}
+*/
+/*
 static __global__ void mGCalcNoise2
 (	cufftComplex* gCmp,
 	int iCmpY,
@@ -145,11 +177,12 @@ static __global__ void mGCalcNoise2
 	if(s_afCount[0] == 0) gfNoise2[0] = 0.0f;
 	else gfNoise2[0] = s_afShared[0] / s_afCount[0];	
 }
+*/
 
 GCorrCTF2D::GCorrCTF2D(void)
 {
 	m_gfNoise2 = 0L;
-	m_bWeiner = true;
+	m_bPhaseFlip = false;
 }
 
 GCorrCTF2D::~GCorrCTF2D(void)
@@ -171,42 +204,44 @@ void GCorrCTF2D::SetParam(MD::CCtfParam* pCtfParam)
 	if(m_gfNoise2 == 0L) cudaMalloc(&m_gfNoise2, sizeof(float));
 }
 
-void GCorrCTF2D::SetWeinerFilter(bool bTrue)
+void GCorrCTF2D::SetPhaseFlip(bool bValue)
 {
-	m_bWeiner = bTrue;
+	m_bPhaseFlip = bValue;
 }
 
 void GCorrCTF2D::DoIt
 (	float fDfMin,   float fDfMax, 
-	float fAzimuth, float fExtPhase, 
-	cufftComplex* gCmp, int* piCmpSize,
-	cudaStream_t stream
+	float fAzimuth, float fExtPhase,
+	float fTilt, cufftComplex* gCmp, 
+	int* piCmpSize, cudaStream_t stream
 )
 {	dim3 aBlockDim(1, 512);
 	dim3 aGridDim(piCmpSize[0], 1);
 	aGridDim.y = (piCmpSize[1] + aBlockDim.y - 1) / aBlockDim.y;
-	size_t tSmBytes = sizeof(float) * aBlockDim.y * 2;
 	//-----------------
-	mGCalcNoise2<<<aGridDim, aBlockDim, tSmBytes, stream>>>(gCmp,
-	   piCmpSize[1], m_gfNoise2);
+	//size_t tSmBytes = sizeof(float) * aBlockDim.y * 2;
+	//mGCalcNoise2<<<aGridDim, aBlockDim, tSmBytes, stream>>>(gCmp,
+	//   piCmpSize[1], m_gfNoise2);
 	//-----------------
 	float fDfMean = 0.5f * (fDfMin + fDfMax);
         float fDfSigma = 0.5f * (fDfMax - fDfMin);
 	float fAddPhase = m_fAmpPhase + fExtPhase;
 	//-----------------
-	if(m_bWeiner)
-	{	mGWeinerFilter<<<aGridDim, aBlockDim, 0, stream>>>(fDfMean, 
-		   fDfSigma, fAzimuth, fAddPhase, m_gfNoise2, 
-		   gCmp, piCmpSize[1]);
-	}
-	else
-	{	mGPhaseFlip<<<aGridDim, aBlockDim, 0, stream>>>(fDfMean,
+	if(m_bPhaseFlip)
+        {	mGPhaseFlip<<<aGridDim, aBlockDim, 0, stream>>>(fDfMean,
 		   fDfSigma, fAzimuth, fAddPhase, gCmp, piCmpSize[1]);
+	}
+	else	
+	{	float fBFactor = 5.0f / (float)(cos(fTilt * 0.01745) + 0.001f);
+		mGWeinerFilter<<<aGridDim, aBlockDim, 0, stream>>>(fDfMean, 
+		   fDfSigma, fAzimuth, fAddPhase, fBFactor, 
+		   gCmp, piCmpSize[1]);
 	}
 }
 
 void GCorrCTF2D::DoIt
 (	MD::CCtfParam* pCtfParam, 
+	float fTilt,
 	cufftComplex* gCmp, 
 	int* piCmpSize,
 	cudaStream_t stream
@@ -214,5 +249,5 @@ void GCorrCTF2D::DoIt
 {	this->SetParam(pCtfParam);
 	this->DoIt(pCtfParam->m_fDefocusMin, pCtfParam->m_fDefocusMax,
 	   pCtfParam->m_fAstAzimuth, pCtfParam->m_fExtPhase,
-	   gCmp, piCmpSize);
+	   fTilt, gCmp, piCmpSize);
 }
