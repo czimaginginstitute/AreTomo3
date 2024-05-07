@@ -78,8 +78,10 @@ public:
 private:
 	void mDoFull(void);
 	void mSkipAlign(void);
+	void mEstimateCtf(void);
 	//-----------------
 	void mRemoveDarkFrames(void);
+	void mRemoveDarkCtfs(void);
 	void mRemoveSpikes(void);
 	void mCreateAlnParams(void);
 	void mFindCtf(void);
@@ -94,11 +96,14 @@ private:
 	void mProjAlign(void);
 	void mPatchAlign(void);
 	//-----------------
+	void mSetupTsCorrection(void);
+	void mSaveForImod(void);
+	//-----------------
 	void mCorrectCTF(void);
+	void mAlignCTF(void);
 	//-----------------
 	void mRecon(void);
 	void mSetPositivity(void);
-	void mSaveForImod(void);
 	void mReconSeries(int iSeries);
 	void mSartRecon
 	( int iVolZ, int iSeries, 
@@ -109,7 +114,6 @@ private:
 	  MD::CTiltSeries* pSeries
 	);
 	//-----------------
-	void mDoseWeight(void);
 	void mSaveAlignment(void);
 	//-----------------
 	MD::CTiltSeries* mFlipVol(MD::CTiltSeries* pVolSeries);

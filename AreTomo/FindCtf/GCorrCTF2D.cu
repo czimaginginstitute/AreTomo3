@@ -35,8 +35,8 @@ static __device__ float mGCalcPhase
 }
 
 //--------------------------------------------------------------------
-// Flip the phase of image Fourier transform (gCmp) when CTF is
-// negative.
+// 1. Flip the phase of image Fourier transform (gCmp) when CTF is
+//    positive. This keeps particles dark.
 //--------------------------------------------------------------------
 static __global__ void mGPhaseFlip
 (	float fDfMean,
@@ -57,8 +57,8 @@ static __global__ void mGPhaseFlip
 	//-----------------------------------------------
 	fY = mGCalcPhase(fDfMean, fDfSigma, 
 	   fAzmuth, fExtPhase, fY);
-	fY = sinf(fY);
-	if(fY >= 0) return;
+	fY = -sinf(fY);
+	if(fY <= 0) return;
 	//-----------------
 	int i = y * gridDim.x + blockIdx.x;
 	gCmp[i].x = -gCmp[i].x;
@@ -85,12 +85,12 @@ static __global__ void mGWeinerFilter
 	//-----------------
 	float fCTF = mGCalcPhase(fDfMean, fDfSigma,
 	   fAzmuth, fExtPhase, fY);
-	fCTF = sinf(fCTF);
+	fCTF = -sinf(fCTF);
 	//-----------------
-	float fSign = (fCTF > 0) ? 1.0f : -1.0f;
+	float fSign = (fCTF <= 0) ? 1.0f : -1.0f; // dark particles
 	fX = 9.0f * expf(fR2);
 	fCTF = (fabsf(fCTF) + fX) / (fX + 1.0f) * fSign;
-	fCTF = expf(-fBFactor * fR2) / fCTF;
+	fCTF = expf(-fBFactor * sqrtf(fR2)) / fCTF;
 	//-----------------
 	int i = y * gridDim.x + blockIdx.x;
 	gCmp[i].x *= fCTF;
@@ -183,6 +183,7 @@ GCorrCTF2D::GCorrCTF2D(void)
 {
 	m_gfNoise2 = 0L;
 	m_bPhaseFlip = false;
+	m_fBFactor = 15.0f;
 }
 
 GCorrCTF2D::~GCorrCTF2D(void)
@@ -209,6 +210,12 @@ void GCorrCTF2D::SetPhaseFlip(bool bValue)
 	m_bPhaseFlip = bValue;
 }
 
+void GCorrCTF2D::SetLowpass(int iBFactor)
+{
+	m_fBFactor = (float)iBFactor;
+	if(m_fBFactor < 0) m_fBFactor = 0.0f;
+}
+
 void GCorrCTF2D::DoIt
 (	float fDfMin,   float fDfMax, 
 	float fAzimuth, float fExtPhase,
@@ -232,7 +239,9 @@ void GCorrCTF2D::DoIt
 		   fDfSigma, fAzimuth, fAddPhase, gCmp, piCmpSize[1]);
 	}
 	else	
-	{	float fBFactor = 5.0f / (float)(cos(fTilt * 0.01745) + 0.001f);
+	{	float fBFactor = m_fBFactor / 
+		   (float)(cos(fTilt * 0.01745) + 0.001f);
+		//----------------
 		mGWeinerFilter<<<aGridDim, aBlockDim, 0, stream>>>(fDfMean, 
 		   fDfSigma, fAzimuth, fAddPhase, fBFactor, 
 		   gCmp, piCmpSize[1]);

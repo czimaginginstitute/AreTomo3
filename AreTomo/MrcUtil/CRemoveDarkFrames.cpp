@@ -61,44 +61,41 @@ void CRemoveDarkFrames::mDetect(void)
 	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
 	pDarkFrames->Setup(pTiltSeries);
 	//-----------------
-	int iSize = (m_iAllFrms + 16) * 64;
-	char* pcLog = new char[iSize];
-	memset(pcLog, 0, sizeof(char) * iSize);
-	//-----------------
-	sprintf(pcLog, "GPU %d: Detect dark images in the tilt "
-	   "series.\n", m_iNthGpu);
-	strcat(pcLog, "# index  tilt    mean         std      ratio\n");
-	char acBuf[64] = {'\0'};
-	//-----------------
+	float fMaxR = (float)-1e30;
+	int iMaxR = -1;
+	float* pfRatio = new float[m_iAllFrms];
 	for(int i=0; i<m_iAllFrms; i++)
 	{	float fTilt = pTiltSeries->m_pfTilts[i];
 		float fMean = (float)fabs(m_pfMeans[i]);
-		float fRatio = fMean / (m_pfStds[i] + 0.000001f);
-		//----------------
-		sprintf(acBuf, " %3d  %8.2f  %8.2f  %8.2f  %8.2f\n", 
-		   i, fTilt, m_pfMeans[i], m_pfStds[i], fRatio);
-		strcat(pcLog, acBuf);
+		pfRatio[i] = fMean / (m_pfStds[i] + 0.000001f);
+		if(pfRatio[i] > fMaxR)
+		{	fMaxR = pfRatio[i];
+			iMaxR = i;
+		}
 	}
-	printf("%s\n", pcLog);
-	if(pcLog != 0L) delete[] pcLog;
 	//-----------------
+	float fTol = 0.0f;
+	int iCount = 0;
 	int iZeroTilt = pTiltSeries->GetTiltIdx(0.0f);
-	float fTol = m_fThreshold * (float)fabs(m_pfMeans[iZeroTilt])
-	   / (m_pfStds[iZeroTilt] + 0.000001f);
+	for(int i=-3; i<=3; i++)
+	{	int j = iZeroTilt + i;
+		if(j < 0 || j >= m_iAllFrms || j == iMaxR) continue;
+		fTol += pfRatio[j];
+		iCount += 1;
+	}
+	if(iCount > 0) fTol = (fTol / iCount) * m_fThreshold;
 	//-----------------
 	for(int i=0; i<m_iAllFrms; i++)
-	{	float fRatio = (float)fabs(m_pfMeans[i]) / 
-		   (m_pfStds[i] + 0.000001f);
-		//----------------
-		if(fRatio > fTol) continue;
+	{	if(fabs(pTiltSeries->m_pfTilts[i]) < 30.5f) continue;	
+		else if(pfRatio[i] > fTol) continue;
 		else pDarkFrames->AddDark(i);
 	}
-
+	if(pfRatio != 0L) delete[] pfRatio;
+	//-----------------
 	/*   Debugging Code
 	pDarkFrames->AddDark(0);
 	pDarkFrames->AddDark(1);
 	*/
-
 	if(pDarkFrames->m_iNumDarks <= 0) 
 	{	printf("GPU %d: no dark images detected.\n\n", m_iNthGpu);
 	}

@@ -15,6 +15,15 @@ static float s_fD2R = 0.0174532f;
 //static CSaveImages s_aSaveImages;
 //static int s_iCount = 0;
 
+//--------------------------------------------------------------------
+// 1. making core size smaller than tilt size helps reducing the
+//    checkerboard effect when we keep particles dark by flipping
+//    the negative phase.
+// 2. However, when core size is smaller than tile size, thin dark
+//    cicles are seen at CTF zeroes.
+// 3. When core and tile has the same size, there is no dark circles
+//    in CTF deconvolved image.
+//--------------------------------------------------------------------   
 CCorrImgCtf::CCorrImgCtf(void)
 {
 	m_iTileSize = 512;
@@ -27,6 +36,11 @@ CCorrImgCtf::~CCorrImgCtf(void)
 {
 	if(m_pExtractTiles != 0L) delete m_pExtractTiles;
 	if(m_pGCorrCTF2D != 0L) delete m_pGCorrCTF2D;
+}
+
+void CCorrImgCtf::SetLowpass(int iBFactor)
+{
+	m_iBFactor = iBFactor;
 }
 
 void CCorrImgCtf::Setup(int* piImgSize, int iNthGpu)
@@ -73,6 +87,7 @@ void CCorrImgCtf::DoIt
 	//-----------------
 	m_pGCorrCTF2D->SetParam(m_pImgCtfParam);
 	m_pGCorrCTF2D->SetPhaseFlip(bPhaseFlip);
+	m_pGCorrCTF2D->SetLowpass(m_iBFactor);
 	//-----------------
 	m_pExtractTiles->DoIt(m_pfImage);
 	//-----------------

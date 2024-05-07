@@ -30,7 +30,15 @@ int main(int argc, char* argv[])
 	CMcInput* pMcInput = CMcInput::GetInstance();
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	//-----------------
-	char acVersion[64] = {"version 1.0.12, built on Apr 10 2024"};
+	char acVersion[64] = {'\0'};
+	strcpy(acVersion, "version 1.0.13, built on May 07 2024");
+	if(argc == 1)
+	{	printf("\nAreTomo3: live automated cryoET pipeline from"
+		   " tilt movies to tomograms.\n");
+		printf("AreTomo3 --version: get version information\n");
+		printf("AreTomo3 --help: get command line information.\n\n");
+		return 0;	
+	}
 	if(argc == 2)
 	{	if(strcasecmp(argv[1], "--version") == 0 ||
 		   strcasecmp(argv[1], "-v") == 0)

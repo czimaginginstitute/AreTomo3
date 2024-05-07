@@ -32,6 +32,7 @@ void CSaveCtfResults::DoIt(int iNthGpu)
 	//-----------------
 	mSaveImages(acCtfFile);
 	mSaveFittings(acCtfFile);
+	mSaveImod(acCtfFile);
 }
 
 void CSaveCtfResults::mSaveImages(const char* pcCtfFile)
@@ -85,8 +86,46 @@ void CSaveCtfResults::mSaveFittings(const char* pcCtfFile)
 		   pCtfResults->GetCtfRes(i));
 	}
 	fclose(pFile);
-	//-----------------
+}
+
+void CSaveCtfResults::mSaveImod(const char* pcCtfFile)
+{
+	MD::CCtfResults* pCtfResults = 
+	   MD::CCtfResults::GetInstance(m_iNthGpu);
+	char acCtfTxtFile[256] = {'\0'};
 	strcpy(acCtfTxtFile, pcCtfFile);
 	strcat(acCtfTxtFile, "_Imod.txt");
-	pCtfResults->SaveImod(acCtfTxtFile);
+	//-----------------
+	FILE* pFile = fopen(acCtfTxtFile, "w");
+	if(pFile == 0L) return;
+	//-----------------
+	float fExtPhase = pCtfResults->GetExtPhase(0);
+	if(fExtPhase == 0) fprintf(pFile, "1  0  0.0  0.0  0.0  3\n");
+	else fprintf(pFile, "5  0  0.0  0.0  0.0  3\n");
+	//-----------------
+	const char *pcFormat1 = "%4d  %4d  %7.2f  %7.2f  %8.2f  "
+	   "%8.2f  %7.2f\n";
+	const char *pcFormat2 = "%4d  %4d  %7.2f  %7.2f  %8.2f  "
+	   "%8.2f  %7.2f  %8.2f\n";
+	float fDfMin, fDfMax;
+	if(fExtPhase == 0)
+	{	for(int i=0; i<pCtfResults->m_iNumImgs; i++)
+		{	float fTilt = pCtfResults->GetTilt(i);
+			fDfMin = pCtfResults->GetDfMin(i) * 0.1f;
+			fDfMax = pCtfResults->GetDfMax(i) * 0.1f;
+			fprintf(pFile, pcFormat1, i+1, i+1, fTilt, fTilt,
+			   fDfMin, fDfMax, pCtfResults->GetAzimuth(i));
+		}
+	}
+	else
+	{	for(int i=0; i<pCtfResults->m_iNumImgs; i++)
+		{	float fTilt = pCtfResults->GetDfMin(i);
+			fDfMin = pCtfResults->GetDfMin(i) * 0.1f;
+			fDfMax = pCtfResults->GetDfMax(i) * 0.1f;
+			fprintf(pFile, pcFormat2, i+1, i+1, fTilt, fTilt,
+			   fDfMin, fDfMax, pCtfResults->GetAzimuth(i),
+			   pCtfResults->GetExtPhase(i));
+		}
+	}
+	fclose(pFile);
 }

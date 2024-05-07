@@ -155,3 +155,18 @@ AreTomo3 1.0.12: [04-08-2024]
    ocillation in higher frequency regime.
 3. Added generation of a Json file containing session information.
 4. Added -CorrCTF 2 for phase flipping
+
+AreTomo3 1.0.13: [04-15-2024]
+-----------------------------
+1. Bug fix: -OutImod 3 does not save the aligned tilt series in Imod folder.
+   Fixed on 04/15/2024.
+2. Change: Save the tilt series for -OutImod 1 and 2 before doing CTF
+   correction.
+3. Added: Save aligned CTF resulted in Imod folder when -OutImod 3 is
+   specified.
+4. Added: Save unaligned but dark-removed CTF results in Imod folder when
+   -OutImod 2 is specified.
+5. [05-01-2024]: Revised CAreTomo3Json.cpp. For multiple arguments, use
+   list even if users provide only one value. The relate option is
+   -Gpu, -InSkips, -Sart, -Patch, -AtPatch 
+6. [05-07-2024]: Added -Cmd 3 that repeates CTF estimation only.

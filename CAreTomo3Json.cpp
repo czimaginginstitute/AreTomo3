@@ -68,7 +68,7 @@ void CAreTomo3Json::mAddInput(void)
 	CInput* pInput = CInput::GetInstance();
 	mAddLine(pInput->m_acInMdocTag+1, pInput->m_acInMdoc);
 	mAddLine(pInput->m_acInSuffixTag+1, pInput->m_acInSuffix);
-	mAddLine(pInput->m_acInSkipsTag+1, pInput->m_acInSkips);
+	mAddLine(pInput->m_acInSkipsTag+1, pInput->m_acInSkips, true);
 	mAddLine(pInput->m_acOutDirTag+1, pInput->m_acOutDir);
 	mAddLine(pInput->m_acPixSizeTag+1, pInput->m_fPixSize);
 	mAddLine(pInput->m_acKvTag+1, pInput->m_iKv);
@@ -121,7 +121,7 @@ void CAreTomo3Json::mAddAtInput(void)
 	mAddLine(pAtInput->m_acOutImodTag+1, pAtInput->m_iOutImod);
 	mAddLine(pAtInput->m_acAmpContrastTag+1, pAtInput->m_fAmpContrast);
 	mAddLine(pAtInput->m_acExtPhaseTag+1, pAtInput->m_afExtPhase, 2);
-	mAddLine(pAtInput->m_acCorrCTFTag+1, pAtInput->m_iCorrCTF);
+	mAddLine(pAtInput->m_acCorrCTFTag+1, pAtInput->m_aiCorrCTF, 2);
 }
 
 void CAreTomo3Json::mAddLine(char* pcLine)
@@ -131,14 +131,33 @@ void CAreTomo3Json::mAddLine(char* pcLine)
 	sprintf(pcJson, "%s", pcLine);
 };
 
-void CAreTomo3Json::mAddLine(char* pcKey, char* pcVal)
+void CAreTomo3Json::mAddLine(char* pcKey, char* pcVal, bool bList)
 {
-	char acBuf[256] = {"empty"};
+	char acBuf[256] = {""};
 	if(pcVal != 0L && strlen(pcVal) > 0) strcpy(acBuf, pcVal);
+	//-----------------
+	int iCount = 0;
+	char* pcTokens[32] = {0L};
+	char* pcToken = strtok(acBuf, ", ");
+	while(pcToken != 0L)
+	{	pcTokens[iCount] = pcToken;
+		iCount += 1;
+		pcToken = strtok(0L, ", ");
+	}
 	//-----------------
 	int iSize = strlen(m_pcJson);
 	char* pcJson = &m_pcJson[iSize];
-	sprintf(pcJson, "     \"%s\":  \"%s\"", pcKey, acBuf);
+	//-----------------
+	if(!bList) 
+	{	sprintf(pcJson, "     \"%s\":  \"", pcKey);
+	       	if(pcVal != 0L) strcat(pcJson, pcVal);
+		strcat(pcJson, "\"");
+	}
+	else
+	{	char acVal[128] = {'\0'};
+		mCreateVal(pcTokens, iCount, acVal);
+		sprintf(pcJson, "     \"%s\":  %s", pcKey, acVal);
+	}
 	//-----------------
 	strcat(pcJson, ",\n");
 	m_iLineCount += 1;
@@ -192,44 +211,39 @@ void CAreTomo3Json::mAddLine(char* pcKey, float* pfVals, int iNumVals)
 
 void CAreTomo3Json::mCreateVal(int* piVals, int iNumVals, char* pcVal)
 {
-	if(iNumVals <= 0)
-	{	strcpy(pcVal, "[]");
-		return;
-	}
-	else if(iNumVals == 1)
-	{	sprintf(pcVal, "[%d]", piVals[0]);
-		return;
-	}
+	int iLast = iNumVals - 1;
+	char acBuf[32] = {'\0'};
 	//-----------------
 	strcpy(pcVal, "[");
-	char acBuf[32] = {'\0'};
-	int iLast = iNumVals - 1;
-	for(int i=0; i<iLast; i++)
-	{	sprintf(acBuf, "%d,", piVals[i]);
-		strcat(pcVal, acBuf);
-	}
-	sprintf(acBuf, "%d]", piVals[iLast]);
-	strcat(pcVal, acBuf);
+	for(int i=0; i<iNumVals; i++) 
+	{	sprintf(acBuf, "%d", piVals[i]);
+                strcat(pcVal, acBuf);
+                if(i < iLast) strcat(pcVal, ", ");
+        }
+        strcat(pcVal, "]");
 }
 
 void CAreTomo3Json::mCreateVal(float* pfVals, int iNumVals, char* pcVal)
 {
-	if(iNumVals <= 0)
-	{	strcpy(pcVal, "[]");
-		return;
-	}
-	else if(iNumVals == 1)
-	{	sprintf(pcVal, "[%f]", pfVals[0]);
-		return;
-	}
+	int iLast = iNumVals - 1;
+	char acBuf[32] = {'\0'};
 	//-----------------
 	strcpy(pcVal, "[");
-	char acBuf[32] = {'\0'};
-	int iLast = iNumVals - 1;
-	for(int i=0; i<iLast; i++)
-	{	sprintf(acBuf, "%f,", pfVals[i]);
+	for(int i=0; i<iNumVals; i++)
+	{	sprintf(acBuf, "%f", pfVals[i]);
 		strcat(pcVal, acBuf);
+		if(i < iLast) strcat(pcVal, ", ");
 	}
-	sprintf(acBuf, "%f]", pfVals[iLast]);
-	strcat(pcVal, acBuf);
+	strcat(pcVal, "]");
+}
+
+void CAreTomo3Json::mCreateVal(char** pcToks, int iNumToks, char* pcVal)
+{
+	int iLast = iNumToks - 1;
+	strcpy(pcVal, "[");
+	for(int i=0; i<iNumToks; i++)
+	{	strcat(pcVal, pcToks[i]);
+		if(i < iLast) strcat(pcVal, ", ");
+	}
+	strcat(pcVal, "]");
 }

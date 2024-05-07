@@ -49,6 +49,12 @@ CAreTomoMain::~CAreTomoMain(void)
 	if(m_pCorrTomoStack != 0L) delete m_pCorrTomoStack;
 }
 
+//--------------------------------------------------------------------
+// m_iCmd = 0: full processing that starts from motion correction.
+// m_iCmd = 1: skip motion correction, starts from tomo alignment.
+// m_iCmd = 2: do tomo reconstruction only.
+// m_iCmd = 3: do CTF estimation only.
+//--------------------------------------------------------------------
 bool CAreTomoMain::DoIt(int iNthGpu)
 {
 	m_iNthGpu = iNthGpu;
@@ -56,6 +62,7 @@ bool CAreTomoMain::DoIt(int iNthGpu)
 	CInput* pInput = CInput::GetInstance();
 	if(pInput->m_iCmd == 0 || pInput->m_iCmd == 1) mDoFull();
 	else if(pInput->m_iCmd == 2) mSkipAlign();
+	else if(pInput->m_iCmd == 3) mEstimateCtf();
 	//-----------------
 	printf("Process thread exits.\n\n");
 	return true;
@@ -63,26 +70,48 @@ bool CAreTomoMain::DoIt(int iNthGpu)
 
 void CAreTomoMain::mDoFull(void)
 {
-	//--------------------------------------------------
-	// 1) This runs on the full tilt series. 2) In the
-	// future, refinement will be performed on dark
-	// removed tilt series to determine alpha and
-	// beta tilt offset.
-	//--------------------------------------------------
+	//-----------------------------------------------
+	// 1) This runs on the full tilt series. 2) In 
+	// the future, refinement will be performed on 
+	// dark removed tilt series to determine alpha 
+	// and beta tilt offset.
+	//-----------------------------------------------
 	mFindCtf();
 	mRemoveDarkFrames();
+	mRemoveDarkCtfs();
+	//-----------------
 	mCreateAlnParams();
 	mRemoveSpikes();	
 	mMassNorm();
 	//-----------------
 	mAlign();
-	mCorrectCTF();
-	//-----------------
-	//mDoseWeight();
 	mSaveAlignment();
+	//-----------------------------------------------
+	// 1) -OutImod 3 saves the aligned tilt series.
+	// 2) Hence we need to configure Tilt series
+	// correction before saving files to Imod
+	// sub-directory.
+	//-----------------------------------------------
+	mSetupTsCorrection();
+	mSaveForImod();
+	//-----------------	
+	mCorrectCTF();
 	mRecon();
-}
+	//-----------------------------------------------
+	// 1) If -OutImod 3 is specified, we save the
+	// aligned tilt series and aligned CTF results.
+	// 2) mAlignCTF aligns CTF results and saves
+	// to IMOD sub-directory.
+	//-----------------------------------------------
+	mAlignCTF();
+}	
 
+//--------------------------------------------------------------------
+// 1) This implements CInput::m_iCmd = 2 that performs tomographic
+//    reconstruction only.
+// 2) This workflow includes local CTF correction.
+// 3) This workflow needs to load aln file and CTF estimation file. 
+//--------------------------------------------------------------------
 void CAreTomoMain::mSkipAlign(void)
 {
 	MAM::CRemoveDarkFrames remDarkFrames;
@@ -101,15 +130,44 @@ void CAreTomoMain::mSkipAlign(void)
 	FindCtf::CLoadCtfResults loadCtfResults;
 	loadCtfResults.DoIt(m_iNthGpu);
 	//-----------------
-	MD::CCtfResults* pCtfResults = 
-	   MD::CCtfResults::GetInstance(m_iNthGpu);
-	pCtfResults->RemoveDarkCTFs();
 	remDarkFrames.Remove();
+	mRemoveDarkCtfs();
 	//-----------------
 	mRemoveSpikes();
 	mMassNorm();
+	//-----------------
 	mCorrectCTF();
+	mSetupTsCorrection();
 	mRecon();
+}
+
+//--------------------------------------------------------------------
+// 1) This implements CInput::m_iCmd = 3 that repeats CTF estimation.
+// 2) This workflow needs to load aln file for removing dark entries
+//    in the generated CTF files and aligning CTF entries if users
+//    previously choose -OutImod 3.
+//--------------------------------------------------------------------
+void CAreTomoMain::mEstimateCtf(void)
+{
+	MAM::CRemoveDarkFrames remDarkFrames;
+        remDarkFrames.Setup(m_iNthGpu);
+	//-----------------
+	MAM::CLoadAlignFile loadAlnFile;
+        bool bLoaded = loadAlnFile.DoIt(m_iNthGpu);
+        if(!bLoaded) return;
+	//-----------------
+	mFindCtf();
+	mRemoveDarkCtfs();
+	//-----------------
+	ImodUtil::CImodUtil* pImodUtil = 0L;
+	pImodUtil = ImodUtil::CImodUtil::GetInstance(m_iNthGpu);
+	int iOutImod = pImodUtil->FindOutImodVal();
+	//-----------------
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	pAtInput->m_iOutImod = iOutImod;
+	mSaveForImod();
+	//-----------------
+	mAlignCTF();	
 }
 
 void CAreTomoMain::mRemoveDarkFrames(void)
@@ -119,7 +177,10 @@ void CAreTomoMain::mRemoveDarkFrames(void)
 	remDarkFrames.Setup(m_iNthGpu);
 	remDarkFrames.Detect(pAtInput->m_fDarkTol);
 	remDarkFrames.Remove();
-	//-----------------
+}
+
+void CAreTomoMain::mRemoveDarkCtfs(void)
+{
 	MD::CCtfResults* pCtfResults = 
 	   MD::CCtfResults::GetInstance(m_iNthGpu);
 	pCtfResults->RemoveDarkCTFs();
@@ -152,6 +213,10 @@ void CAreTomoMain::mRemoveSpikes(void)
 	remSpikes.DoIt(pRawSeries);	
 }
 
+//--------------------------------------------------------------------
+// 1. CFindCtfMain estimates CTFs and saves them into the output
+//    directory, but does not save in the Imod directory.
+//--------------------------------------------------------------------
 void CAreTomoMain::mFindCtf(void)
 {
 	if(!FindCtf::CFindCtfMain::bCheckInput()) return;
@@ -321,29 +386,20 @@ void CAreTomoMain::mPatchAlign(void)
 void CAreTomoMain::mCorrectCTF(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
-	if(pAtInput->m_iCorrCTF == 0) return;
+	if(pAtInput->m_aiCorrCTF[0] == 0) return;
 	//-----------------
 	MD::CCtfResults* pCtfResults = 
 	   MD::CCtfResults::GetInstance(m_iNthGpu);
 	if(!pCtfResults->bHasCTF()) return;
 	//-----------------
 	bool bPhaseFlip = false;
-	if(pAtInput->m_iCorrCTF == 2) bPhaseFlip = true;
+	if(pAtInput->m_aiCorrCTF[0] == 2) bPhaseFlip = true;
 	//-----------------
 	MAF::CCorrCtfMain corrCtfMain;
-	corrCtfMain.DoIt(m_iNthGpu, bPhaseFlip);
+	corrCtfMain.DoIt(m_iNthGpu, bPhaseFlip, pAtInput->m_aiCorrCTF[1]);
 }
 
-/*
-void CAreTomoMain::mDoseWeight(void)
-{
-	CInput* pInput = CInput::GetInstance();
-	DoseWeight::CWeightTomoStack::DoIt(m_pTomoStack, pInput->m_piGpuIDs,
-	   pInput->m_iNumGpus);
-}
-*/
-
-void CAreTomoMain::mRecon(void)
+void CAreTomoMain::mSetupTsCorrection(void)
 {
 	//---------------------------------------------------------
 	// The aligned tilt series is buffered in m_pCorrTomoStack
@@ -367,40 +423,95 @@ void CAreTomoMain::mRecon(void)
 	m_pCorrTomoStack->Set2(1.0f, bFFTCrop, bRandFill);
 	m_pCorrTomoStack->Set3(!bShiftOnly, bIntpCor, !bRWeight);
 	m_pCorrTomoStack->Set4(true);
+}
+
+//--------------------------------------------------------------------
+// 1. Save tilt series in the Imod sub-directory.
+//--------------------------------------------------------------------
+void CAreTomoMain::mSaveForImod(void)
+{
+	CInput* pInput = CInput::GetInstance();
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	ImodUtil::CImodUtil* pImodUtil = 0L;
+        pImodUtil = ImodUtil::CImodUtil::GetInstance(m_iNthGpu);
+	if(pAtInput->m_iOutImod <= 0) return;
+	//--------------------------------------------------
+	// CreateFolder is skipped if the folder exists.
+	//--------------------------------------------------
+	pImodUtil->CreateFolder();
+	MD::CTiltSeries* pSeries = sGetTiltSeries(m_iNthGpu, 0);
+	//--------------------------------------------------
+	// CTF estimation is performed for m_iCmd = 0 and 1
+	//--------------------------------------------------
+	if(pInput->m_iCmd == 0 || pInput->m_iCmd == 1)
+	{	if(pAtInput->m_iOutImod == 1) // for Relion 4
+		{	pImodUtil->SaveTiltSeries(0L);
+		}
+		else if(pAtInput->m_iOutImod == 2) // for warp
+		{	pImodUtil->SaveTiltSeries(pSeries);
+			pImodUtil->SaveCtfFile();
+		}
+		//-----------------------------------------------
+		// 1) This is for aligned tilt series not CTF
+		// corrected. 2) We do not save the CTF results
+		// into the IMOD sub-folder here since they are
+		// not aligned yet to match the aligned tilt
+		// series. 3) The aligned CTF results will be
+		// created after CTF correction is done on raw
+		// and dark-removed tilt series.
+		//-----------------------------------------------
+		else if(pAtInput->m_iOutImod == 3)
+		{	m_pCorrTomoStack->DoIt(0, 0L);
+			MD::CTiltSeries* pAlnSeries = 
+		   	   m_pCorrTomoStack->GetCorrectedStack(false);
+			pImodUtil->SaveTiltSeries(pAlnSeries);
+		}
+	}
+	//--------------------------------------------------
+	// 1) Perform tomographic reconstruction only.
+	// 2) Nothing else needs to update in Imod folder.
+	//--------------------------------------------------
+	else if(pInput->m_iCmd == 2)
+	{	// do not update Imod subfolder	
+	}
+	//--------------------------------------------------
+	// 1) Since CTF estimation is repeated, needs to
+	// update the corresponding files in Imod sub
+	// when the last processing uses -OutImod 2.
+	// 2) When last processing uses -OutImod 3, we nned
+	// to re-align CTF by calling mAlignCTF.
+	//--------------------------------------------------
+	else if(pInput->m_iCmd == 3)
+	{	if(pAtInput->m_iOutImod == 2)
+		{	pImodUtil->SaveCtfFile();
+		}
+	}
+}
+
+void CAreTomoMain::mAlignCTF(void)
+{
+	CInput* pInput = CInput::GetInstance();
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	if(pAtInput->m_iOutImod != 3) return;
 	//-----------------
+	FindCtf::CAlignCtfResults alignCtfResults;
+	alignCtfResults.DoIt(m_iNthGpu);
+	//-----------------
+	ImodUtil::CImodUtil* pImodUtil = 0L;
+	pImodUtil = ImodUtil::CImodUtil::GetInstance(m_iNthGpu);
+	pImodUtil->SaveCtfFile();
+}
+
+void CAreTomoMain::mRecon(void)
+{
 	int iNumSeries = MD::CAlnSums::m_iNumSums;
 	for(int i=0; i<iNumSeries; i++)
 	{	m_pCorrTomoStack->DoIt(i, 0L);
-		if(i == 0) mSaveForImod();
 		mReconSeries(i);
 	}
 	//-----------------
 	if(m_pCorrTomoStack != 0L) delete m_pCorrTomoStack;
 	m_pCorrTomoStack = 0L;
-}
-
-void CAreTomoMain::mSaveForImod(void)
-{
-	CAtInput* pInput = CAtInput::GetInstance();
-	if(pInput->m_iOutImod == 0) return;
-	//-----------------
-	ImodUtil::CImodUtil* pImodUtil = 0L;
-	pImodUtil = ImodUtil::CImodUtil::GetInstance(m_iNthGpu);
-	pImodUtil->CreateFolder();
-	//-----------------
-	if(pInput->m_iOutImod == 1) // for Relion 4
-	{	pImodUtil->SaveTiltSeries(0L);
-		return;
-	}
-	else if(pInput->m_iOutImod == 2) // for warp
-	{	MD::CTiltSeries* pSeries = sGetTiltSeries(m_iNthGpu, 0);
-		pImodUtil->SaveTiltSeries(pSeries);
-	}
-	else
-	{	MD::CTiltSeries* pSeries = 
-		   m_pCorrTomoStack->GetCorrectedStack(false);
-		pImodUtil->SaveTiltSeries(pSeries);
-	}
 }
 
 void CAreTomoMain::mReconSeries(int iSeries)

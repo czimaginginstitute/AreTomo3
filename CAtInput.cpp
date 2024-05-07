@@ -69,7 +69,8 @@ CAtInput::CAtInput(void)
 	m_iAlign = 1;
 	m_fDarkTol = 0.7f;
 	m_bIntpCor = false;
-	m_iCorrCTF = 1;
+	m_aiCorrCTF[0] = 1;
+	m_aiCorrCTF[1] = 15;
 	//-----------------
 	memset(m_afExtPhase, 0, sizeof(m_afExtPhase));
 	memset(m_aiAtPatches, 0, sizeof(m_aiAtPatches));
@@ -272,8 +273,8 @@ void CAtInput::Parse(int argc, char* argv[])
 	m_bIntpCor = (iIntpCor == 0) ? false : true;
 	//-----------------
 	aParseArgs.FindVals(m_acCorrCTFTag, aiRange);
-	if(aiRange[1] > 1) aiRange[1] = 1;
-	aParseArgs.GetVals(aiRange, &m_iCorrCTF);	
+	if(aiRange[1] > 2) aiRange[1] = 2;
+	aParseArgs.GetVals(aiRange, m_aiCorrCTF);	
 	//-----------------
 	mPrint();	
 }
@@ -330,7 +331,8 @@ void CAtInput::mPrint(void)
 	printf("%-10s  %d\n", m_acOutImodTag, m_iOutImod);
 	printf("%-10s  %.2f\n", m_acDarkTolTag, m_fDarkTol);
 	printf("%-10s  %d\n", m_acIntpCorTag, m_bIntpCor);
-	printf("%-10s  %d\n", m_acCorrCTFTag, m_iCorrCTF);
+	printf("%-10s  %d %d\n", m_acCorrCTFTag, 
+	   m_aiCorrCTF[0], m_aiCorrCTF[1]);
 	printf("\n");
 }
 

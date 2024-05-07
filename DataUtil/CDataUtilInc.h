@@ -252,6 +252,7 @@ public:
 	float GetAzimuth(int iImage);
 	float GetExtPhase(int iImage);
 	float GetScore(int iImage);
+	float GetPixSize(int iImage);
 	float GetCtfRes(int iImage);
 	float* GetSpect(int iImage, bool bClean);
 	void SaveImod(const char* pcCtfTxtFile);

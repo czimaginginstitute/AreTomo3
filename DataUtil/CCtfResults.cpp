@@ -165,6 +165,11 @@ float CCtfResults::GetExtPhase(int iImage)
 	return m_ppCtfParams[iImage]->m_fExtPhase / s_fD2R;
 }
 
+float CCtfResults::GetPixSize(int iImage)
+{
+	return m_ppCtfParams[iImage]->m_fPixelSize;
+}
+
 float CCtfResults::GetScore(int iImage)
 {
 	return m_ppCtfParams[iImage]->m_fScore;

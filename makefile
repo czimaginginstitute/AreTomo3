@@ -201,6 +201,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/FindCtf/CGenAvgSpectrum.cpp \
 	./AreTomo/FindCtf/CSaveCtfResults.cpp \
 	./AreTomo/FindCtf/CLoadCtfResults.cpp \
+	./AreTomo/FindCtf/CAlignCtfResults.cpp \
 	./AreTomo/FindCtf/CSpectrumImage.cpp \
 	./AreTomo/FindCtf/CCorrCtfMain.cpp \
 	./AreTomo/ImodUtil/CImodUtil.cpp \

@@ -307,6 +307,7 @@ public:
 	~GCorrCTF2D(void);
 	void SetParam(MD::CCtfParam* pCtfParam);
 	void SetPhaseFlip(bool bValue);
+	void SetLowpass(int iBfactor);
 	void DoIt
 	( float fDfMin, float fDfMax, // pixel
 	  float fAzimuth, float fExtPhase, // rad
@@ -323,6 +324,7 @@ private:
 	bool m_bPhaseFlip;
 	float m_fAmpPhase;
 	float* m_gfNoise2;
+	float m_fBFactor;
 };
 
 class CTile
@@ -386,9 +388,12 @@ public:
 	CCorrImgCtf(void);
 	~CCorrImgCtf(void);
 	void Setup(int* piImgSize, int iNthGpu);
+	void SetLowpass(int iBFactor);
 	void DoIt
-	( float* pfImage, float fTilt, 
-	  float fTiltAxis, bool bPhaseFlip
+	( float* pfImage, 
+	  float fTilt, 
+	  float fTiltAxis, 
+	  bool bPhaseFlip
 	);
 private:
 	void mTileToGpu(int iTile);
@@ -412,6 +417,7 @@ private:
 	int m_aiImgSize[2];
 	float m_fTilt;
 	float m_fTiltAxis;
+	int m_iBFactor;
 	//-----------------
 	int m_iNthGpu;
 };
@@ -736,6 +742,7 @@ public:
 private:
 	void mSaveImages(const char* pcCtfFile);
 	void mSaveFittings(const char* pcCtfFile);
+	void mSaveImod(const char* pcCtfFile);
 	int m_iNthGpu;
 };
 
@@ -750,6 +757,17 @@ public:
 	int m_iNthGpu;
 private:
 	bool mLoadFittings(const char* pcCtfFile);
+};
+
+class CAlignCtfResults
+{
+public:
+	CAlignCtfResults(void);
+	~CAlignCtfResults(void);
+	void DoIt(int iNthGpu);
+private:
+	void mAlignCtf(int iImage);
+	int m_iNthGpu;
 };
 
 class CFindCtfMain
@@ -784,7 +802,7 @@ class CCorrCtfMain
 public:
 	CCorrCtfMain(void);
 	~CCorrCtfMain(void);
-	void DoIt(int iNthGpu, bool bPhaseFlip);
+	void DoIt(int iNthGpu, bool bPhaseFlip, int iLowpass);
 private:
 	void mCorrTiltSeries(int iSeries);
 	//-----------------

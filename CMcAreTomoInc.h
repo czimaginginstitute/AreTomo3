@@ -158,7 +158,7 @@ public:
 	int m_iOutImod;
 	float m_fDarkTol;
 	bool m_bIntpCor;
-	int m_iCorrCTF;
+	int m_aiCorrCTF[2];
 	//-----------------
 	char m_acTotalDoseTag[32];
 	char m_acTiltAxisTag[32];
@@ -202,7 +202,7 @@ private:
 	void mAddAtInput(void);
 	//-----------------
 	void mAddLine(char* pcLine);
-	void mAddLine(char* pcKey, char* pcVal);
+	void mAddLine(char* pcKey, char* pcVal, bool bList=false);
 	void mAddLine(char* pcKey, int iVal);
 	void mAddLine(char* pcKey, float fVal);
 	void mAddLine(char* pcKey, int* piVals, int iNumVals);
@@ -210,6 +210,7 @@ private:
 	//-----------------
 	void mCreateVal(int* piVals, int iNumVals, char* pcVal);
 	void mCreateVal(float* pfVals, int iNumVals, char* pcVal);
+	void mCreateVal(char** pcToks, int iNumToks, char* pcVal);
 	//-----------------
 	int m_iNumLines;
 	int m_iLineSize;

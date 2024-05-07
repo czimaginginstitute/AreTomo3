@@ -24,8 +24,9 @@ CCorrCtfMain::~CCorrCtfMain(void)
 //    tilt angle rather than image index in CTiltSeries.
 // 3. The tilt angles must be raw, not ones corrected with tilt
 //    angle offset.
+// 4. iLowpass controls how strong the low-pass filter is.
 //--------------------------------------------------------------------
-void CCorrCtfMain::DoIt(int iNthGpu, bool bPhaseFlip)
+void CCorrCtfMain::DoIt(int iNthGpu, bool bPhaseFlip, int iLowpass)
 {
 	if(!CFindCtfMain::bCheckInput()) return;
 	//-----------------	
@@ -36,6 +37,7 @@ void CCorrCtfMain::DoIt(int iNthGpu, bool bPhaseFlip)
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* pTiltSeries = pTsPkg->GetSeries(0);
 	m_pCorrImgCtf->Setup(pTiltSeries->m_aiStkSize, m_iNthGpu);
+	m_pCorrImgCtf->SetLowpass(iLowpass);
 	//-----------------
 	for(int i=0; i<MD::CAlnSums::m_iNumSums; i++)
 	{	mCorrTiltSeries(i);
@@ -64,7 +66,7 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 		float fTilt = pTiltSeries->m_pfTilts[i];
 		m_pCorrImgCtf->DoIt(pfImage, fTilt, fTiltAxis, m_bPhaseFlip);
 	}
-					
+	/*					
 	if(iSeries == 0)
 	{	MU::CSaveTempMrc saveMrc;
 		saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestYesCTF", 
@@ -73,5 +75,5 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 		saveMrc.DoMany(ppvImgs, 2, pTiltSeries->m_aiStkSize);
 		printf("Save CTF corrected tilt series done.\n");
 	}
-
+	*/
 }
