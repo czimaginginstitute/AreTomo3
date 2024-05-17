@@ -31,11 +31,10 @@ public:
 	void DoIt
 	( float* gfPadSinogram, // y-slice of all projections
 	  float* gfCosSin,
-	  int iStartProj,    // starting projection of subset
-	  int iNumProjs,     // number of projections in subset
+	  bool* gbProjs,        // which projections are used
 	  bool bSart,
 	  float fRelax,
-	  float* gfVolXZ,    // y-slice of volume
+	  float* gfVolXZ,       // y-slice of volume
 	  cudaStream_t stream = 0
 	);
 private:
@@ -110,7 +109,38 @@ public:
 private:
 };
 
-class CTomoWbp
+class CTomoBase
+{
+public:
+	CTomoBase(void);
+	virtual ~CTomoBase(void);
+	void Clean(void);
+	void Setup
+	( int iVolX, int iVolZ,
+	  MD::CTiltSeries* pTiltSeries,
+	  MAM::CAlignParam* pAlignParam
+	);
+protected:
+	int m_aiVolSize[2];
+	int m_iPadProjX;
+	int m_iNumProjs;
+	//-----------------
+	float* m_gfPadSinogram;
+	float* m_gfVolXZ;
+	//-----------------
+	float* m_gfCosSin;
+	bool* m_gbProjs;
+	bool* m_pbProjs;
+	//-----------------
+	MD::CTiltSeries* m_pTiltSeries;
+	MAM::CAlignParam* m_pAlignParam;
+	//-----------------
+	GWeightProjs m_aGWeightProjs;
+	GBackProj m_aGBackProj;
+	cudaStream_t m_stream;
+};
+
+class CTomoWbp : public CTomoBase
 {
 public:
 	CTomoWbp(void);
@@ -127,25 +157,14 @@ public:
 	  cudaStream_t stream
 	);
 private:
-	int m_aiVolSize[2];
-	int m_iPadProjX;
-	int m_iNumProjs;
-	float* m_gfCosSin;
-	float* m_gfPadSinogram;
-	float* m_gfVolXZ;
-	GBackProj m_aGBackProj;
 	GRWeight m_aGRWeight;
-	GWeightProjs m_aGWeightProjs;
-	MD::CTiltSeries* m_pTiltSeries;
-	MAM::CAlignParam* m_pAlignParam;
-	cudaStream_t m_stream;
 };
 
-class CTomoSart
+class CTomoSart : public CTomoBase
 {
 public:
 	CTomoSart(void);
-	~CTomoSart(void);
+	virtual ~CTomoSart(void);
 	void Clean(void);
 	void Setup
 	( int iVolX,
@@ -168,28 +187,16 @@ private:
 	void mForProj(int iStartProj, int iNumProjs);
 	void mDiffProj(int iStartProj, int iNumProjs);
 	void mBackProj(float* gfSinogram, int iStartProj, 
-		int iNumProjs, float fRelax);
+	   int iNumProjs, float fRelax);
 	//-----------------
 	float m_fRelax;
 	int m_iNumSubsets;
-	MD::CTiltSeries* m_pTiltSeries;
-	MAM::CAlignParam* m_pAlignParam;
 	int m_aiTiltRange[2]; // start and num tilts
 	//-----------------
-	GBackProj m_aGBackProj;
 	GForProj m_aGForProj;
 	GDiffProj m_aGDiffProj;
-	GWeightProjs m_aGWeightProjs;
 	//-----------------
-	int m_aiVolSize[2];
-	int m_iPadProjX;
-	int m_iNumProjs;
-	//----------------
-	float* m_gfCosSin;
 	float* m_gfPadForProjs;
-	float* m_gfPadSinogram;
-	float* m_gfVolXZ;
-	cudaStream_t m_stream;
 };
 
 class CDoBaseRecon 

@@ -676,6 +676,7 @@ protected:
 	void mRemoveBackground(void);
 	void mInitPointers(void);
 	void mLowpass(void);
+	void mHighpass(void);
 	//-----------------
 	CCtfTheory* m_pCtfTheory;
 	CGenAvgSpectrum* m_pGenAvgSpect;
@@ -792,6 +793,9 @@ private:
 	CFindCtf2D* m_pFindCtf2D;
 	int m_iNumTilts;
 	int m_iRefTilt;
+	float m_fLowTilt;
+	float m_fDfMean;
+	float m_fDfStd;
 	//-----------------
 	MD::CTiltSeries* m_pTiltSeries;
 	int m_iNthGpu;

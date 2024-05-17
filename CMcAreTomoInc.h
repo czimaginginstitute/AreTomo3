@@ -202,7 +202,7 @@ private:
 	void mAddAtInput(void);
 	//-----------------
 	void mAddLine(char* pcLine);
-	void mAddLine(char* pcKey, char* pcVal, bool bList=false);
+	void mAddLine(const char* pcKey, const char* pcVal, bool bList=false);
 	void mAddLine(char* pcKey, int iVal);
 	void mAddLine(char* pcKey, float fVal);
 	void mAddLine(char* pcKey, int* piVals, int iNumVals);

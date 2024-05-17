@@ -349,10 +349,15 @@ public:
           cudaStream_t stream=0
 	);
 	void Lowpass
-	( cufftComplex* gInCmp,
-	  cufftComplex* gOutCmp,
-	  int* piCmpSize,
-	  float fBFactor
+	( cufftComplex* gInCmp, cufftComplex* gOutCmp,
+	  int* piCmpSize, float fBFactor
+	);
+	//-----------------------------------------------
+	// This is 1 minus lowpass filter.
+	//-----------------------------------------------
+	void Highpass
+	( cufftComplex* gInCmp, cufftComplex* gOutCmp,
+	  int* piCmpSize, float fBFactor
 	);
 };
 

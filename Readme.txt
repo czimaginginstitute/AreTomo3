@@ -170,3 +170,21 @@ AreTomo3 1.0.13: [04-15-2024]
    list even if users provide only one value. The relate option is
    -Gpu, -InSkips, -Sart, -Patch, -AtPatch 
 6. [05-07-2024]: Added -Cmd 3 that repeates CTF estimation only.
+
+AreTomo3 1.0.14: [05-15-2024]
+-----------------------------
+1. Bug fix (05-15-2024)
+   CTomoWbp::DoIt::m_aGWeightProjs.DoIt(...):
+      m_gfPadSinogram is padded, shoud use bPadded not !bPadded.
+   CTomoSart::DoIt::m_aGWeightProjs.DoIt(...):
+      m_gfPadSinogram is padded, should use bPadded not !bPadded.
+2. Improvement on CTF estimation (05-17-2024)
+   - Use multiple low-tilt CTFs rather than a single zero-tilt CTF as the
+     initial values for higher tilt.
+   - Increased defocus search range for CTF refinement.
+3. Change (05-17-2024)
+   - AreTomo/Recon/GBackProj.cu: use boolean array to specify which
+     projections are included in the backprojection instead of starting
+     and endind indices, a more flexible approach.
+   - Added CTomoBase class as the parent class for CTomoWbp and CTomoSart.
+   - Deleted Mdoc subfolder containing mdoc file examples.

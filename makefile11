@@ -225,6 +225,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/Recon/CDoBaseRecon.cpp \
 	./AreTomo/Recon/CDoSartRecon.cpp \
 	./AreTomo/Recon/CDoWbpRecon.cpp \
+	./AreTomo/Recon/CTomoBase.cpp \
 	./AreTomo/Recon/CTomoSart.cpp \
 	./AreTomo/Recon/CTomoWbp.cpp \
 	./AreTomo/StreAlign/CStretchAlign.cpp \

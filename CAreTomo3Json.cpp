@@ -32,7 +32,8 @@ void CAreTomo3Json::Create(char* pcVersion)
 	mAddLine(acBuf);
 	//-----------------
 	strcpy(acBuf, "AreTomo3");
-	mAddLine(acBuf, pcVersion);
+	mAddLine("Name", "AreTomo3");
+	mAddLine("Version", pcVersion);
 	//-----------------
 	mAddInput();
 	mAddMcInput();
@@ -131,9 +132,12 @@ void CAreTomo3Json::mAddLine(char* pcLine)
 	sprintf(pcJson, "%s", pcLine);
 };
 
-void CAreTomo3Json::mAddLine(char* pcKey, char* pcVal, bool bList)
-{
-	char acBuf[256] = {""};
+void CAreTomo3Json::mAddLine
+(	const char* pcKey, 
+	const char* pcVal, 
+	bool bList
+)
+{	char acBuf[256] = {""};
 	if(pcVal != 0L && strlen(pcVal) > 0) strcpy(acBuf, pcVal);
 	//-----------------
 	int iCount = 0;

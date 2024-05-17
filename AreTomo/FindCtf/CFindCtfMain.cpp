@@ -96,11 +96,13 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	   pAtInput->m_afExtPhase[1]);
 	//-----------------
 	mGenSpectrums();
+	printf("GPU %d: estimate tilt series CTF, "
+	   "please wait......\n", m_iNthGpu);
 	mDoZeroTilt();
 	mDo2D();
-	//-----------------
 	CSaveCtfResults saveCtfResults;
 	saveCtfResults.DoIt(m_iNthGpu);
+	printf("GPU %d: estimate tilt series CTF, done\n\n");
 }
 
 void CFindCtfMain::mGenSpectrums(void)
@@ -128,48 +130,84 @@ void CFindCtfMain::mGenSpectrums(void)
 
 void CFindCtfMain::mDoZeroTilt(void)
 {
-	m_iRefTilt = m_pTiltSeries->GetTiltIdx(0.0f);
-	//-----------------
 	CAtInput* pAtInput = CAtInput::GetInstance();
         float fPhaseRange = fmaxf(pAtInput->m_afExtPhase[1], 0.0f);
 	m_pFindCtf2D->SetPhase(pAtInput->m_afExtPhase[0], fPhaseRange);
 	//-----------------
-	m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[m_iRefTilt]);
+	int iZeroTilt = m_pTiltSeries->GetTiltIdx(0.0f);
+	m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[iZeroTilt]);
 	m_pFindCtf2D->Do2D();
-	//-------------------
-	mGetResults(m_iRefTilt);
+	mGetResults(iZeroTilt);
+	//-----------------------------------------------
+	// Sometimes image at zero tilt is collected at
+	// much higher defocus, we should use other
+	// tilt images;
+	//-----------------------------------------------
+	m_fLowTilt = 12.5f;
+	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
+	//-----------------
+	for(int i=0; i<m_iNumTilts; i++)
+	{	if(fabs(m_pTiltSeries->m_pfTilts[i]) > m_fLowTilt) continue;
+		else if(i == iZeroTilt) continue;
+		//----------------
+		m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
+		m_pFindCtf2D->Do2D();
+		mGetResults(i);
+	}
+	//------------------
+	int iCount = 0.0f;
+	float fSum1 = 0.0f, fSum2 = 0.0f;
+	for(int i=0; i<m_iNumTilts; i++)
+	{	if(fabs(m_pTiltSeries->m_pfTilts[i]) > m_fLowTilt) continue;
+		else if(i == iZeroTilt) continue;
+		//----------------
+		float fDf = (pCtfResults->GetDfMin(i) + 
+		   pCtfResults->GetDfMax(i)) * 0.5f;
+		fSum1 += fDf;
+		fSum2 += (fDf * fDf);
+		iCount += 1;
+	}
+	m_fDfMean = fSum1 / (iCount + 0.001f);
+	m_fDfStd = fSum2 / (iCount + 0.001f) - m_fDfMean * m_fDfMean;
+	if(m_fDfStd <= 0) m_fDfStd = 0.0f;
+	else m_fDfStd = sqrtf(m_fDfStd);
+	//-----------------
+	if(iCount == 0)
+	{	m_fDfMean = (pCtfResults->GetDfMax(iZeroTilt) +
+		   pCtfResults->GetDfMin(iZeroTilt)) * 0.5f;
+		m_fDfStd = m_fDfMean * 0.5f;
+	}
 }
 	   
 void CFindCtfMain::mDo2D(void)
 {
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* m_pTiltSeries = pTsPkg->GetSeries(0);
+	int iZeroTilt = m_pTiltSeries->GetTiltIdx(0.0f);
 	//-----------------	
 	float afDfRange[2], afAstRatio[2];
 	float afAstAngle[2], afExtPhase[2];
 	//-----------------
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
-	float fDfMin = pCtfResults->GetDfMin(m_iRefTilt);
-	float fDfMax = pCtfResults->GetDfMax(m_iRefTilt);
-	afDfRange[0] = 0.5f * (fDfMin + fDfMax); 
-	afDfRange[1] = fmaxf(afDfRange[0] * 0.25f, 10000.0f);
+	afDfRange[0] = m_fDfMean; 
+	afDfRange[1] = fmaxf(m_fDfStd * 2.0f, 30000.0f);
 	//-----------------
-	afAstRatio[0] = CFindCtfHelp::CalcAstRatio(fDfMin, fDfMax);
+	MD::CCtfParam* pCtfParam = pCtfResults->GetCtfParam(iZeroTilt);
+	afAstRatio[0] = pCtfParam->GetDfSigma(false) / 
+	   (pCtfParam->GetDfMean(false) + 0.001f);
 	afAstRatio[1] = fmaxf(afAstRatio[0] * 0.10f, 0.01f);
 	//-----------------
-	afAstAngle[0] = pCtfResults->GetAzimuth(m_iRefTilt);
+	afAstAngle[0] = pCtfResults->GetAzimuth(iZeroTilt);
 	afAstAngle[1] = 0.0f;
 	//-----------------
-	afExtPhase[0] = pCtfResults->GetExtPhase(m_iRefTilt);
+	afExtPhase[0] = pCtfResults->GetExtPhase(iZeroTilt);
 	afExtPhase[1] = 0.0f;
 	//-----------------
-	printf("GPU %d: estimate tilt series CTF, "
-	   "please wait......\n", m_iNthGpu);
-	//-----------------
 	for(int i=0; i<m_pTiltSeries->m_aiStkSize[2]; i++)
-	{	if(i == m_iRefTilt) continue;
-		m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
+	{	if(fabs(m_pTiltSeries->m_pfTilts[i]) <= m_fLowTilt) continue;
+		else if(i == iZeroTilt) continue;
 		//----------------
+		m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
 		m_pFindCtf2D->Refine(afDfRange, afAstRatio, 
 		   afAstAngle, afExtPhase);
 		float fScore = mGetResults(i);
