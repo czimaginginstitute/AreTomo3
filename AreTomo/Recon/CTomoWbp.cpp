@@ -45,14 +45,8 @@ void CTomoWbp::DoIt(float* gfPadSinogram, float* gfVolXZ, cudaStream_t stream)
 	//-----------------
 	m_aGRWeight.DoIt(m_gfPadSinogram);
 	//-----------------
-	int iBytes = sizeof(bool) * m_iNumProjs;
-	memset(m_pbProjs, 0, iBytes);
-	for(int i=0; i<m_iNumProjs; i++) m_pbProjs[i] = true;
-	cudaMemcpyAsync(m_gbProjs, m_pbProjs, iBytes,
-	   cudaMemcpyDefault, m_stream);
-	//-----------------
 	bool bSart = true;
-	m_aGBackProj.DoIt(m_gfPadSinogram, m_gfCosSin, m_gbProjs, 
+	m_aGBackProj.DoIt(m_gfPadSinogram, m_gfCosSin, m_gbNoProjs, 
 	   !bSart, 1.0f, m_gfVolXZ, m_stream);
 	cudaStreamSynchronize(m_stream);
 }

@@ -302,20 +302,35 @@ bool CTsPackage::mLoadTiltFile(void)
 {
 	char acTiltFile[256] = {'0'};
 	mGenFullPath("_TLT.txt", acTiltFile);
-	//-----------------
 	FILE* pFile = fopen(acTiltFile, "rt");
         if(pFile == 0L)
-        {       printf("GPU %d warning: Unable to save tilt angles\n\n",
-                   m_iNthGpu, acTiltFile);
-                return false;
+        {       printf("GPU %d warning: Unable to load tilt angles from\n"
+		   "   file: %s\n", m_iNthGpu, acTiltFile);
+		//----------------
+		mGenFullPath(".rawtlt", acTiltFile);
+		printf("GPU %d: try loading tilt angles from\n"
+		   "   file: %s\n\n", m_iNthGpu, acTiltFile);
+		pFile = fopen(acTiltFile, "rt");
+		//----------------
+		if(pFile == 0L)
+		{	fprintf(stderr, "GPU %d error: unable to load "
+			   "tilt angles. Tilt angle files not "
+			   "found.\n\n", m_iNthGpu);
+			return false;
+		}
         }
 	//-----------------
 	float fTilt = 0.0f;
 	int iAcqIdx = 0, iCount = 0;
 	//-----------------
+	char acBuf[256] = {'\0'};
 	while(!feof(pFile))
-	{	int iItems = fscanf(pFile, "%f %d", &fTilt, &iAcqIdx);
-		if(iItems != 2) continue;
+	{	memset(acBuf, 0, sizeof(acBuf));
+		char* pcRet = fgets(acBuf, 256, pFile);
+		if(pcRet == 0L) continue;
+		//----------------
+		int iItems = sscanf(acBuf, "%f %d", &fTilt, &iAcqIdx);
+		if(iItems < 1) continue;
 		//----------------
 		this->SetTiltAngle(iCount, fTilt);
 		this->SetAcqIdx(iCount, iAcqIdx);

@@ -392,6 +392,7 @@ void CAreTomoMain::mCorrectCTF(void)
 	   MD::CCtfResults::GetInstance(m_iNthGpu);
 	if(!pCtfResults->bHasCTF()) return;
 	//-----------------
+	printf("GPU %d: Tilt series CTF deconvolution\n\n", m_iNthGpu);
 	bool bPhaseFlip = false;
 	if(pAtInput->m_aiCorrCTF[0] == 2) bPhaseFlip = true;
 	//-----------------

@@ -23,7 +23,7 @@ static __global__ void mGRemove
 	y -= iHalfY;
 	float fR = blockIdx.x * 0.5f / (gridDim.x - 1);
 	fR = sqrtf(fR * fR + y * y / (float)(iCmpY * iCmpY));
-	if(fR < 0.04)
+	if(fR < 0.04f)
 	{	gfOutSpect[i] = 0.0f;
 		return;
 	}

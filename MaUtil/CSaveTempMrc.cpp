@@ -90,3 +90,20 @@ void CSaveTempMrc::DoMany(void** ppvImgs, int iMode, int* piSize)
 	{	aSaveMrc.DoIt(i, ppvImgs[i]);
 	}
 }
+
+void CSaveTempMrc::DoMany(float* pfImgs, int* piSize)
+{
+	Mrc::CSaveMrc aSaveMrc;
+	if(!aSaveMrc.OpenFile(m_acMrcFile)) return;
+	//-----------------
+	aSaveMrc.SetMode(2);
+	aSaveMrc.SetImgSize(piSize, piSize[2], 1, 1.0f);
+	aSaveMrc.SetExtHeader(0, 0, 0);
+	//-----------------
+	size_t tPixels = piSize[0] * piSize[1];
+	for(int z=0; z<piSize[2]; z++)
+	{	float* pfImg = &pfImgs[z * tPixels];
+		aSaveMrc.DoIt(z, pfImg);
+	}
+}
+

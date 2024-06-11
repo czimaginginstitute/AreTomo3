@@ -11,8 +11,7 @@ using namespace McAreTomo::AreTomo::Recon;
 CTomoBase::CTomoBase(void)
 {
 	m_gfCosSin = 0L;
-	m_gbProjs = 0L;
-	m_pbProjs = 0L;
+	m_gbNoProjs = 0L;
 }
 
 CTomoBase::~CTomoBase(void)
@@ -23,11 +22,9 @@ CTomoBase::~CTomoBase(void)
 void CTomoBase::Clean(void)
 {
 	if(m_gfCosSin != 0L) cudaFree(m_gfCosSin);
-	if(m_gbProjs != 0L) cudaFree(m_gbProjs);
-	if(m_pbProjs != 0L) cudaFreeHost(m_pbProjs);
+	if(m_gbNoProjs != 0L) cudaFree(m_gbNoProjs);
 	m_gfCosSin = 0L;
-	m_gbProjs = 0L;
-	m_pbProjs = 0L;
+	m_gbNoProjs = 0L;
 }
 
 void CTomoBase::Setup
@@ -47,8 +44,7 @@ void CTomoBase::Setup
 	m_iNumProjs = m_pTiltSeries->m_aiStkSize[2];
 	//-----------------
 	size_t tBytes = sizeof(bool) * m_iNumProjs;
-	cudaMalloc(&m_gbProjs, tBytes);
-	cudaMallocHost(&m_pbProjs, tBytes);
+	cudaMalloc(&m_gbNoProjs, tBytes);
 	//-----------------
 	tBytes = sizeof(float) * m_iNumProjs * 2;
 	cudaMalloc(&m_gfCosSin, tBytes);
@@ -67,5 +63,17 @@ void CTomoBase::Setup
 	//-----------------
 	int aiPadProjSize[] = {m_iPadProjX, m_iNumProjs};
         m_aGBackProj.SetSize(aiPadProjSize, m_aiVolSize);
+}
+
+void CTomoBase::ExcludeTilts(float* pfTilts, int iNumTilts)
+{
+	bool* pbNoProjs = new bool[m_iNumProjs];
+	memset(pbNoProjs, 0, sizeof(bool) * m_iNumProjs);
+	for(int i=0; i<iNumTilts; i++)
+	{	int j = m_pAlignParam->GetFrameIdxFromTilt(pfTilts[i]);
+		pbNoProjs[j] = true;
+	}
+	cudaMemcpy(m_gbNoProjs, pbNoProjs, sizeof(bool) * m_iNumProjs,
+	   cudaMemcpyDefault);
 }
 

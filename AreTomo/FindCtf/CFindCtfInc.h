@@ -656,7 +656,7 @@ public:
 	CFindCtfBase(void);
 	virtual ~CFindCtfBase(void);
 	void Clean(void);
-	void Setup1(CCtfTheory* pCtfTheory);
+	void Setup1(CCtfTheory* pCtfTheory, int iTileSize);
 	void Setup2(int* piImgSize);
 	void SetPhase(float fInitPhase, float fPhaseRange); // degree
 	void SetHalfSpect(float* pfCtfSpect);
@@ -695,7 +695,7 @@ public:
 	CFindCtf1D(void);
 	virtual ~CFindCtf1D(void);
 	void Clean(void);
-	void Setup1(CCtfTheory* pCtfTheory);
+	void Setup1(CCtfTheory* pCtfTheory, int iTileSize);
 	void Do1D(void);
 	void Refine1D(float fInitDf, float fDfRange);
 protected:
@@ -712,7 +712,7 @@ public:
 	CFindCtf2D(void);
 	virtual ~CFindCtf2D(void);
 	void Clean(void);
-	void Setup1(CCtfTheory* pCtfTheory);
+	void Setup1(CCtfTheory* pCtfTheory, int iTileSize);
 	void Do2D(void);
 	void Refine
 	( float afDfMean[2], 
@@ -798,6 +798,7 @@ private:
 	float m_fDfStd;
 	//-----------------
 	MD::CTiltSeries* m_pTiltSeries;
+	int m_aiBinSize[2];
 	int m_iNthGpu;
 };
 

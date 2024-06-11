@@ -32,10 +32,10 @@ void CFindCtf1D::Clean(void)
 	CFindCtfBase::Clean();
 }
 
-void CFindCtf1D::Setup1(CCtfTheory* pCtfTheory)
+void CFindCtf1D::Setup1(CCtfTheory* pCtfTheory, int iTileSize)
 {
 	this->Clean();
-	CFindCtfBase::Setup1(pCtfTheory);
+	CFindCtfBase::Setup1(pCtfTheory, iTileSize);
 	cudaMalloc(&m_gfRadialAvg, sizeof(float) * m_aiCmpSize[0]);
 	//---------------------------------------------------------
 	m_pFindDefocus1D = new CFindDefocus1D;
@@ -71,7 +71,7 @@ void CFindCtf1D::mFindDefocus(void)
 	//-----------------
 	float afDfRange[2] = {0.0f};
 	afDfRange[0] = 3000.0f * fPixSize2;
-	afDfRange[1] = 30000.0f * fPixSize2;
+	afDfRange[1] = 40000.0f * fPixSize2;
 	//------------------
 	m_pFindDefocus1D->DoIt(afDfRange, m_afPhaseRange, m_gfRadialAvg);
 	m_fExtPhase = m_pFindDefocus1D->m_fBestPhase;

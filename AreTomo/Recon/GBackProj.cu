@@ -12,7 +12,9 @@ static __device__ __constant__ int giSize[4];
 static __global__ void mGBackProj
 (	float* gfPadSinogram,
 	float* gfCosSin,
-	bool* gbProjs,
+	bool* gbNoProjs,    // exclude projections
+	int iStartProj,     // include projections, starting index
+	int iEndProj,       // include projections, ending index exclusive
 	bool bSart,
 	float fRelax,
 	float* gfVolXZ
@@ -27,8 +29,8 @@ static __global__ void mGBackProj
 	//-----------------
         float fInt = 0.0f;
 	int i, iCount = 0;
-	for(i=0; i<giSize[2]; i++)
-	{	if(!gbProjs[i]) continue;
+	for(i=iStartProj; i<iEndProj; i++)
+	{	if(gbNoProjs[i]) continue;
 		//----------------
 		float fXp = fX * gfCosSin[2 * i] + fZ * gfCosSin[2 * i + 1] 
 		   + fProjCentX;
@@ -51,6 +53,8 @@ static __global__ void mGBackProj
 
 GBackProj::GBackProj(void)
 {
+	m_iStartProj = 0;
+	m_iEndProj = 0;
 }
 
 GBackProj::~GBackProj(void)
@@ -68,17 +72,28 @@ void GBackProj::SetSize(int* piPadProjSize, int* piVolSize)
 	m_aBlockDim.y = 1;
 	m_aGridDim.x = (piVolSize[0] + m_aBlockDim.x - 1) / m_aBlockDim.x;
 	m_aGridDim.y = piVolSize[1];
+	//-----------------
+	m_iStartProj = 0;
+	m_iEndProj = piPadProjSize[1];
 } 
+
+void GBackProj::SetSubset(int iStartProj, int iEndProj)
+{
+	m_iStartProj = iStartProj;
+	m_iEndProj = iEndProj;
+}
 
 void GBackProj::DoIt
 (	float* gfPadSinogram,
 	float* gfCosSin,  // cosine and sine of all tilt angles
-	bool* gbProjs,
+	bool* gbNoProjs,  // excluded projecions
 	bool bSart,
 	float fRelax,
 	float* gfVolXZ,
 	cudaStream_t stream
 )
-{	mGBackProj<<<m_aGridDim, m_aBlockDim, 0, stream>>>(gfPadSinogram, 
-	   gfCosSin, gbProjs, bSart, fRelax, gfVolXZ);
+{	mGBackProj<<<m_aGridDim, m_aBlockDim, 0, stream>>>(
+	   gfPadSinogram, gfCosSin, gbNoProjs, 
+	   m_iStartProj, m_iEndProj,
+	   bSart, fRelax, gfVolXZ);
 }

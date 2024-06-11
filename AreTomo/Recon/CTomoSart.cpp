@@ -72,12 +72,14 @@ void CTomoSart::DoIt(float* gfPadSinogram, float* gfVolXZ, cudaStream_t stream)
 	for(int iIter=0; iIter<m_iNumIters; iIter++)
 	{	for(int i=0; i<m_iNumSubsets; i++)
 		{	int iStartProj = splitItems.GetStart(i);
-			iStartProj += m_aiTiltRange[0];
 			int iNumProjs = splitItems.GetSize(i);
+			//---------------
+			iStartProj += m_aiTiltRange[0];
+			int iEndProj = iStartProj + iNumProjs;
 			//---------------
 			mForProj(iStartProj, iNumProjs);
 			mDiffProj(iStartProj, iNumProjs);
-			mBackProj(m_gfPadForProjs, iStartProj, iNumProjs, fRelax);
+			mBackProj(m_gfPadForProjs, iStartProj, iEndProj, fRelax);
 		}
 		fRelax *= 0.8f;
 	}
@@ -110,26 +112,12 @@ void CTomoSart::mDiffProj(int iStartProj, int iNumProjs)
 void CTomoSart::mBackProj
 (	float* gfSinogram,
 	int iStartProj, 
-	int iNumProjs, 
+	int iEndProj,
 	float fRelax
 )
-{	int iBytes = sizeof(bool) * m_iNumProjs;
-	memset(m_pbProjs, 0, iBytes);
-	//-----------------
-	int iEndProj = iStartProj + iNumProjs;
-	for(int i=iStartProj; i<iEndProj; i++)
-	{	m_pbProjs[i] = true;
-	}
-	//-----------------------------------------------
-	// synchronize here to make sure m_gbProjs is
-	// not used anymore.
-	//-----------------------------------------------
-	cudaStreamSynchronize(m_stream);
-	//-----------------
-	cudaMemcpyAsync(m_gbProjs, m_pbProjs, iBytes,
-	   cudaMemcpyDefault, m_stream);
-	bool bSart = true;
-	m_aGBackProj.DoIt(gfSinogram, m_gfCosSin, m_gbProjs,
+{	bool bSart = true;
+	m_aGBackProj.SetSubset(iStartProj, iEndProj);
+	m_aGBackProj.DoIt(gfSinogram, m_gfCosSin, m_gbNoProjs,
 	   bSart, fRelax, m_gfVolXZ, m_stream);
 }
 

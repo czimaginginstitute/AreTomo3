@@ -28,6 +28,10 @@ public:
 	( int* piPadProjSize, // iPadProjX, iAllProjs
 	  int* piVolSize      // iVolX, iVolZ
 	);
+	void SetSubset     // subset of projections for back-projection
+	( int iStartProj,  // starting index
+	  int iEndProj     // ending index, exclusive
+	);
 	void DoIt
 	( float* gfPadSinogram, // y-slice of all projections
 	  float* gfCosSin,
@@ -40,6 +44,8 @@ public:
 private:
 	dim3 m_aBlockDim;
 	dim3 m_aGridDim;
+	int m_iStartProj;
+	int m_iEndProj;
 };
 
 class GForProj 
@@ -120,6 +126,7 @@ public:
 	  MD::CTiltSeries* pTiltSeries,
 	  MAM::CAlignParam* pAlignParam
 	);
+	void ExcludeTilts(float* pfTilts, int iNumTilts);
 protected:
 	int m_aiVolSize[2];
 	int m_iPadProjX;
@@ -129,8 +136,7 @@ protected:
 	float* m_gfVolXZ;
 	//-----------------
 	float* m_gfCosSin;
-	bool* m_gbProjs;
-	bool* m_pbProjs;
+	bool* m_gbNoProjs;
 	//-----------------
 	MD::CTiltSeries* m_pTiltSeries;
 	MAM::CAlignParam* m_pAlignParam;
@@ -186,8 +192,12 @@ private:
 	void mExtractSinogram(int iY);
 	void mForProj(int iStartProj, int iNumProjs);
 	void mDiffProj(int iStartProj, int iNumProjs);
-	void mBackProj(float* gfSinogram, int iStartProj, 
-	   int iNumProjs, float fRelax);
+	void mBackProj
+	( float* gfSinogram, 
+	  int iStartProj, 
+	  int iEndProj, 
+	  float fRelax
+	);
 	//-----------------
 	float m_fRelax;
 	int m_iNumSubsets;
@@ -206,6 +216,8 @@ public:
 	virtual ~CDoBaseRecon(void);
 	virtual void Clean(void);
 protected:
+	float* mCalcProjXY(void);
+	float* mCalcProjXZ(void);
 	float* m_gfPadSinogram;
 	float* m_pfPadSinogram;
 	float* m_gfVolXZ;

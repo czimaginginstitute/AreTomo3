@@ -7,6 +7,7 @@ PRJINC = $(PRJHOME)/LibSrc/Include
 PRJLIB = $(PRJHOME)/LibSrc/Lib
 #-----------------------------
 CUSRCS = ./MaUtil/GAddFrames.cu \
+	./MaUtil/GCalcFRC.cu \
 	./MaUtil/GCalcMoment2D.cu \
 	./MaUtil/GCorrLinearInterp.cu \
 	./MaUtil/GFFT1D.cu \

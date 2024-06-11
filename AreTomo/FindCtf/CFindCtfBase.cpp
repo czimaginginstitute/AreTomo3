@@ -41,11 +41,11 @@ void CFindCtfBase::Clean(void)
 	mInitPointers();
 }
 
-void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory)
+void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory, int iTileSize)
 {
 	this->Clean();
 	//------------
-	m_aiCmpSize[1] = 512;
+	m_aiCmpSize[1] = iTileSize;
 	m_aiCmpSize[0] = m_aiCmpSize[1] / 2 + 1;
 	m_pCtfTheory = pCtfTheory->GetCopy();
 	//-----------------

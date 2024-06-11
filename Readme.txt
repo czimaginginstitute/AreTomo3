@@ -188,3 +188,19 @@ AreTomo3 1.0.14: [05-15-2024]
      and endind indices, a more flexible approach.
    - Added CTomoBase class as the parent class for CTomoWbp and CTomoSart.
    - Deleted Mdoc subfolder containing mdoc file examples.
+
+AreTomo3 1.0.15: [05-23-2024]
+-----------------------------
+1. Bug fix (05-23-2024)
+   DataUtil::CTsPackage::mLoadTiltFile: revised to load both xxx_TLT.txt
+      (two columns) or xxx.rawtlt (one column).
+2. Since Version 1.0.13, dark image detection takes into account Tygress
+   data collection scheme.
+3. Since Version 1.0.14, CTomoSart change the relaxation scheme. It depends
+   on number of subsets. The more subsets are, the smaller relaxation.
+4. Bug (05-30-2024)
+   CTF estimation fails when pixel size is less than 1A and the defocus is
+   higher than 2um. The fix is to use Fourier cropping to increase the pixel 
+   size to 1A and correspondingly the Thon ring spacing. CFindCtfMain.cpp 
+5. Implemented GCalcFRC.cu that calculates the FRC between a pair of 2D
+   images. (05-31-2024) 

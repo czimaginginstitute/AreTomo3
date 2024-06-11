@@ -78,11 +78,27 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	//-----------------
 	CInput* pInput = CInput::GetInstance();
 	CAtInput* pAtInput = CAtInput::GetInstance();
+	//---------------------------------------------------------
+	// When pixel size is small, Fourier cropping to cut
+	// high-frequency components to reduce noise.
+	//---------------------------------------------------------
+	float fBinning = 1.0f / m_pTiltSeries->m_fPixSize;
+	if(fBinning <= 1.001f) fBinning = 1.0f;
+	else if(fBinning > 2) fBinning = 2.0f;
+	//-----------------
+	float fPixSize = m_pTiltSeries->m_fPixSize;
+	m_aiBinSize[0] = m_pTiltSeries->m_aiStkSize[0];
+	m_aiBinSize[1] = m_pTiltSeries->m_aiStkSize[1];
+	if(fBinning > 1.001)
+	{	m_aiBinSize[0] = (int)(m_aiBinSize[0] / fBinning) / 2 * 2;
+		m_aiBinSize[1] = (int)(m_aiBinSize[1] / fBinning) / 2 * 2;
+		fPixSize *= fBinning;
+	}
 	//-----------------
 	float fExtPhase = pAtInput->m_afExtPhase[0] * 0.017453f;
 	CCtfTheory aInputCTF;
 	aInputCTF.Setup(pInput->m_iKv, pInput->m_fCs,
-	   pAtInput->m_fAmpContrast, m_pTiltSeries->m_fPixSize,
+	   pAtInput->m_fAmpContrast, fPixSize,
 	   100.0f, fExtPhase);
 	//-----------------
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
@@ -90,23 +106,32 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	   aInputCTF.GetParam(false));
 	//-----------------
 	m_pFindCtf2D = new CFindCtf2D;
-	m_pFindCtf2D->Setup1(&aInputCTF);
-	m_pFindCtf2D->Setup2(m_pTiltSeries->m_aiStkSize);
+	m_pFindCtf2D->Setup1(&aInputCTF, CFindCtfMain::m_aiSpectSize[0]);
+	m_pFindCtf2D->Setup2(m_aiBinSize);
 	m_pFindCtf2D->SetPhase(pAtInput->m_afExtPhase[0], 
 	   pAtInput->m_afExtPhase[1]);
 	//-----------------
 	mGenSpectrums();
 	printf("GPU %d: estimate tilt series CTF, "
-	   "please wait......\n", m_iNthGpu);
+	   "please wait ......\n", m_iNthGpu);
 	mDoZeroTilt();
 	mDo2D();
 	CSaveCtfResults saveCtfResults;
 	saveCtfResults.DoIt(m_iNthGpu);
-	printf("GPU %d: estimate tilt series CTF, done\n\n");
+	printf("GPU %d: estimate tilt series CTF, done\n\n", m_iNthGpu);
 }
 
 void CFindCtfMain::mGenSpectrums(void)
 {
+	MU::GFourierResize2D* gFtResize = 0L;
+	float* pfBinImg = 0L;
+	if(m_aiBinSize[0] < m_pTiltSeries->m_aiStkSize[0] &&
+	   m_aiBinSize[1] < m_pTiltSeries->m_aiStkSize[1])
+	{	gFtResize = new MU::GFourierResize2D;
+		gFtResize->Setup(m_pTiltSeries->m_aiStkSize, m_aiBinSize);
+		pfBinImg = new float[m_aiBinSize[0] * m_aiBinSize[1]];
+	}
+	//-----------------
 	bool bRaw = true, bToHost = true;
 	if(m_ppfHalfSpects == 0L) m_ppfHalfSpects = new float*[m_iNumTilts];
 	//-----------------
@@ -121,11 +146,19 @@ void CFindCtfMain::mGenSpectrums(void)
 		   "%4d left\n", i+1, m_iNumTilts - 1 - i);
 		strcat(pcLog, acBuf);	
 		float* pfImage = (float*)m_pTiltSeries->GetFrame(i);
-		m_pFindCtf2D->GenHalfSpectrum(pfImage);
+		if(gFtResize == 0L) 
+		{	m_pFindCtf2D->GenHalfSpectrum(pfImage);
+		}
+		else
+		{	gFtResize->DoIt(pfImage, pfBinImg);
+			m_pFindCtf2D->GenHalfSpectrum(pfBinImg);
+		}
 		m_ppfHalfSpects[i] = m_pFindCtf2D->GetHalfSpect(!bRaw, bToHost);
 	}
 	printf("%s\n", pcLog);
 	if(pcLog != 0L) delete[] pcLog;
+	if(pfBinImg != 0L) delete[] pfBinImg;
+	if(gFtResize != 0L) delete gFtResize;
 }
 
 void CFindCtfMain::mDoZeroTilt(void)

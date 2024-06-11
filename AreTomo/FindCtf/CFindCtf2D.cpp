@@ -27,11 +27,11 @@ void CFindCtf2D::Clean(void)
 	CFindCtf1D::Clean();
 }
 
-void CFindCtf2D::Setup1(CCtfTheory* pCtfTheory)
+void CFindCtf2D::Setup1(CCtfTheory* pCtfTheory, int iTileSize)
 {
 	this->Clean();
-	CFindCtf1D::Setup1(pCtfTheory);
-	//-----------------------------
+	CFindCtf1D::Setup1(pCtfTheory, iTileSize);
+	//-----------------
 	m_pFindDefocus2D = new CFindDefocus2D;
 	MD::CCtfParam* pCtfParam = m_pCtfTheory->GetParam(false);
 	m_pFindDefocus2D->Setup1(pCtfParam, m_aiCmpSize);
