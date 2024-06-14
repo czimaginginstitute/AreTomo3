@@ -34,7 +34,7 @@ void CStackFolder::DeleteInstance(void)
 //------------------------------------------------------------------------------
 CStackFolder::CStackFolder(void)
 {
-	m_dRecentFileTime = 0.0;
+	m_iNumChars = 256;
 }
 
 //------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ CStackFolder::~CStackFolder(void)
 void CStackFolder::PushFile(char* pcMdocFile)
 {
 	if(pcMdocFile == 0L) return;
-	char* pcBuf = new char[256];
+	char* pcBuf = new char[m_iNumChars];
 	strcpy(pcBuf, pcMdocFile);
 	//-----------------
 	pthread_mutex_lock(&m_aMutex);
@@ -85,7 +85,6 @@ int CStackFolder::GetQueueSize(void)
 bool CStackFolder::ReadFiles(void)
 {
 	this->mClean();
-	m_dRecentFileTime = 0.0;
 	//----------------------
 	CInput* pInput = CInput::GetInstance();
 	if(pInput->m_iSerial == 0) 
@@ -96,15 +95,17 @@ bool CStackFolder::ReadFiles(void)
 	bool bSuccess = mGetDirName();
 	if(!bSuccess) return false;
 	strcpy(m_acSuffix, pInput->m_acInSuffix);
+	strcpy(m_acSkips, pInput->m_acInSkips);
 	printf("Directory: %s\n", m_acDirName);
 	printf("Prefix:    %s\n", m_acPrefix);
 	printf("Suffix:    %s\n", m_acSuffix);
+	printf("Skips:     %s\n", m_acSkips);
 	//-------------------------------------------------
 	// Read all the movies in the specified folder for
 	// batch processing.
 	//-------------------------------------------------
 	if(pInput->m_iSerial == 1) 
-	{	int iNumRead = mReadFolder(true);
+	{	int iNumRead = mReadFolder();
 		if(iNumRead > 0) return true;
 		else return false;
 	}
@@ -133,7 +134,7 @@ bool CStackFolder::mReadSingle(void)
 // 2. The template file contains the full path that is used to
 //    determine the folder containing the series stack files
 //--------------------------------------------------------------------
-int CStackFolder::mReadFolder(bool bFirstTime)
+int CStackFolder::mReadFolder(void)
 {
 	DIR* pDir = opendir(m_acDirName);
 	if(pDir == 0L)
@@ -145,13 +146,16 @@ int CStackFolder::mReadFolder(bool bFirstTime)
 	int iNumRead = 0;
 	int iPrefix = strlen(m_acPrefix);
 	int iSuffix = strlen(m_acSuffix);
+	int iSkips = strlen(m_acSkips);
 	struct dirent* pDirent;
 	char *pcPrefix = 0L, *pcSuffix = 0L;
 	//-----------------
 	struct stat statBuf;
-	char acFullFile[256] = {'\0'};
+	char acFullFile[m_iNumChars] = {'\0'};
 	strcpy(acFullFile, m_acDirName);
 	char* pcMainFile = acFullFile + strlen(m_acDirName);
+	//-----------------
+	CReadMdocDone* pReadMdocDone = CReadMdocDone::GetInstance();
 	//-----------------
 	while(true)
 	{	pDirent = readdir(pDir);
@@ -168,22 +172,28 @@ int CStackFolder::mReadFolder(bool bFirstTime)
 			   + iPrefix, m_acSuffix);
 			if(pcSuffix == 0L) continue;
 		}
-		//----------------------------------
-		// check if this is the latest file
-		//----------------------------------
-		strcpy(pcMainFile, pDirent->d_name);
-		int iStatus = stat(acFullFile, &statBuf);
-		double dTime = statBuf.st_mtim.tv_sec +
-		   1e-9 * statBuf.st_mtim.tv_nsec;
-		double dDeltaT = dTime - m_dRecentFileTime;
-		//-----------------------------------------------------
-		// But if this is the first time to read the directory,
-		// bypass the latest file check, read all instead.
-		//-----------------------------------------------------
-		if(dDeltaT <= 0 && !bFirstTime) continue;
-		if(dDeltaT > 0) m_dRecentFileTime = dTime;
 		//----------------
+		if(iSkips > 0)
+		{	bool bSkip = mCheckSkips(pDirent->d_name);
+			if(bSkip) continue;
+		}
+		//--------------------------------------------------------
+		// 1) Note: CReadMdocDone has already considered the
+		// -Cmd = 0 and -Resume 1 combination. When it is given
+		// in the command line, CReadMdocDone checklist is empty.
+		//--------------------------------------------------------
+		if(pReadMdocDone->bExist(pDirent->d_name)) continue;
+		//----------------
+		if(m_aReadFiles.find(pDirent->d_name) ==
+		   m_aReadFiles.end())
+		{	int iNumFiles = m_aReadFiles.size();
+                	m_aReadFiles[pDirent->d_name] = iNumFiles;
+		}
+		else continue;
+		//----------------
+		strcpy(pcMainFile, pDirent->d_name);
 		this->PushFile(acFullFile);
+		//----------------
 		printf("added: %s\n", acFullFile);
 		iNumRead += 1;
 	}
@@ -198,28 +208,6 @@ int CStackFolder::mReadFolder(bool bFirstTime)
 	return iNumRead;
 }
 
-char* CStackFolder::mGetSerial(char* pcInputFile)
-{
-	char acBuf[256] = {'\0'};
-	int iPrefixLen = strlen(m_acPrefix);
-	strcpy(acBuf, pcInputFile+iPrefixLen);
-	//-----------------
-	int iSuffix = strlen(m_acSuffix);
-	if(iSuffix > 0)
-	{	char* pcSuffix = strcasestr(acBuf, m_acSuffix);
-		if(pcSuffix != 0L) pcSuffix[0] = '\0';
-	}
-	else
-	{	char* pcExt = strcasestr(acBuf, ".mdoc");
-		if(pcExt != 0L) pcExt[0] = '\0';
-	}
-	//-----------------
-	char* pcSerial = new char[256];
-	memset(pcSerial, 0, sizeof(char) * 256);
-	strcpy(pcSerial, acBuf);
-	return pcSerial;
-}
-	
 bool CStackFolder::mGetDirName(void)
 {
 	CInput* pInput = CInput::GetInstance();
@@ -240,6 +228,19 @@ bool CStackFolder::mGetDirName(void)
 	return true;
 }
 
+bool CStackFolder::mCheckSkips(const char* pcString)
+{
+	char acBuf[m_iNumChars] = {'\0'};
+	strcpy(acBuf, m_acSkips);
+	//-----------------
+	char* pcToken = strtok(acBuf, ", ");
+	while(pcToken != 0L)
+	{	if(strstr(pcString, pcToken) != 0L) return true;
+		pcToken = strtok(0L, ", ");
+	}
+	return false;
+}
+
 void CStackFolder::mClean(void)
 {
 	while(!m_aFileQueue.empty())
@@ -247,6 +248,23 @@ void CStackFolder::mClean(void)
 		m_aFileQueue.pop();
 		if(pcFile != 0L) delete[] pcFile;
 	}
+	m_aReadFiles.clear();
+}
+
+void CStackFolder::mLogFiles(void)
+{
+	char acFile[256] = {'\0'};
+	CInput* pInput = CInput::GetInstance();
+	strcpy(acFile, pInput->m_acOutDir);
+	strcat(acFile, "MdocFound.txt");
+	FILE* pFile = fopen(acFile, "wt");
+	if(pFile == 0L) return;
+	//-----------------
+	for(auto x : m_aReadFiles)
+	{	fprintf(pFile, "%s  %d\n", x.first.c_str(), x.second);
+		printf("%s  %d\n", x.first.c_str(), x.second);
+	}
+	fclose(pFile);
 }
 
 bool CStackFolder::mAsyncReadFolder(void)
@@ -257,26 +275,8 @@ bool CStackFolder::mAsyncReadFolder(void)
 
 void CStackFolder::ThreadMain(void)
 {
-	const char* pcMethod = "in CStackFolder::ThreadMain";
-	m_ifd = inotify_init1(IN_NONBLOCK);
-	m_iwd = inotify_add_watch(m_ifd, m_acDirName, IN_CLOSE_WRITE);
-	if(m_ifd == -1)
-	{	fprintf(stderr, "Error: unable to init inotify %s.\n\n",
-		   pcMethod); return;
-	}
-	if(m_iwd == -1) 
-	{	fprintf(stderr, "Error: add_watch failed %s.\n\n",
-		   pcMethod);
-		close(m_ifd); return;
-	}
-	//-----------------
 	CInput* pInput = CInput::GetInstance();
-	int iEventSize = sizeof(inotify_event);
-	char acEventBuf[4096] = {'\0'};
-	inotify_event* pEvents = (inotify_event*)acEventBuf;
-	//-----------------
-	bool bFirstTime = true;
-	int iNumEvents = 0, iNumFiles = 0, iCount = 0;
+	int iCount = 0;
 	//-----------------
 	while(true)
 	{	int iQueueSize = GetQueueSize();
@@ -285,53 +285,19 @@ void CStackFolder::ThreadMain(void)
 			continue;
 		}
 		//----------------
-		if(bFirstTime)
-		{	iNumFiles = mReadFolder(bFirstTime);
-			if(iNumFiles > 0) 
-			{	bFirstTime = false;
-				iCount = 0;
-			}
-			else 
-			{	this->mWait(10.0f);
-				iCount += 10.0f;
-				int iLeftSec = pInput->m_iSerial - iCount;
-				printf("No mdoc files have been found, "
-				   "wait %d seconds.\n\n", iLeftSec);
-				if(iLeftSec <= 0) break;
-			}
-			continue;
-		}
-		//----------------
-		iNumEvents = read(m_ifd, acEventBuf, 4096);
-		bool bCloseWrite = false;
-		for(int i=0; i<iNumEvents; i++)
-		{	inotify_event* pEvent = pEvents + i;
-			bCloseWrite = pEvent->mask & IN_CLOSE_WRITE;
-			if(bCloseWrite) break;
-		}
-		//----------------
-		float fWaitSec = bCloseWrite ? 0.1f : 2.0f;
-		this->mWait(fWaitSec);
-		iCount += (int)fWaitSec;
-		//----------------
-		iNumFiles = mReadFolder(false);
+		int iNumFiles = mReadFolder();
 		if(iNumFiles > 0) 
 		{	iCount = 0;
 			continue;
 		}
-		else
-		{	this->mWait(2.0f);
-			iCount += 2;
-		}
 		//----------------
+		this->mWait(10.0f);
+		iCount += 10.0f;
 		int iLeftSec = pInput->m_iSerial - iCount;
+		printf("No mdoc files have been found, "
+		   "wait %d seconds.\n\n", iLeftSec);
 		if(iLeftSec <= 0) break;
-		//----------------
-		if(iCount % 10 != 0) continue; 
-		printf("Folder watching thread: no tilt series have been found"
-		   " for %d seconds, wait %d seconds before quitting.\n\n", 
-		   iCount, iLeftSec);
+		else continue;
 	}
-	inotify_rm_watch(m_ifd, m_iwd);
-	close(m_ifd);
+	mLogFiles();
 }

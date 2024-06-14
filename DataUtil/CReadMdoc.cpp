@@ -40,9 +40,14 @@ CReadMdoc::CReadMdoc(void)
 	m_iNthGpu = 0;
 	m_iBufSize = 1024;
 	m_iNumTilts = 0;
+	//-----------------
 	m_ppcFrmPath = new char*[m_iBufSize];
 	m_piAcqIdxs = new int[m_iBufSize];
 	m_pfTilts = new float[m_iBufSize];
+	//-----------------
+	memset(m_ppcFrmPath, 0, sizeof(char*) * m_iBufSize);
+	memset(m_piAcqIdxs, 0, sizeof(int) * m_iBufSize);
+	memset(m_pfTilts, 0, sizeof(float) * m_iBufSize);
 }
 
 CReadMdoc::~CReadMdoc(void)
@@ -157,7 +162,7 @@ char* CReadMdoc::mExtractFramePath(char* pcLine)
 	if(pcPath == 0L) return 0L;
 	//-----------------
 	char* pcEqual = strrchr(pcLine, '=');
-	pcPath = new char[128];
+	pcPath = new char[256];
 	if(pcEqual[1] == ' ') strcpy(pcPath, &pcEqual[2]);
 	else strcpy(pcPath, &pcEqual[1]);
 	//-----------------

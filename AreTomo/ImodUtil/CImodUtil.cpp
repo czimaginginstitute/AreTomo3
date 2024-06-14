@@ -4,11 +4,10 @@
 #include <memory.h>
 #include <string.h>
 #include <stdio.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <limits.h>
+#include <dirent.h>
 
 using namespace McAreTomo::AreTomo;
 using namespace McAreTomo::AreTomo::ImodUtil;
@@ -48,22 +47,49 @@ CImodUtil::~CImodUtil(void)
 {
 }
 
+bool CImodUtil::bFolderExist(void)
+{
+	mGenFolderName();
+	struct stat st = {0};
+	if (stat(m_acOutFolder, &st) == -1) return false;
+	else return true;
+}
+
+int CImodUtil::FindOutImodVal(void)
+{
+	if(!bFolderExist()) return 0;
+	DIR* pDir = opendir(m_acOutFolder);
+	if(pDir == 0L) return 0;
+	//-----------------
+	int iOutImod = 0;
+	struct dirent* pDirent;
+	while(true)
+	{	pDirent = readdir(pDir);
+		if(pDirent == 0L) break;
+		if(pDirent->d_name[0] == '.') continue;
+		//----------------
+		char* pcMrcFile = strstr(pDirent->d_name, "_st.mrc");
+		if(pcMrcFile != 0L)
+		{	iOutImod = 2; // aligned tilt series exists
+			break;
+		}
+		pcMrcFile = strstr(pDirent->d_name, ".mrc");
+		if(pcMrcFile != 0L)
+		{	iOutImod = 1; // dark-removed and unaligned
+			break;
+		}
+	}
+	closedir(pDir);
+	return iOutImod;
+}
+
 void CImodUtil::CreateFolder(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	if(pAtInput->m_iOutImod == 0) return;
-	//-----------------
-	McAreTomo::CInput* pInput = CInput::GetInstance();
-	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
-	//-----------------
-	strcpy(m_acOutFolder, pInput->m_acOutDir);
-	strcat(m_acOutFolder, pTsPackage->m_acMrcMain);
-	strcat(m_acOutFolder, "_Imod/");
-	struct stat st = {0};
-        if (stat(m_acOutFolder, &st) == -1)
-        {       mkdir(m_acOutFolder, 0700);
-        }
+	if(!this->bFolderExist()) mkdir(m_acOutFolder, 0700);
 	//----------------
+	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	strcpy(m_acTltFile, pTsPackage->m_acMrcMain);
 	strcat(m_acTltFile, "_st.tlt");
 	//-----------------
@@ -85,15 +111,8 @@ void CImodUtil::CreateFolder(void)
 	//-----------------------------
 	strcpy(m_acCtfFile, pTsPackage->m_acMrcMain);
 	strcat(m_acCtfFile, "_ctf.txt");
-	//------------------------------
-	strcpy(m_acInMrcFile, pInput->m_acOutDir);
-	strcat(m_acInMrcFile, pTsPackage->m_acMrcMain);
-	if(pAtInput->m_iOutImod == 1) 
-	{	strcat(m_acInMrcFile, ".mrc");	
-	}
-	else if(pAtInput->m_iOutImod >= 2)
-	{	strcat(m_acInMrcFile, "_st.mrc");
-	}
+	//-----------------
+	mGenMrcName();
 }
 
 void CImodUtil::SaveTiltSeries(MD::CTiltSeries* pTiltSeries)
@@ -129,7 +148,6 @@ void CImodUtil::SaveTiltSeries(MD::CTiltSeries* pTiltSeries)
 	mSaveTiltSeries();
 	mSaveNewstComFile();
 	mSaveTiltComFile();
-	mSaveCtfFile();
 }
 
 void CImodUtil::mSaveTiltSeries(void)
@@ -143,11 +161,12 @@ void CImodUtil::mSaveTiltSeries(void)
 	bool bOpen = aSaveStack.OpenFile(acFile);
 	if(!bOpen) return;
 	//-----------------
-	printf("Save tilt series, please wait .....\n");
+	printf("GPU %d: Save tilt series in Imod folder, please "
+	   "wait .....\n", m_iNthGpu);
 	bool bVolume = true;
 	aSaveStack.DoIt(m_pTiltSeries, m_pGlobalParam,
 	   m_fPixelSize, 0L, !bVolume);
-	printf("Aligned series has been saved.\n");
+	printf("GPU %d: Aligned series saved in Imod folder.\n", m_iNthGpu);
 }
 
 void CImodUtil::mSaveNewstComFile(void)
@@ -220,7 +239,7 @@ void CImodUtil::mSaveTiltComFile(void)
 	fclose(pFile);	
 }
 
-void CImodUtil::mSaveCtfFile(void)
+void CImodUtil::SaveCtfFile(void)
 {
 	MD::CCtfResults* pCtfResults = 
 	   MD::CCtfResults::GetInstance(m_iNthGpu);
@@ -267,3 +286,28 @@ void CImodUtil::mCreateFileName(const char* pcInFileName, char* pcOutFileName)
 	strcpy(pcOutFileName, m_acOutFolder);
 	strcat(pcOutFileName, pcInFileName);
 }
+
+void CImodUtil::mGenFolderName(void)
+{
+        McAreTomo::CInput* pInput = CInput::GetInstance();
+        MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
+        //-----------------
+        strcpy(m_acOutFolder, pInput->m_acOutDir);
+        strcat(m_acOutFolder, pTsPackage->m_acMrcMain);
+        strcat(m_acOutFolder, "_Imod/");
+}
+
+void CImodUtil::mGenMrcName(void)
+{
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
+	strcpy(m_acInMrcFile, pTsPackage->m_acMrcMain);
+	//-----------------
+        if(pAtInput->m_iOutImod == 1)
+        {       strcat(m_acInMrcFile, ".mrc");
+        }
+        else if(pAtInput->m_iOutImod >= 2)
+        {       strcat(m_acInMrcFile, "_st.mrc");
+        }
+}
+

@@ -30,11 +30,19 @@ int main(int argc, char* argv[])
 	CMcInput* pMcInput = CMcInput::GetInstance();
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	//-----------------
+	char acVersion[64] = {'\0'};
+	strcpy(acVersion, "version 1.0.15, built on Jun 11 2024");
+	if(argc == 1)
+	{	printf("\nAreTomo3: live automated cryoET pipeline from"
+		   " tilt movies to tomograms.\n");
+		printf("AreTomo3 --version: get version information\n");
+		printf("AreTomo3 --help: get command line information.\n\n");
+		return 0;	
+	}
 	if(argc == 2)
 	{	if(strcasecmp(argv[1], "--version") == 0 ||
 		   strcasecmp(argv[1], "-v") == 0)
-		{	printf("AreTomo3 version 1.0.0\n"
-			   "Built on Feb 04 2024\n");
+		{	printf("%s\n", acVersion);
 		}
 		else if(strcasecmp(argv[1], "--help") == 0)
 		{	printf("\nUsage: AreTomo3 Tags\n");
@@ -48,6 +56,9 @@ int main(int argc, char* argv[])
 	pInput->Parse(argc, argv);
 	pMcInput->Parse(argc, argv);
 	pAtInput->Parse(argc, argv);
+	//-----------------
+	CAreTomo3Json areTomo3Json;
+	areTomo3Json.Create(acVersion);
 	//-----------------
 	cuInit(0);
 	bool bGpu = mCheckGPUs();

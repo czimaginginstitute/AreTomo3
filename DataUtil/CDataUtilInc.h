@@ -3,6 +3,8 @@
 #include <Util/Util_Thread.h>
 #include <Mrcfile/CMrcFileInc.h>
 #include <queue>
+#include <unordered_map>
+#include <string>
 #include <cuda.h>
 
 namespace McAreTomo::DataUtil
@@ -43,10 +45,13 @@ public:
 	//-----------------
 	void SetTilts(float* pfTilts);
 	void SetAcqs(int* piAcqIndices);
+	void SetSecs(int* piSecIndices);
 	//-----------------
 	void SetImage(int iTilt, void* pvImage);
 	void SetCenter(int iFrame, float* pfCent);
 	void GetCenter(int iFrame, float* pfCent);
+	int GetTiltIdx(float fTilt);
+	bool bEmpty(void);
 	//-----------------
 	CTiltSeries* GetSubSeries(int* piStart, int* piSize);
 	void RemoveFrame(int iFrame);
@@ -54,11 +59,16 @@ public:
 	float* GetAccDose(void);
 	float** GetImages(void); // do not free;
 	//-----------------
+	void ResetSecIndices(void); // make sec indices ascending
+	CTiltSeries* FlipVol(bool bFlip);
+	//-----------------
 	float* m_pfTilts;
-	int* m_piAcqIndices;
+	int* m_piAcqIndices; // acquistion index, same as mdoc z value.
+	int* m_piSecIndices; // section index in input MRC file.
 	float m_fImgDose;
 private:
 	void mSwap(int iIdx1, int iIdx2);
+	CTiltSeries* mGenVolXZY(void);
 	void mCleanCenters(void);
 	float** m_ppfCenters;
 	float** m_ppfImages;
@@ -179,6 +189,43 @@ private:
 	static int m_iNumGpus;
 };
 
+class CCtfParam
+{
+public:
+	CCtfParam(void);
+	~CCtfParam(void);
+	void Setup
+	( int iKv,        // in kV
+	  float fCs,      // in mm
+	  float fAC,      // amplitude contrast
+	  float fPixSize  // in A
+	);
+	//-----------------
+	float GetWavelength(bool bAngstrom);
+	float GetDefocusMax(bool bAngstrom);
+	float GetDefocusMin(bool bAngstrom);
+	float GetDfMean(bool bAngstrom);
+	float GetDfSigma(bool bAngstrom);
+	//-----------------
+	void SetParam(CCtfParam* pCtfParam);
+	CCtfParam* GetCopy(void);
+	//-----------------
+	float m_fWavelength; // pixel
+	float m_fCs; // pixel
+	float m_fAmpContrast;
+	float m_fAmpPhaseShift; // radian
+	float m_fPixelSize;  // angstrom
+	//-----------------
+	float m_fExtPhase;   // radian
+	float m_fDefocusMax; // pixel
+	float m_fDefocusMin; // pixel
+	float m_fAstAzimuth; // radian
+	//-----------------
+	float m_fScore;
+	float m_fCtfRes;     // angstrom
+	float m_fTilt;
+};
+
 class CCtfResults
 {
 public:
@@ -187,38 +234,45 @@ public:
 	static CCtfResults* GetInstance(int iNthGpu);
 	~CCtfResults(void);
 	void Clean(void);
-	void Setup(int iNumImgs, int* piSpectSize);
+	void Setup(int iNumImgs, int* piSpectSize, CCtfParam* pCtfParam);
+	bool bHasCTF(void);
+	//----------------
 	void SetTilt(int iImage, float fTilt);
 	void SetDfMin(int iImage, float fDfMin);
 	void SetDfMax(int iImage, float fDfMax);
 	void SetAzimuth(int iImage, float fAzimuth);
 	void SetExtPhase(int iImage, float fExtPhase);
 	void SetScore(int iImage, float fScore);
+	void SetCtfRes(int iImage, float fRes);
 	void SetSpect(int iImage, float* pfSpect);
-	//----------------------------------------
+	//-----------------
 	float GetTilt(int iImage);
 	float GetDfMin(int iImage);
 	float GetDfMax(int iImage);
 	float GetAzimuth(int iImage);
 	float GetExtPhase(int iImage);
 	float GetScore(int iImage);
+	float GetPixSize(int iImage);
+	float GetCtfRes(int iImage);
 	float* GetSpect(int iImage, bool bClean);
 	void SaveImod(const char* pcCtfTxtFile);
 	void Display(int iNthCtf, char* pcLog);
 	void DisplayAll(void);
-	//-----------------------
+	//-----------------
+	int GetImgIdxFromTilt(float fTilt);
+	CCtfParam* GetCtfParam(int iImage);
+	CCtfParam* GetCtfParamFromTilt(float fTilt);
+	//-----------------
+	void RemoveDarkCTFs(void);
+	//-----------------
 	int m_aiSpectSize[2];
 	int m_iNumImgs;
 	int m_iNthGpu;
 private:
 	CCtfResults(void);
-	void mInit(void);
-	float* m_pfDfMins;
-	float* m_pfDfMaxs;
-	float* m_pfAzimuths;
-	float* m_pfExtPhases;
-	float* m_pfScores;
-	float* m_pfTilts;
+	void mRemoveEntry(int iEntry);
+	//-----------------
+	CCtfParam** m_ppCtfParams;
 	float** m_ppfSpects;
 	static CCtfResults* m_pInstances;
 	static int m_iNumGpus;
@@ -292,15 +346,20 @@ public:
 	//-----------------
 	~CTsPackage(void);
 	void SetMdoc(char* pcMdocFile);
+	//-----------------
 	void CreateTiltSeries(void);
+	bool LoadTiltSeries(void);
+	//-----------------
 	void SetTiltAngle(int iTilt, float fTiltAngle);
 	void SetAcqIdx(int iTilt, int iAcqIdx);
+	void SetSecIdx(int iTilt, int iSecIdx);
 	void SetSums(int iTilt, CAlnSums* pAlnSums);
 	void SetImgDose(float fImgDose);
 	//-----------------
 	CTiltSeries* GetSeries(int iSeries); // 0 - raw, 1 - evn, 2 - odd
 	//-----------------
 	void SortTiltSeries(int iOrder); // 0 - by tilt, 1 - by acq
+	void ResetSectionIndices(void);
 	void SaveTiltSeries(void);
 	//-----------------
 	void SaveVol(CTiltSeries* pVol, int iVol);
@@ -309,15 +368,16 @@ public:
 	char m_acMrcMain[256];
 	int m_iNthGpu;
 private:
-	void mSaveTiltFile
-	( const char* pcFileName,
-	  CTiltSeries* pTiltSeries
-	);
-	void mSaveMrc
-	( const char* pcFileName, 
-	  const char* pcExt,
-	  CTiltSeries* pTiltSeries
-	); 
+	void mCreateTiltSeries(int* piImgSize, 
+	   int iNumTilts, float fPixSize);
+	//-----------------
+	void mSaveTiltFile(CTiltSeries* pTiltSeries);
+	void mSaveMrc(const char* pcExt,CTiltSeries* pTiltSeries); 
+	//-----------------
+	bool mLoadMrc(const char* pcExt, CTiltSeries* pTiltSeries);
+	bool mLoadTiltFile(void);
+	//-----------------
+	void mGenFullPath(const char* pcSuffix, char* pcFullPath);
 	//-----------------
 	CTsPackage(void);
 	CTiltSeries** m_ppTsStacks;
@@ -344,21 +404,59 @@ private:
         bool mReadSingle(void);
         bool mGetDirName(void);
         bool mOpenDir(void);
-        int mReadFolder(bool bFirstTime);
+        int mReadFolder(void);
         bool mAsyncReadFolder(void);
-        char* mGetSerial(char* pcInputFile);
-        char* mGetInPrefix(void);
+	//-----------------
+	bool mCheckSkips(const char* pcString);
+	//-----------------
+	void mLogFiles(void);
         void mClean(void);
+	//-----------------
         char m_acDirName[256];
         char m_acPrefix[256];
         char m_acSuffix[256];
+	char m_acSkips[256];
+	//-----------------
 	std::queue<char*> m_aFileQueue;
-        int m_ifd;
-        int m_iwd;
-        double m_dRecentFileTime;
+        std::unordered_map<std::string, int> m_aReadFiles;
+        //-----------------
+	int m_iNumChars;
 	static CStackFolder* m_pInstance;
 };
 
+class CReadMdocDone
+{
+public:
+	static CReadMdocDone* GetInstance(void);
+	static void DeleteInstance(void);
+	static char m_acMdocDone[64];
+	//-----------------
+	~CReadMdocDone(void);
+	void DoIt(void);
+	bool bExist(const char* pcMdocFile);
+private:
+	CReadMdocDone(void);
+	void mClean(void);
+	//-----------------
+	int m_iNumChars;
+	std::unordered_map<std::string, int> *m_pMdocFiles;
+	static CReadMdocDone* m_pInstance;
+};
+
+class CSaveMdocDone
+{
+public:
+	static CSaveMdocDone* GetInstance(void);
+	static void DeleteInstance(void);
+	//-----------------
+	~CSaveMdocDone(void);
+	void DoIt(const char* pcMdocFile);
+private:
+	CSaveMdocDone(void);
+	FILE* m_pLogFile;
+	static CSaveMdocDone* m_pInstance;
+};
+	
 class CLogFiles
 {
 public:

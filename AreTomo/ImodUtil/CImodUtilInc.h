@@ -15,6 +15,8 @@ private:
 	void mSaveForRelion(void);
 	void mSaveForWarp(void);
 	void mSaveForAligned(void);
+	//-----------------
+	int m_iLineSize;
 	FILE* m_pFile;
 	int m_iNthGpu;
 };
@@ -32,6 +34,14 @@ private:
 	void mSaveForRelion(void);
 	void mSaveForWarp(void);
 	void mSaveForAligned(void);
+	void mGenList(void);
+	void mClean(void);
+	//-----------------
+	int m_iAllTilts;
+	int m_iLineSize;
+	char* m_pcOrderedList;
+	bool* m_pbDarkImgs;
+	//-----------------
 	FILE* m_pFile;
 	int m_iNthGpu;
 };
@@ -41,13 +51,22 @@ class CSaveCsv
 public:
 	CSaveCsv(void);
 	~CSaveCsv(void);
-	void DoIt(int iNthGpu, const char* pcFileName);
+	void DoIt
+	( int iNthGpu, 
+	  const char* pcFileName
+	);
 private:
 	void mSaveForRelion(void);
         void mSaveForWarp(void);
         void mSaveForAligned(void);
-        FILE* m_pFile;
+	void mGenList(void);
+	void mClean(void);
+	//-----------------
 	int m_iNthGpu;
+	int m_iAllTilts;
+	char* m_pcOrderedList;
+	bool* m_pbDarkImgs;
+        FILE* m_pFile;
 };
 
 class CSaveXtilts
@@ -56,6 +75,7 @@ public:
 	CSaveXtilts(void);
 	~CSaveXtilts(void);
 	void DoIt(int iNthGpu, const char* pcFileName);
+private:
 };
 
 class CImodUtil
@@ -66,13 +86,11 @@ public:
 	static CImodUtil* GetInstance(int iNthGpu);
 	//-----------------
 	~CImodUtil(void);
+	bool bFolderExist(void);
+	int FindOutImodVal(void);
 	void CreateFolder(void);
 	void SaveTiltSeries(MD::CTiltSeries* pTiltSeries);
-	void SaveVolume
-	( MD::CTiltSeries* pVolSeries,
-	  float fPixelSize,
-	  float* pfStats
-	);
+	void SaveCtfFile(void);
 	int m_iNthGpu;
 private:
 	CImodUtil(void);
@@ -81,6 +99,10 @@ private:
 	void mSaveTiltComFile(void);
 	void mSaveCtfFile(void);
 	void mCreateFileName(const char* pcInFileName, char* pcOutFileName);
+	//-----------------
+	void mGenFolderName(void);
+	void mGenMrcName(void);
+	//-----------------
 	char m_acOutFolder[256];
 	char m_acInMrcFile[128];
 	char m_acAliFile[128];

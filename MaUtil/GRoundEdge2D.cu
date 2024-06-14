@@ -31,7 +31,6 @@ static __global__ void mGRoundEdge2D
 	gfImg[i] = gfImg[i] * fR;
 }
 
-
 GRoundEdge2D::GRoundEdge2D(void)
 {
 	memset(m_afMaskCent, 0, sizeof(m_afMaskCent));
@@ -63,13 +62,12 @@ void GRoundEdge2D::DoIt
 	{	m_afMaskSize[0] = 1.0f * iImgX;
 		m_afMaskSize[1] = 1.0f * piSize[1];
 	}
-	//-----------------------------------------
+	//-----------------
 	dim3 aBlockDim(1, 512);
 	dim3 aGridDim(iImgX, (piSize[1] + aBlockDim.y - 1) / aBlockDim.y);
-	//----------------------------------------------------------------
-	mGRoundEdge2D<<<aGridDim, aBlockDim, 0, stream>>>
-	( gfImg, piSize[0], piSize[1],
-	  m_afMaskCent[0], m_afMaskCent[1],
-	  m_afMaskSize[0], m_afMaskSize[1], fPower
-	);
+	//-----------------
+	mGRoundEdge2D<<<aGridDim, aBlockDim, 0, stream>>>(gfImg, 
+	   piSize[0], piSize[1], m_afMaskCent[0], m_afMaskCent[1],
+	   m_afMaskSize[0], m_afMaskSize[1], fPower);
 }
+

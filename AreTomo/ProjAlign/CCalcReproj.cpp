@@ -63,44 +63,61 @@ void CCalcReproj::DoIt
 	}
 }
 
+//--------------------------------------------------------------------
+// 1. This function searches the index range of tilt images that have
+//    lower tilt angles than that to be reprojected.
+// 2. pbSkipProjs: the projections at higher tilt angles than the
+//    projection angle are excluded in reprojection.
+//--------------------------------------------------------------------
 void CCalcReproj::mFindProjRange(float* pfTiltAngles, bool* pbSkipProjs)
 {
 	float fRefRange = 20.5f;
-	float fRefStretch = 1.20f; //(float)(1.0 / cos(40.0 * s_fD2R));	
+	float fRefStretch = 1.20f; 
 	float fProjA = pfTiltAngles[m_iProjIdx];
 	float fCosProjA = (float)cos(fProjA * s_fD2R);
-	//--------------------------------------------
+	//-----------------
 	int iStart = -1;
 	for(int i=0; i<m_iNumProjs; i++)
 	{	if(pbSkipProjs[i]) continue;
-		//--------------------------
+		//----------------
 		float fTiltA = pfTiltAngles[i];
 		float fDiffA = fProjA - fTiltA;
 		if(fabs(fDiffA) > fRefRange) continue;
-		//------------------------------------
+		//----------------
 		float fStretch = (float)(cos(fTiltA * s_fD2R) / fCosProjA);
 		if(fStretch > fRefStretch) continue;
-		//----------------------------------
+		//----------------
 		iStart = i; break;
 	}
 	int iEnd = -1;
 	for(int i=iStart; i<m_iNumProjs; i++)
 	{	if(pbSkipProjs[i]) continue;
-		//--------------------------
+		//----------------
 		float fTiltA = pfTiltAngles[i];
 		float fDiffA = fProjA - fTiltA;
 		if(fabs(fDiffA) > fRefRange) continue;
-		//------------------------------------
+		//----------------
 		float fStretch = (float)(cos(fTiltA * s_fD2R) / fCosProjA);
 		if(fStretch > fRefStretch) continue;
-		//----------------------------------
+		//----------------
 		iEnd = i;
 	}
-	//---------------------------------------------
+	//-----------------------------------------------
+	// 1) Prevent an unusual situation where the
+	// angular step is so large causing stretching
+	// factor larger that allowed. 2) In that case
+	// we just use the nearest lower tilt image.
+	//-----------------------------------------------
+	if(iStart < 0 || iEnd < 0)
+	{	int iSign = (fProjA > 0) ? 1 : -1;
+		iStart = m_iProjIdx - iSign;
+		iEnd = iStart;
+	}
+	//-----------------
 	if((iEnd - iStart) > 9) iEnd = iStart + 9;
 	m_aiProjRange[0] = iStart;
 	m_aiProjRange[1] = iEnd;
-	//----------------------
+	//-----------------
 	/*	
 	printf("%.2f  %d  %d  %d  %.2f  %.2f\n", pfTiltAngles[m_iProjIdx],
            m_aiProjRange[0], m_aiProjRange[1],

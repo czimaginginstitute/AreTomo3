@@ -64,6 +64,24 @@ static __global__ void mGLowpass
 	gOutCmp[i].y = gInCmp[i].y * fFilt;
 }
 
+static __global__ void mGHighpass
+(       cufftComplex* gInCmp,
+        int iCmpY,
+        float fBFactor,
+        cufftComplex* gOutCmp
+)
+{       int y = blockIdx.y * blockDim.y + threadIdx.y;
+        if(y >= iCmpY) return;
+        int i = y * gridDim.x + blockIdx.x;
+        //-----------------
+        if(y > (iCmpY / 2)) y -= iCmpY;
+        float fFilt = expf(fBFactor * (blockIdx.x * blockIdx.x + y * y));
+	fFilt = 1.0f - fFilt;
+	//-----------------
+        gOutCmp[i].x = gInCmp[i].x * fFilt;
+        gOutCmp[i].y = gInCmp[i].y * fFilt;
+}
+
 
 GFFTUtil2D::GFFTUtil2D(void)
 {
@@ -148,5 +166,22 @@ void GFFTUtil2D::Lowpass
 	aGridDim.y = piCmpSize[1] / aBlockDim.y + 1;
 	mGLowpass<<<aGridDim, aBlockDim>>>(gInCmp, piCmpSize[1], 
 	   fScale, gOutCmp);
+}
+
+void GFFTUtil2D::Highpass
+(       cufftComplex* gInCmp,
+        cufftComplex* gOutCmp,
+        int* piCmpSize,
+        float fBFactor
+)
+{       int iNx = (piCmpSize[0] - 1) * 2;
+        double dTemp = iNx * iNx + piCmpSize[1] * piCmpSize[1];
+        float fScale = (float)(-fBFactor / dTemp);
+        //-----------------
+        dim3 aBlockDim(1, 512);
+        dim3 aGridDim(piCmpSize[0], 1);
+        aGridDim.y = piCmpSize[1] / aBlockDim.y + 1;
+        mGHighpass<<<aGridDim, aBlockDim>>>(gInCmp, piCmpSize[1],
+           fScale, gOutCmp);
 }
 

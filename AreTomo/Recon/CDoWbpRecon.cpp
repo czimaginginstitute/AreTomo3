@@ -1,4 +1,5 @@
 #include "CReconInc.h"
+#include "../MrcUtil/CMrcUtilInc.h"
 #include <memory.h>
 #include <stdio.h>
 #include <cuda.h>
@@ -60,6 +61,8 @@ void CDoWbpRecon::mDoIt(void)
 	m_aTomoWbp.Setup(m_pVolSeries->m_aiStkSize[0], 
 	   m_pVolSeries->m_aiStkSize[1],
 	   m_pTiltSeries, m_pAlignParam);
+	float fTilt = 0.0f;
+	m_aTomoWbp.ExcludeTilts(&fTilt, 1);
 	//-----------------
 	cudaStreamCreate(&m_stream);
 	cudaEventCreate(&m_eventSino);

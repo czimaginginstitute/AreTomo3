@@ -86,7 +86,10 @@ void CBufferPool::Clean(void)
 //------------------------------------------------------------------------------
 void CBufferPool::Create(int* piStkSize)
 {
-	if(m_bCreated) this->Adjust(piStkSize[2]);
+	if(m_bCreated) 
+	{	this->Adjust(piStkSize[2]);
+		return;
+	}
 	//-----------------
 	this->Clean();
 	CInput* pInput = CInput::GetInstance();
@@ -125,8 +128,11 @@ void CBufferPool::Adjust(int iNumFrames)
 	//-----------------
 	m_pFrmBuffer->Adjust(iNumFrames);
 	m_pXcfBuffer->Adjust(iNumFrames);
-	m_pPatBuffer->Adjust(iNumFrames);
-
+	//-----------------------------------------------
+	// 1) m_pPatBuffer will be NULL if patch align
+	// is not specified. Need to check here.
+	//-----------------------------------------------
+	if(m_pPatBuffer != 0L) m_pPatBuffer->Adjust(iNumFrames);
 }
 
 CStackBuffer* CBufferPool::GetBuffer(int iBuf)

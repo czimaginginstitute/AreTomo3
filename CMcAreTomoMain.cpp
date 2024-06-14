@@ -38,6 +38,19 @@ CMcAreTomoMain::~CMcAreTomoMain(void)
 
 bool CMcAreTomoMain::DoIt(void)
 {
+	//---------------------------------------------------------
+	// 1) Load MdocDone.txt from the output folder if there 
+	// is one. 2) This is used for resuming processing without
+	// reppcessing those that have been processed.
+	//--------------------------------------------------
+	MD::CReadMdocDone* pReadMdocDone = MD::CReadMdocDone::GetInstance();
+	pReadMdocDone->DoIt();
+	//---------------------------------------------------------
+	// 1) If -Resume 1 and -Cmd 0 are both specified,
+	// CStackFolder checks a mdoc file name is in the list of 
+	// processed mdoc files. If yes, this mdoc will not be 
+	// processed.
+	//---------------------------------------------------------
 	s_pStackFolder = MD::CStackFolder::GetInstance();
 	bool bSuccess = s_pStackFolder->ReadFiles();
 	if(!bSuccess)
@@ -59,17 +72,22 @@ bool CMcAreTomoMain::DoIt(void)
 	//--------------------------------------------------------
 	// wait a new movie for 10 minutes and quit if not found.
 	//--------------------------------------------------------
+	bool bExit = false;
 	while(true)
 	{	int iQueueSize = s_pStackFolder->GetQueueSize();
-		if(iQueueSize > 0) mProcess();
-		bool bExit = s_pStackFolder->WaitForExit(1.0f);
+		if(iQueueSize > 0) 
+		{	mProcess();
+			s_pStackFolder->WaitForExit(5.0f);
+			continue;
+		}
+		bExit = s_pStackFolder->WaitForExit(1.0f);
 		if(bExit) break;
 	}
 	printf("All mdoc files have been processed, "
 	   "waiting processing to finish.\n\n");	
 	//-----------------
 	while(true)
-	{	bool bExit = CProcessThread::WaitExitAll(1.0f);
+	{	bExit = CProcessThread::WaitExitAll(1.0f);
 		if(bExit) break;
 	}
 	printf("All threads have finished, program exits.\n\n");
@@ -85,8 +103,13 @@ void CMcAreTomoMain::mProcess(void)
 	}
 	int iNthGpu = pProcessThread->m_iNthGpu; 
 	//-----------------
+	char acMdoc[256] = {'\0'};
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(iNthGpu);
 	char* pcMdocFile = s_pStackFolder->GetFile(true);
+	char* pcMainFile = strrchr(pcMdocFile, '/');
+	if(pcMainFile == 0L) strcpy(acMdoc, pcMdocFile);
+	else strcpy(acMdoc, &pcMainFile[1]);
+	//-----------------
 	pTsPackage->SetMdoc(pcMdocFile);
 	if(pcMdocFile != 0L) delete[] pcMdocFile;
 	//-----------------

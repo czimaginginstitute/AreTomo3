@@ -40,10 +40,17 @@ static __global__ void mGResize
 
 GFourierResize2D::GFourierResize2D(void)
 {
+	m_gfInImg = 0L;
+	m_gfOutImg = 0L;
+	m_pForwardFFT = new CCufft2D;
+	m_pInverseFFT = new CCufft2D;
 }
 
 GFourierResize2D::~GFourierResize2D(void)
 {
+	this->Clean();
+	if(m_pForwardFFT != 0L) delete m_pForwardFFT;
+	if(m_pInverseFFT != 0L) delete m_pInverseFFT;
 }
 
 void GFourierResize2D::GetBinnedCmpSize
@@ -118,9 +125,59 @@ void GFourierResize2D::DoIt
 {	dim3 aBlockDim(1, 64);
 	dim3 aGridDim(piSizeOut[0], 1);
 	aGridDim.y = (piSizeOut[1] + aBlockDim.y - 1) / aBlockDim.y;
-	//----------------------------------------------------------
+	//-----------------
 	mGResize<<<aGridDim, aBlockDim, 0, stream>>>
 	( gCmpIn, piSizeIn[0], piSizeIn[1], 
 	  gCmpOut, piSizeOut[1], bSum );	
 }
 
+void GFourierResize2D::Clean(void)
+{
+	m_pForwardFFT->DestroyPlan();
+	m_pInverseFFT->DestroyPlan();
+	if(m_gfInImg != 0L) cudaFree(m_gfInImg);
+	if(m_gfOutImg != 0L) cudaFree(m_gfOutImg);
+	m_gfInImg = 0L;
+	m_gfOutImg = 0L;
+}
+
+void GFourierResize2D::Setup
+(	int* piInImgSize,
+	int* piOutImgSize
+)
+{	this->Clean();
+	//-----------------
+	memcpy(m_aiInImgSize, piInImgSize, sizeof(int) * 2);
+	memcpy(m_aiOutImgSize, piOutImgSize, sizeof(int) * 2);
+	//-----------------
+	m_pForwardFFT->CreateForwardPlan(m_aiInImgSize, false);
+	m_pInverseFFT->CreateInversePlan(m_aiOutImgSize, false);
+	//-----------------
+	size_t tBytes = sizeof(float) * m_aiInImgSize[1] *
+	   (m_aiInImgSize[0] / 2 + 1) * 2;
+	cudaMalloc(&m_gfInImg, tBytes);
+	//-----------------
+	tBytes = sizeof(float) * m_aiOutImgSize[1] *
+	   (m_aiOutImgSize[0] / 2 + 1) * 2;
+	cudaMalloc(&m_gfOutImg, tBytes);
+}
+
+void GFourierResize2D::DoIt(float* pfInImg, float* pfOutImg)
+{
+	CPad2D pad2D;
+	pad2D.Pad(pfInImg, m_aiInImgSize, m_gfInImg);
+	m_pForwardFFT->Forward(m_gfInImg, true);
+	//-----------------
+	cufftComplex* gInCmp = (cufftComplex*)m_gfInImg;
+	cufftComplex* gOutCmp = (cufftComplex*)m_gfOutImg;
+	//-----------------
+	int aiInCmpSize[] = {0, m_aiInImgSize[1]};
+	int aiOutCmpSize[] = {0, m_aiOutImgSize[1]};
+	aiInCmpSize[0] = m_aiInImgSize[0] / 2 + 1;
+	aiOutCmpSize[0] = m_aiOutImgSize[0] / 2 + 1;
+	this->DoIt(gInCmp, aiInCmpSize, gOutCmp, aiOutCmpSize, false);
+	//-----------------
+	m_pInverseFFT->Inverse(gOutCmp);
+	int aiOutPadSize[] = {aiOutCmpSize[0] * 2, aiOutCmpSize[1]};
+	pad2D.Unpad(m_gfOutImg, aiOutPadSize, pfOutImg);
+}

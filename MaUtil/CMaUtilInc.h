@@ -127,6 +127,7 @@ public:
         void GDoIt(unsigned char* gucImg, int* piSize);
         void DoIt(void* pvImg, int iMode, int* piSize);
 	void DoMany(void** pvImgs, int iMode, int* piSize);
+	void DoMany(float* pfImgs, int* piSize);
 private:
         char m_acMrcFile[256];
 };	//CSaveTempMrc
@@ -284,6 +285,7 @@ class GFourierResize2D
 public:
 	GFourierResize2D(void);
 	~GFourierResize2D(void);
+	//-----------------
 	static void GetBinnedCmpSize
 	(  int* piCmpSize,// cmp size before binning
 	   float fBin,
@@ -312,6 +314,17 @@ public:
 	  bool bSum,
 	  cudaStream_t stream = 0
 	);
+	//-----------------
+	void Clean(void);
+	void Setup(int* piInImgSize, int* piOutImgSize);
+	void DoIt(float* pfInImg, float* pfOutImg);
+private:
+	float* m_gfInImg;
+	float* m_gfOutImg;
+	int m_aiInImgSize[2];
+	int m_aiOutImgSize[2];
+	CCufft2D* m_pForwardFFT;
+	CCufft2D* m_pInverseFFT;
 };
 
 class GPositivity2D
@@ -349,10 +362,15 @@ public:
           cudaStream_t stream=0
 	);
 	void Lowpass
-	( cufftComplex* gInCmp,
-	  cufftComplex* gOutCmp,
-	  int* piCmpSize,
-	  float fBFactor
+	( cufftComplex* gInCmp, cufftComplex* gOutCmp,
+	  int* piCmpSize, float fBFactor
+	);
+	//-----------------------------------------------
+	// This is 1 minus lowpass filter.
+	//-----------------------------------------------
+	void Highpass
+	( cufftComplex* gInCmp, cufftComplex* gOutCmp,
+	  int* piCmpSize, float fBFactor
 	);
 };
 
@@ -427,7 +445,31 @@ public:
 	  int* piCmpSize,
           cudaStream_t stream=0
 	);
-};   
+};
+
+class GCalcFRC
+{
+public:
+	GCalcFRC(void);
+	~GCalcFRC(void);
+	void DoIt
+	( cufftComplex* gCmp1, 
+	  cufftComplex* gCmp2,
+	  float* gfFRC, int iRingWidth, // in pixel
+	  int* piCmpSize,
+	  cudaStream_t stream = 0
+	);
+	float* DoIt
+	( float* pfImg1, float* pfImg2,
+	  int* piImgSize, bool bPadded,
+	  int iRingWidth
+	);
+	float m_fRes;
+private:
+	float* mHost2Gpu(float* pfImg, int* piImgSize);
+	void mCalcFFT(float* gfPadImg1, float* gfPadImg2);
+	int m_aiCmpSize[2];
+};
 }
 
 namespace MU = McAreTomo::MaUtil;

@@ -57,12 +57,12 @@ void CSpectrumImage::mGenFullSpectrum(void)
 void CSpectrumImage::mEmbedCTF(void)
 {
 	float fPixelSize = m_pCtfTheory->GetPixelSize();
-	float fMinFreq = fPixelSize / m_afResRange[0];
+	float fMinFreq = fPixelSize / 25.0f; //m_afResRange[0];
 	float fMaxFreq = fPixelSize / m_afResRange[1];
 	float fGain = m_fStd * 1.5f;
 	//--------------------------
 	GCalcCTF2D gCalcCtf2D;
-	CCtfParam* pCtfParam = m_pCtfTheory->GetParam(false);
+	MD::CCtfParam* pCtfParam = m_pCtfTheory->GetParam(false);
 	gCalcCtf2D.DoIt(pCtfParam, m_gfCtfBuf, m_aiCmpSize);
 	gCalcCtf2D.EmbedCtf(m_gfCtfBuf, fMinFreq, fMaxFreq,
 	   m_fMean, fGain, m_gfFullSpect, m_aiCmpSize);

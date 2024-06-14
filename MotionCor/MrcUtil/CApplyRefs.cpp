@@ -36,8 +36,7 @@ void CApplyRefs::DoIt
 	float* pfDark,
 	int iNthGpu
 )
-{	if(pfGain == 0L && pfDark == 0L) return;
-	nvtxRangePushA("CApplyRefs::DoIt");
+{	nvtxRangePushA("CApplyRefs::DoIt");
 	m_iNthGpu = iNthGpu;
 	//------------------
 	MD::CBufferPool* pBufPool = MD::CBufferPool::GetInstance(m_iNthGpu);

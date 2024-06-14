@@ -14,6 +14,7 @@ void CAtInstances::CreateInstances(int iNumGpus)
 	MrcUtil::CMuInstances::CreateInstances(iNumGpus);
 	PatchAlign::CPatchAlignMain::CreateInstances(iNumGpus);
 	ProjAlign::CParam::CreateInstances(iNumGpus);
+	//-----------------
 }
 
 void CAtInstances::DeleteInstances(void)

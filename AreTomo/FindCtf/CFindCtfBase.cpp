@@ -41,11 +41,11 @@ void CFindCtfBase::Clean(void)
 	mInitPointers();
 }
 
-void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory)
+void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory, int iTileSize)
 {
 	this->Clean();
 	//------------
-	m_aiCmpSize[1] = 512;
+	m_aiCmpSize[1] = iTileSize;
 	m_aiCmpSize[0] = m_aiCmpSize[1] / 2 + 1;
 	m_pCtfTheory = pCtfTheory->GetCopy();
 	//-----------------
@@ -161,7 +161,7 @@ void CFindCtfBase::mLowpass(void)
 	MU::GFFTUtil2D fftUtil2D;
         cufftComplex* gCmpFullSpect = (cufftComplex*)m_gfFullSpect;
         fftUtil2D.Lowpass(gCmpFullSpect, gCmpFullSpect,
-           m_aiCmpSize, 5.0f);
+           m_aiCmpSize, 36.0f);
         //-----------------
         cufft2D.CreateInversePlan(aiFFTSize, false);
         cufft2D.Inverse(gCmpFullSpect);
@@ -175,4 +175,35 @@ void CFindCtfBase::mLowpass(void)
                 cudaMemcpy(gfDst, gfSrc, tBytes, cudaMemcpyDefault);
         }
 }
+
+void CFindCtfBase::mHighpass(void)
+{
+        GCalcSpectrum calcSpectrum;
+        bool bPadded = true;
+        calcSpectrum.GenFullSpect(m_gfRawSpect, m_aiCmpSize,
+           m_gfFullSpect, bPadded);
+        //-----------------
+        MU::CCufft2D cufft2D;
+        int aiFFTSize[] = {(m_aiCmpSize[0] - 1) * 2, m_aiCmpSize[1]};
+        cufft2D.CreateForwardPlan(aiFFTSize, false);
+        cufft2D.Forward(m_gfFullSpect, true);
+        //-----------------
+        MU::GFFTUtil2D fftUtil2D;
+        cufftComplex* gCmpFullSpect = (cufftComplex*)m_gfFullSpect;
+        fftUtil2D.Highpass(gCmpFullSpect, gCmpFullSpect,
+           m_aiCmpSize, 800.0f);
+        //-----------------
+        cufft2D.CreateInversePlan(aiFFTSize, false);
+        cufft2D.Inverse(gCmpFullSpect);
+        //-----------------
+        int iFullSizeX = m_aiCmpSize[0] * 2;
+        int iHalfX = m_aiCmpSize[0] - 1;
+        size_t tBytes = sizeof(float) * m_aiCmpSize[0];
+        for(int y=0; y<m_aiCmpSize[1]; y++)
+        {       float* gfSrc = m_gfFullSpect + y * iFullSizeX + iHalfX;
+                float* gfDst = m_gfCtfSpect + y * m_aiCmpSize[0];
+                cudaMemcpy(gfDst, gfSrc, tBytes, cudaMemcpyDefault);
+        }
+}
+
 

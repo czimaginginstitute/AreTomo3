@@ -2,6 +2,8 @@
 #include "MaUtil/CMaUtilInc.h"
 #include "DataUtil/CDataUtilInc.h"
 #include <Util/Util_Thread.h>
+#include <unordered_map>
+#include <string>
 #include <stdio.h>
 #include <cufft.h>
 
@@ -20,6 +22,7 @@ public:
 	//-----------------
 	char m_acInMdoc[256];
 	char m_acInSuffix[256];
+	char m_acInSkips[256];
 	char m_acTmpFile[256];
 	char m_acLogDir[256];
 	char m_acOutDir[256];
@@ -33,10 +36,13 @@ public:
 	float m_fPixSize;
 	float m_fFmDose;
 	//-----------------
+	int m_iCmd;
+	int m_iResume;
 	int m_iSerial;
 	//-----------------
 	char m_acInMdocTag[32];
 	char m_acInSuffixTag[32];
+	char m_acInSkipsTag[32];
 	char m_acTmpFileTag[32];
 	char m_acLogDirTag[32];
 	char m_acOutDirTag[32];
@@ -48,6 +54,8 @@ public:
 	char m_acPixSizeTag[32];
 	char m_acFmDoseTag[32];
 	//-----------------
+	char m_acCmdTag[32];
+	char m_acResumeTag[32];
 	char m_acSerialTag[32];
 private:
         CInput(void);
@@ -150,6 +158,7 @@ public:
 	int m_iOutImod;
 	float m_fDarkTol;
 	bool m_bIntpCor;
+	int m_aiCorrCTF[2];
 	//-----------------
 	char m_acTotalDoseTag[32];
 	char m_acTiltAxisTag[32];
@@ -172,12 +181,42 @@ public:
 	char m_acDarkTolTag[32];
 	char m_acBFactorTag[32];
 	char m_acIntpCorTag[32];
+	char m_acCorrCTFTag[32];
 private:
         CAtInput(void);
         void mPrint(void);
         int m_argc;
         char** m_argv;
         static CAtInput* m_pInstance;
+};
+
+class CAreTomo3Json
+{
+public:
+	CAreTomo3Json(void);
+	~CAreTomo3Json(void);
+	void Create(char* pcVersion);
+private:
+	void mAddInput(void);
+	void mAddMcInput(void);
+	void mAddAtInput(void);
+	//-----------------
+	void mAddLine(char* pcLine);
+	void mAddLine(const char* pcKey, const char* pcVal, bool bList=false);
+	void mAddLine(char* pcKey, int iVal);
+	void mAddLine(char* pcKey, float fVal);
+	void mAddLine(char* pcKey, int* piVals, int iNumVals);
+	void mAddLine(char* pcKey, float* pfVals, int iNumVals);
+	//-----------------
+	void mCreateVal(int* piVals, int iNumVals, char* pcVal);
+	void mCreateVal(float* pfVals, int iNumVals, char* pcVal);
+	void mCreateVal(char** pcToks, int iNumToks, char* pcVal);
+	//-----------------
+	int m_iNumLines;
+	int m_iLineSize;
+	int m_iLineCount;
+	int m_iIndent;
+	char* m_pcJson;
 };
 
 class CCheckFreeGpus
@@ -203,25 +242,6 @@ private:
 	int m_iPid;
 };
 
-class CProcessMovie
-{
-public:
-	CProcessMovie(void);
-	~CProcessMovie(void);
-	bool DoIt(void* pvMvPackage, int iNthGpu);
-private:
-	bool mCheckGain(void);
-	void mApplyRefs(void);
-	void mDetectBadPixels(void);
-	void mCorrectBadPixels(void);
-	void mAlignStack(void);
-	//-----------------
-	void* m_pvMvPackage;
-	int m_iNthGpu;
-	void* m_pvBadDetect;
-	void* m_pvBadCorrect;
-};
-
 class CProcessThread : public Util_Thread
 {
 public:
@@ -230,19 +250,22 @@ public:
 	static CProcessThread* GetFreeThread(void);
 	static bool WaitExitAll(float fSeconds);
 	~CProcessThread(void);
-	void DoIt(void);
+	int DoIt(void);
 	void ThreadMain(void);
 	int m_iNthGpu;
 private:
 	CProcessThread(void);
 	void mProcessTsPackage(void);
-	bool mLoadMovie(int iTilt);
+	void mProcessMovies(void);
+	bool mLoadTiltSeries(void);
+	//-----------------
 	void mProcessMovie(int iTilt);
 	void mAssembleTiltSeries(int iTilt);
 	void mProcessTiltSeries(void);
 	//-----------------
 	static CProcessThread* m_pInstances;
 	static int m_iNumGpus;
+	static std::unordered_map<std::string, int> *m_pMdocFiles;
 };
 
 class CGenStarFile

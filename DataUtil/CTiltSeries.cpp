@@ -14,8 +14,10 @@ CTiltSeries::CTiltSeries(void)
 {
 	m_pfTilts = 0L;
 	m_piAcqIndices = 0L;
+	m_piSecIndices = 0L;
 	m_ppfCenters = 0L;
 	m_ppfImages = 0L;
+	memset(m_aiStkSize, 0, sizeof(m_aiStkSize));
 }
 
 CTiltSeries::~CTiltSeries(void)
@@ -24,6 +26,7 @@ CTiltSeries::~CTiltSeries(void)
 	if(m_piAcqIndices != 0L) delete[] m_piAcqIndices;
 	m_pfTilts = 0L;
 	m_piAcqIndices = 0L;
+	m_piSecIndices = 0L;
 	//--------------------------------------------
 	// do NOT free each image. They will be freed
 	// in the base class (m_ppvFrames).
@@ -41,6 +44,8 @@ void CTiltSeries::Create(int* piStkSize)
 
 void CTiltSeries::Create(int* piImgSize, int iNumTilts)
 {
+	mCleanCenters();
+	//-----------------
 	int aiStkSize[] = {piImgSize[0], piImgSize[1], iNumTilts};
 	CMrcStack::Create(2, aiStkSize);
 	//-----------------
@@ -49,10 +54,10 @@ void CTiltSeries::Create(int* piImgSize, int iNumTilts)
 	memset(m_pfTilts, 0, sizeof(float) * iNumTilts);
 	//----------------
 	if(m_piAcqIndices != 0L) delete[] m_piAcqIndices;
-	m_piAcqIndices = new int[iNumTilts];
-	memset(m_piAcqIndices, 0, sizeof(int) * iNumTilts);
+	m_piAcqIndices = new int[iNumTilts * 2];
+	m_piSecIndices = &m_piAcqIndices[iNumTilts];
+	memset(m_piAcqIndices, 0, sizeof(int) * iNumTilts * 2);
 	//----------------
-	mCleanCenters();
 	m_ppfCenters = new float*[m_aiStkSize[2]];
 	for(int i=0; i<m_aiStkSize[2]; i++)
 	{	float* pfCent = new float[2];
@@ -106,8 +111,15 @@ void CTiltSeries::SetTilts(float* pfTilts)
 void CTiltSeries::SetAcqs(int* piAcqIndices)
 {
 	int iBytes = sizeof(int) * m_aiStkSize[2];
-	if(iBytes == 0) return;
+	if(iBytes <= 0) return;
 	memcpy(m_piAcqIndices, piAcqIndices, iBytes);
+}
+
+void CTiltSeries::SetSecs(int* piSecIndices)
+{
+	int iBytes = sizeof(int) * m_aiStkSize[2];
+	if(iBytes <= 0) return;
+	memcpy(m_piSecIndices, piSecIndices, iBytes);
 }
 
 void CTiltSeries::SetImage(int iTilt, void* pvImage)
@@ -169,6 +181,7 @@ void CTiltSeries::RemoveFrame(int iFrame)
 		m_ppfCenters[k] = m_ppfCenters[i];
 		m_pfTilts[k] = m_pfTilts[i];
 		m_piAcqIndices[k] = m_piAcqIndices[i];
+		m_piSecIndices[k] = m_piSecIndices[i];
 	};
 	//-----------------
 	int iLast = m_aiStkSize[2] - 1;
@@ -199,9 +212,76 @@ float* CTiltSeries::GetAccDose(void)
 	return pfAccDose;
 }
 
+int CTiltSeries::GetTiltIdx(float fTilt)
+{
+	int iMin = 0;
+	float fMin = (float)fabs(m_pfTilts[0] - fTilt);
+	for(int i=1; i<m_aiStkSize[2]; i++)
+	{	float fDif = (float)fabs(m_pfTilts[i] - fTilt);
+		if(fDif < fMin)
+		{	fMin = fDif;
+			iMin = i;
+		}
+	}
+	return iMin;
+}
+
+bool CTiltSeries::bEmpty(void)
+{
+	if(m_aiStkSize[0] == 0) return true;
+	if(m_aiStkSize[1] == 0) return true;
+	if(m_aiStkSize[0] == 0) return true;
+	if(m_ppfImages == 0L) return true;
+	return false;
+}
+
 float** CTiltSeries::GetImages(void)
 {
 	return m_ppfImages;
+}
+
+//--------------------------------------------------------------------
+// 1. This is called in CProcessThread::mProcessTsPackage().
+// 2. Since the tilt series is sorted by tilt angles and then saved
+//    into MRC files, its section indices are in ascending order
+//    as the tilt angles.
+// 3. If not sorted by tilt angles, the section indices should be
+//    the same as acquisition indices.
+//--------------------------------------------------------------------
+void CTiltSeries::ResetSecIndices(void)
+{
+	for(int i=0; i<m_aiStkSize[2]; i++)
+	{	m_piSecIndices[i] = i;
+	}
+}
+
+//--------------------------------------------------------------------
+// 1. Generate a new volume that swaps y and z dimensions by flipping
+//    of rotation.
+// 2. When flipping is used, the handedness will be changed. Rotation
+//    maintains the handedness.
+// 3. Flipping generates a volume that matches the one by rotation
+//    around X axis in IMOD user interface.
+//--------------------------------------------------------------------
+CTiltSeries* CTiltSeries::FlipVol(bool bFlip)
+{
+	CTiltSeries* pNewSeries = mGenVolXZY();
+	int* piNewSize = pNewSeries->m_aiStkSize;
+	//-----------------
+	int iBytes = m_aiStkSize[0] * sizeof(float);
+	int iEndOldY = m_aiStkSize[1] - 1;
+	//-----------------
+	for(int y=0; y<m_aiStkSize[1]; y++)
+	{	int iNewFrm = bFlip ? (iEndOldY - y) : y;
+		float* pfNewFrm = (float*)pNewSeries->GetFrame(iNewFrm);
+		for(int z=0; z<m_aiStkSize[2]; z++)
+		{	float* pfOldFrm = (float*)this->GetFrame(z);
+			memcpy(pfNewFrm + z * piNewSize[0],
+			   pfOldFrm + y * m_aiStkSize[0], iBytes);
+		}
+	}
+	//-----------------
+	return pNewSeries;
 }
 
 void CTiltSeries::mSwap(int k1, int k2)
@@ -210,16 +290,19 @@ void CTiltSeries::mSwap(int k1, int k2)
 	//-----------------
 	float fTilt1 = m_pfTilts[k1];
 	int iAcqIdx1 = m_piAcqIndices[k1];
+	int iSecIdx1 = m_piSecIndices[k1];
 	void* pvFrm1 = m_ppvFrames[k1];
 	float* pfImg1 = m_ppfImages[k1];
 	//-----------------
 	m_pfTilts[k1] = m_pfTilts[k2];
 	m_piAcqIndices[k1] = m_piAcqIndices[k2];
+	m_piSecIndices[k1] = m_piSecIndices[k2];
 	m_ppvFrames[k1] = m_ppvFrames[k2];
 	m_ppfImages[k1] = m_ppfImages[k2];
 	//-----------------
 	m_pfTilts[k2] = fTilt1;
 	m_piAcqIndices[k2] = iAcqIdx1;
+	m_piSecIndices[k2] = iSecIdx1;
 	m_ppvFrames[k2] = pvFrm1;
 	m_ppfImages[k2] = pfImg1;
 	//-----------------
@@ -237,4 +320,15 @@ void CTiltSeries::mCleanCenters(void)
 	}
 	delete[] m_ppfCenters;
 	m_ppfCenters = 0L;
+}
+
+CTiltSeries* CTiltSeries::mGenVolXZY(void)
+{
+	CTiltSeries* pNewSeries = new CTiltSeries;
+	int aiNewSize[] = {m_aiStkSize[0], 
+	   m_aiStkSize[2], m_aiStkSize[1]};
+	//-----------------
+	pNewSeries->Create(aiNewSize);
+	pNewSeries->m_fPixSize = m_fPixSize;
+	return pNewSeries;
 }

@@ -81,8 +81,9 @@ bool CReadFmIntFile::NeedIntegrate(void)
 	//-----------------------------------------
 	float fDose0 = m_ppEntries[0]->m_fFmDose;
 	float fDoseN = m_ppEntries[m_iNumEntries-1]->m_fFmDose;
-	float fDif = (float)fabs(fDose0 - fDoseN);
-	if(fDif >= 0.0001f) return false;
+	float fDif = (float)(fabs(fDose0 - fDoseN) /
+	   fabs(fDose0 + fDoseN) + 1e-30);
+	if(fDif >= 0.001f) return false;
 	//----------------------------------------------------
 	// For fixed exposure and users specified integration
 	// sizes, integration is then allowed.
@@ -137,13 +138,17 @@ void CReadFmIntFile::DoIt(void)
 	}
 	//-----------------
 	while(bSuccess)
-	{	CEntry* pEntry = new CEntry;
+	{	if(iGroupSize <= 0 || iIntSize <= 0) return;
+		if(iGroupSize < iIntSize) iGroupSize = iIntSize;
+		//----------------
+		CEntry* pEntry = new CEntry;
 		pEntry->Set(iGroupSize, iIntSize, fFmDose);
 		entryQueue.push(pEntry);
 		if(feof(pFile)) break;
-		//--------------------
+		//----------------
+		memset(acBuf, 0, sizeof(acBuf));
 		char* pcRet = fgets(acBuf, 256, pFile);
-		if(pcRet == 0L) break;
+		if(pcRet == 0L || strlen(acBuf) < 3) break;
 		//--------------------
 		if(bTwoItems) 
 		{	iItems = sscanf(acBuf, "%d  %d", 
@@ -158,11 +163,11 @@ void CReadFmIntFile::DoIt(void)
 		}
 	}
 	fclose(pFile);
-	//------------
+	//-----------------
 	m_iNumEntries = entryQueue.size();
 	if(m_iNumEntries == 0) return;
-	else m_ppEntries = new CEntry*[m_iNumEntries];
-	//---------------------------------------------
+	//-----------------
+	m_ppEntries = new CEntry*[m_iNumEntries];
 	bool bSameDose = true;
 	for(int i=0; i<m_iNumEntries; i++)
 	{	m_ppEntries[i] = entryQueue.front();

@@ -15,6 +15,7 @@ using namespace McAreTomo;
 
 CProcessThread* CProcessThread::m_pInstances = 0L;
 int CProcessThread::m_iNumGpus = 0;
+std::unordered_map<std::string, int>* CProcessThread::m_pMdocFiles = 0L;
 
 void CProcessThread::CreateInstances(int iNumGpus)
 {
@@ -27,6 +28,11 @@ void CProcessThread::CreateInstances(int iNumGpus)
 	{	m_pInstances[i].m_iNthGpu = i;
 	}
 	m_iNumGpus = iNumGpus;
+	//--------------------------------------------------
+	// store reading-failed mdoc files and the number
+	// of attempts.
+	//--------------------------------------------------
+	m_pMdocFiles = new std::unordered_map<std::string, int>;
 }
 
 void CProcessThread::DeleteInstances(void)
@@ -35,6 +41,10 @@ void CProcessThread::DeleteInstances(void)
 	delete[] m_pInstances;
 	m_pInstances = 0L;
 	m_iNumGpus = 0;
+	//-----------------
+	m_pMdocFiles->clear();
+	delete m_pMdocFiles;
+	m_pMdocFiles = 0L;	
 }
 
 CProcessThread* CProcessThread::GetFreeThread(void)
@@ -76,16 +86,33 @@ CProcessThread::~CProcessThread(void)
 {
 }
 
-void CProcessThread::DoIt(void)
+int CProcessThread::DoIt(void)
 {
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
-	if(!pReadMdoc->DoIt(pTsPackage->m_pcMdocFile))
-	{	printf("Warning: failed to read mdoc file.\n");
-		printf("   mdoc file: %s\n\n", pTsPackage->m_pcMdocFile);
-		return;
+	bool bLoaded = pReadMdoc->DoIt(pTsPackage->m_pcMdocFile);
+	if(bLoaded)
+	{	this->Start();
+		return 1;
 	}
-	this->Start();
+	//-----------------
+	MD::CStackFolder* pStackFolder = MD::CStackFolder::GetInstance();
+	auto item = m_pMdocFiles->find(pTsPackage->m_pcMdocFile);
+	if(item == m_pMdocFiles->end())
+	{	m_pMdocFiles->insert({pTsPackage->m_pcMdocFile, 1});
+		pStackFolder->PushFile(pTsPackage->m_pcMdocFile);
+		return 0;
+	}
+	//-----------------
+	if(item->second < 10)
+	{	item->second = item->second + 1;
+		pStackFolder->PushFile(pTsPackage->m_pcMdocFile);
+		return 0;
+	}
+	//-----------------
+	printf("Warning: failed to read mdoc file.\n");
+	printf("   mdoc file: %s\n\n", pTsPackage->m_pcMdocFile);
+	return -1;
 }
 
 void CProcessThread::ThreadMain(void)
@@ -98,25 +125,72 @@ void CProcessThread::ThreadMain(void)
 	pLogFiles->Create(pReadMdoc->m_acMdocFile);
 	//-----------------	
 	mProcessTsPackage();
+	//-----------------
+	MD::CSaveMdocDone* pSaveMdocDone = MD::CSaveMdocDone::GetInstance();
+	pSaveMdocDone->DoIt(pReadMdoc->m_acMdocFile);
+	//-----------------
+	printf("GPU %d: process thread exiting.\n\n", m_iNthGpu);
 }
 
 void CProcessThread::mProcessTsPackage(void)
 {
+	CInput* pInput = CInput::GetInstance();
+	if(pInput->m_iCmd == 0) 
+	{	mProcessMovies();
+		mProcessTiltSeries();
+	}
+	else 
+	{	bool bLoaded = mLoadTiltSeries();
+		if(!bLoaded) return;
+		mProcessTiltSeries();
+	}
+}
+
+void CProcessThread::mProcessMovies(void)
+{
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
 	//-----------------
-	bool bSuccess = true;
 	for(int i=0; i<pReadMdoc->m_iNumTilts; i++)
 	{	mProcessMovie(i);
 		mAssembleTiltSeries(i);
 	}
-	//-----------------
+	//--------------------------------------------------
+	// 1) Tilt series are sorted by tilt angle and then
+	// saved into MRC file.
+	// 2) The subsequent processing is done on the
+	// tilt-angle sorted tilt series.
+	//--------------------------------------------------
 	pTsPackage->SortTiltSeries(0);
 	pTsPackage->SaveTiltSeries();
-	//----------------------------------------------
-	// Start AreTomo processing: to be implemented.
-	//----------------------------------------------
-	mProcessTiltSeries();
+	//--------------------------------------------------
+	// 1) Resetting section indices makes the section
+	// index array in ascending order. 
+	// 2) Since the tilt series to be saved is sorted
+	// by tilt angles, its section indices should be
+	// in ascending order as the tilt angles.
+	//--------------------------------------------------
+	pTsPackage->ResetSectionIndices();
+}
+
+bool CProcessThread::mLoadTiltSeries(void)
+{
+	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);	
+	bool bLoaded = pTsPackage->LoadTiltSeries();
+	if(!bLoaded) return false;
+	//---------------------------------------------------------
+	// 1) Create buffer pool since there are several classes
+	// in Correct folder use it.
+	// 2) Buffer pool is created here only for -Cmd 1.
+	// 3) This is a patch and needs improvement.
+	//---------------------------------------------------------
+	MD::CTiltSeries* pTiltSeries = pTsPackage->GetSeries(0);
+	MD::CBufferPool* pBufferPool = MD::CBufferPool::GetInstance(m_iNthGpu);
+	int aiStkSize[3] = {0};
+	memcpy(aiStkSize, pTiltSeries->m_aiStkSize, sizeof(int) * 3);
+	if(aiStkSize[2] > 10) aiStkSize[2] = 10;
+	pBufferPool->Create(aiStkSize);
+	return true;	
 }
 
 void CProcessThread::mProcessMovie(int iTilt)
@@ -131,9 +205,9 @@ void CProcessThread::mProcessMovie(int iTilt)
 	pMcPackage->m_fTilt = pReadMdoc->GetTilt(iTilt);
 	pMcPackage->m_fPixSize = pInput->m_fPixSize;
 	//-----------------
-	printf("Motion correct %s\n"
+	printf("GPU %d: Motion correct %s\n"
 	   "------------------\n\n", 
-	   pcFileName);
+	   m_iNthGpu, pcFileName);
 	//-----------------
 	MotionCor::CMotionCorMain mcMain;
 	mcMain.DoIt(m_iNthGpu);
@@ -149,9 +223,18 @@ void CProcessThread::mAssembleTiltSeries(int iTilt)
 	//-----------------
 	float fTilt = pReadMdoc->GetTilt(iTilt);
 	pTsPackage->SetTiltAngle(iTilt, fTilt);
-	//-----------------
+	//--------------------------------------------------
+	// 1) when processing starts with movies, section
+	// indices are the same as acquisition  indices. 
+	// 2) when starting with MRC files of tilt series,
+	// section indices (MRC indices) likely differs
+	// from acquisition indices since MRC files usually
+	// sort tilt images in terms of tilt angles, not
+	// acquisition sequence.
+	//--------------------------------------------------
 	int iAcqIdx = pReadMdoc->GetAcqIdx(iTilt);
 	pTsPackage->SetAcqIdx(iTilt, iAcqIdx);
+	pTsPackage->SetSecIdx(iTilt, iAcqIdx);
 	//-----------------
 	pTsPackage->SetSums(iTilt, pMcPackage->m_pAlnSums);
 	pTsPackage->SetImgDose(pMcPackage->m_pRawStack->m_fStkDose);

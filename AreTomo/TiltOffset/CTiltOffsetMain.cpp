@@ -77,8 +77,8 @@ float CTiltOffsetMain::mSearch
 
 float CTiltOffsetMain::mCalcAveragedCC(float fTiltOffset)
 {
-	m_pAlignParam->AddTiltOffset(fTiltOffset);
-	//----------------------------------------
+	m_pAlignParam->AddAlphaOffset(fTiltOffset);
+	//-----------------
 	int iCount = 0;
 	float fCCSum = 0.0f;
 	int iZeroTilt = m_pAlignParam->GetFrameIdxFromTilt(0.0f);
@@ -90,8 +90,8 @@ float CTiltOffsetMain::mCalcAveragedCC(float fTiltOffset)
 		iCount++;
 	}
 	float fMeanCC = fCCSum / iCount;
-	//------------------------------
-	m_pAlignParam->AddTiltOffset(-fTiltOffset);
+	//-----------------
+	m_pAlignParam->AddAlphaOffset(-fTiltOffset);
 	return fMeanCC;
 }
 

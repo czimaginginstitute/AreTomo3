@@ -1,10 +1,13 @@
 #include "CDataUtilInc.h"
 #include "../CMcAreTomoInc.h"
+#include "../AreTomo/MrcUtil/CMrcUtilInc.h"
 #include <memory.h>
 #include <stdio.h>
 
 using namespace McAreTomo;
 using namespace McAreTomo::DataUtil;
+
+static float s_fD2R = 0.01745329f;
 
 CCtfResults* CCtfResults::m_pInstances = 0L;
 int CCtfResults::m_iNumGpus = 0;
@@ -35,13 +38,8 @@ CCtfResults* CCtfResults::GetInstance(int iNthGpu)
 
 CCtfResults::CCtfResults(void)
 {
-	mInit();
-}
-
-void CCtfResults::mInit(void)
-{
 	m_iNumImgs = 0;
-	m_pfDfMins = 0L;
+	m_ppCtfParams = 0L;
 	m_ppfSpects = 0L;
 }
 
@@ -50,69 +48,88 @@ CCtfResults::~CCtfResults(void)
 	this->Clean();
 }
 
-void CCtfResults::Setup(int iNumImgs, int* piSpectSize)
-{
-	this->Clean();
+void CCtfResults::Setup
+(	int iNumImgs, 
+	int* piSpectSize, 
+	CCtfParam* pCtfParam
+)
+{	this->Clean();
 	m_iNumImgs = iNumImgs;
 	m_aiSpectSize[0] = piSpectSize[0];
 	m_aiSpectSize[1] = piSpectSize[1];
-	//--------------------------------------------
-	int iNumCols = 6;
-	m_pfDfMins = new float[m_iNumImgs * iNumCols];
-	m_pfDfMaxs = &m_pfDfMins[m_iNumImgs];
-	m_pfAzimuths = &m_pfDfMaxs[m_iNumImgs];
-	m_pfExtPhases = &m_pfAzimuths[m_iNumImgs];
-	m_pfScores = &m_pfExtPhases[m_iNumImgs];
-	m_pfTilts = &m_pfScores[m_iNumImgs];
-	//-------------------------------------------------
-	int iBytes = sizeof(float) * m_iNumImgs * iNumCols;
-	memset(m_pfDfMins, 0, iBytes);
-	//-----------------------------------
+	//-----------------
 	m_ppfSpects = new float*[m_iNumImgs];
 	memset(m_ppfSpects, 0, sizeof(float*) * m_iNumImgs);
+	//-----------------
+	m_ppCtfParams = new CCtfParam*[m_iNumImgs];
+	for(int i=0; i<m_iNumImgs; i++)
+	{	m_ppCtfParams[i] = new CCtfParam;
+		m_ppCtfParams[i]->SetParam(pCtfParam);
+	}
 }
 
 void CCtfResults::Clean(void)
 {
 	if(m_iNumImgs == 0) return;
-	//-------------------------
-	if(m_pfDfMins != 0L) delete[] m_pfDfMins;
+	//-----------------
 	for(int i=0; i<m_iNumImgs; i++)
-	{	if(m_ppfSpects[i] == 0L) continue;
-		delete[] m_ppfSpects[i];
-		m_ppfSpects[i] = 0L;
+	{	if(m_ppfSpects[i] != 0L) delete[] m_ppfSpects[i];
+		if(m_ppCtfParams[i] != 0L) delete m_ppCtfParams[i];
 	}
-	mInit();
+	if(m_ppfSpects != 0L) delete[] m_ppfSpects;
+	if(m_ppCtfParams != 0L) delete[] m_ppCtfParams;
+	//-----------------
+	m_iNumImgs = 0;
+	m_ppCtfParams = 0L;
+	m_ppfSpects = 0L;
+}
+
+bool CCtfResults::bHasCTF(void)
+{
+	if(m_iNumImgs == 0) return false;
+	if(m_ppCtfParams == 0) return false;
+	//-----------------
+	for(int i=0; i<m_iNumImgs; i++)
+	{	if(m_ppCtfParams[i]->m_fDefocusMax < 1.0f) return false;
+	}
+	return true;
 }
 
 void CCtfResults::SetTilt(int iImage, float fTilt)
 {
-	m_pfTilts[iImage] = fTilt;
+	m_ppCtfParams[iImage]->m_fTilt = fTilt;
 }
 
 void CCtfResults::SetDfMin(int iImage, float fDfMin)
 {
-	m_pfDfMins[iImage] = fDfMin;
+	m_ppCtfParams[iImage]->m_fDefocusMin = 
+	   fDfMin / m_ppCtfParams[iImage]->m_fPixelSize;
 }
 
 void CCtfResults::SetDfMax(int iImage, float fDfMax)
 {
-	m_pfDfMaxs[iImage] = fDfMax;
+	m_ppCtfParams[iImage]->m_fDefocusMax = 
+	   fDfMax / m_ppCtfParams[iImage]->m_fPixelSize;
 }
 
 void CCtfResults::SetAzimuth(int iImage, float fAzimuth)
 {
-	m_pfAzimuths[iImage] = fAzimuth;
+	m_ppCtfParams[iImage]->m_fAstAzimuth = fAzimuth * s_fD2R;
 }
 
 void CCtfResults::SetExtPhase(int iImage, float fExtPhase)
 {
-	m_pfExtPhases[iImage] = fExtPhase;
+	m_ppCtfParams[iImage]->m_fExtPhase = fExtPhase * s_fD2R;
 }
 
 void CCtfResults::SetScore(int iImage, float fScore)
 {
-	m_pfScores[iImage] = fScore;
+	m_ppCtfParams[iImage]->m_fScore = fScore;
+}
+
+void CCtfResults::SetCtfRes(int iImage, float fRes)
+{
+	m_ppCtfParams[iImage]->m_fCtfRes = fRes;
 }
 
 void CCtfResults::SetSpect(int iImage, float* pfSpect)
@@ -123,32 +140,44 @@ void CCtfResults::SetSpect(int iImage, float* pfSpect)
 
 float CCtfResults::GetTilt(int iImage)
 {
-	return m_pfTilts[iImage];
+	return m_ppCtfParams[iImage]->m_fTilt;
 }
 
 float CCtfResults::GetDfMin(int iImage)
 {
-	return m_pfDfMins[iImage];
+	return m_ppCtfParams[iImage]->m_fDefocusMin *
+	   m_ppCtfParams[iImage]->m_fPixelSize;
 }
 
 float CCtfResults::GetDfMax(int iImage)
 {
-	return m_pfDfMaxs[iImage];
+	return m_ppCtfParams[iImage]->m_fDefocusMax *
+	   m_ppCtfParams[iImage]->m_fPixelSize;
 }
 
 float CCtfResults::GetAzimuth(int iImage)
 {
-	return m_pfAzimuths[iImage];
+	return m_ppCtfParams[iImage]->m_fAstAzimuth / s_fD2R;
 }
 
 float CCtfResults::GetExtPhase(int iImage)
 {
-	return m_pfExtPhases[iImage];
+	return m_ppCtfParams[iImage]->m_fExtPhase / s_fD2R;
+}
+
+float CCtfResults::GetPixSize(int iImage)
+{
+	return m_ppCtfParams[iImage]->m_fPixelSize;
 }
 
 float CCtfResults::GetScore(int iImage)
 {
-	return m_pfScores[iImage];
+	return m_ppCtfParams[iImage]->m_fScore;
+}
+
+float CCtfResults::GetCtfRes(int iImage)
+{
+	return m_ppCtfParams[iImage]->m_fCtfRes;
 }
 
 float* CCtfResults::GetSpect(int iImage, bool bClean)
@@ -197,11 +226,13 @@ void CCtfResults::SaveImod(const char* pcCtfTxtFile)
 void CCtfResults::Display(int iNthCtf, char* pcLog)
 {
 	char acBuf[128] = {'\0'};
-	sprintf(acBuf, "%4d  %8.2f  %8.2f  %6.2f %6.2f %9.5f\n", 
+	sprintf(acBuf, "%4d  %8.2f  %8.2f  %6.2f "
+	   "%6.2f %6.2f %9.5f\n", 
 	   iNthCtf+1, this->GetDfMin(iNthCtf), 
 	   this->GetDfMax(iNthCtf), 
 	   this->GetAzimuth(iNthCtf), 
 	   this->GetExtPhase(iNthCtf),
+	   this->GetCtfRes(iNthCtf),
 	   this->GetScore(iNthCtf));
 	strcat(pcLog, acBuf);
 }
@@ -213,7 +244,8 @@ void CCtfResults::DisplayAll(void)
 	memset(pcLog, 0, sizeof(char) * iSize);
 	//-----------------
 	sprintf(pcLog, "GPU %d: Estimated CTFs\n", m_iNthGpu);
-        strcat(pcLog, "Index  dfmin     dfmax    azimuth  phase   score\n");
+        strcat(pcLog, "Index  dfmin     dfmax    azimuth  phase  "
+	   "res   score\n");
 	//-----------------
 	for(int i=0; i<m_iNumImgs; i++) 
 	{	this->Display(i, pcLog);
@@ -221,4 +253,56 @@ void CCtfResults::DisplayAll(void)
 	//-----------------
 	printf("%s\n", pcLog);
 	if(pcLog != 0L) delete[] pcLog;
+}
+
+int CCtfResults::GetImgIdxFromTilt(float fTilt)
+{
+	int iMin = -1;
+	float fMin = (float)1e30;
+	for(int i=0; i<m_iNumImgs; i++)
+	{	float fDif = fabsf(fTilt - m_ppCtfParams[i]->m_fTilt);
+		if(fDif < fMin)
+		{	fMin = fDif;
+			iMin = i;
+		}
+	}
+	return iMin;
+}
+
+CCtfParam* CCtfResults::GetCtfParam(int iImage)
+{
+	return m_ppCtfParams[iImage];
+}
+
+CCtfParam* CCtfResults::GetCtfParamFromTilt(float fTilt)
+{
+	int iImage = this->GetImgIdxFromTilt(fTilt);
+	return m_ppCtfParams[iImage];
+}
+
+//--------------------------------------------------------------------
+// 1. Dark CTFs are those estimated on dark images.
+//--------------------------------------------------------------------
+void CCtfResults::RemoveDarkCTFs(void)
+{
+	if(!bHasCTF()) return;
+	//-----------------
+	MAM::CDarkFrames* pDarkFrames = 
+	   MAM::CDarkFrames::GetInstance(m_iNthGpu);
+	if(pDarkFrames->m_iNumDarks <= 0) return;
+	//-----------------
+	for(int i=pDarkFrames->m_iNumDarks-1; i>=0; i--)
+	{	int iDark = pDarkFrames->GetDarkIdx(i);
+		mRemoveEntry(i);
+	}
+}
+
+void CCtfResults::mRemoveEntry(int iEntry)
+{
+	if(m_ppCtfParams[iEntry] != 0L) delete m_ppCtfParams[iEntry];
+	for(int i=iEntry+1; i<m_iNumImgs; i++)
+	{	int j = i - 1;
+		m_ppCtfParams[j] = m_ppCtfParams[i];
+	}
+	m_iNumImgs -= 1;
 }

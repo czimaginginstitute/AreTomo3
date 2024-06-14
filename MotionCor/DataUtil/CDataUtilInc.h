@@ -60,14 +60,16 @@ public:
 private:
 	CFmIntParam(void);
         void mSetup(void);
-        void mSetupFile(void);    // FmIntFile has variable dose, intSize = 1
-	void mSetupFileInt(void); // FmIntFile has fixed dose, intSize > 1
+	void mCalcIntFms(void);
         void mClean(void);
         void mAllocate(void);
 	void mCalcIntFmCenters(void);
+	void mDisplay(void);
+	//-----------------
         int* m_piIntFmStart;
         int* m_piIntFmSize;
         int m_iNumRawFms;   // All frames in the input movie file
+	int m_iLeftRaws;    // leftover raw frames
         int m_iMrcMode;
 	//-----------------
 	static CFmIntParam* m_pInstances;
