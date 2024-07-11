@@ -60,10 +60,12 @@ bool CAreTomoMain::DoIt(int iNthGpu)
 	m_iNthGpu = iNthGpu;
 	//-----------------
 	CInput* pInput = CInput::GetInstance();
+	mGenCtfTiles();
 	if(pInput->m_iCmd == 0 || pInput->m_iCmd == 1) mDoFull();
 	else if(pInput->m_iCmd == 2) mSkipAlign();
 	else if(pInput->m_iCmd == 3) mEstimateCtf();
 	//-----------------
+	FindCtf::CTsTiles::DeleteInstance(m_iNthGpu);
 	printf("Process thread exits.\n\n");
 	return true;
 }
@@ -76,9 +78,8 @@ void CAreTomoMain::mDoFull(void)
 	// dark removed tilt series to determine alpha 
 	// and beta tilt offset.
 	//-----------------------------------------------
-	mFindCtf();
+	mFindCtf(false);
 	mRemoveDarkFrames();
-	mRemoveDarkCtfs();
 	//-----------------
 	mCreateAlnParams();
 	mRemoveSpikes();	
@@ -92,6 +93,7 @@ void CAreTomoMain::mDoFull(void)
 	// correction before saving files to Imod
 	// sub-directory.
 	//-----------------------------------------------
+	mRemoveDarkCtfs();
 	mSetupTsCorrection();
 	mSaveForImod();
 	//-----------------	
@@ -156,7 +158,7 @@ void CAreTomoMain::mEstimateCtf(void)
         bool bLoaded = loadAlnFile.DoIt(m_iNthGpu);
         if(!bLoaded) return;
 	//-----------------
-	mFindCtf();
+	mFindCtf(false);
 	mRemoveDarkCtfs();
 	//-----------------
 	ImodUtil::CImodUtil* pImodUtil = 0L;
@@ -213,15 +215,30 @@ void CAreTomoMain::mRemoveSpikes(void)
 	remSpikes.DoIt(pRawSeries);	
 }
 
+void CAreTomoMain::mGenCtfTiles(void)
+{
+	if(!FindCtf::CFindCtfMain::bCheckInput()) return;
+	FindCtf::CTsTiles *pTsTiles = 
+	   FindCtf::CTsTiles::GetInstance(m_iNthGpu);
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	pTsTiles->Generate(pAtInput->m_iCtfTileSize);
+}
+
 //--------------------------------------------------------------------
 // 1. CFindCtfMain estimates CTFs and saves them into the output
 //    directory, but does not save in the Imod directory.
 //--------------------------------------------------------------------
-void CAreTomoMain::mFindCtf(void)
+void CAreTomoMain::mFindCtf(bool bRefine)
 {
 	if(!FindCtf::CFindCtfMain::bCheckInput()) return;
-	FindCtf::CFindCtfMain findCtfMain;
-	findCtfMain.DoIt(m_iNthGpu);
+	if(!bRefine)
+	{	FindCtf::CFindCtfMain findCtfMain;
+		findCtfMain.DoIt(m_iNthGpu);
+	}
+	else 
+	{	FindCtf::CRefineCtfMain refineCtfMain;
+		refineCtfMain.DoIt(m_iNthGpu);
+	}
 }
 
 void CAreTomoMain::mMassNorm(void)
@@ -234,6 +251,7 @@ void CAreTomoMain::mAlign(void)
 {
 	m_fRotScore = 0.0f;
 	mCoarseAlign();
+	mFindCtf(true);
 	//-----------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->ResetShift();
@@ -254,15 +272,6 @@ void CAreTomoMain::mAlign(void)
 	}
 	//-----------------
 	mPatchAlign();
-	//-----------------
-	if(pInput->m_afTiltCor[0] == 0) 
-	{	pAlignParam->AddAlphaOffset(-m_fTiltOffset);
-	}
-	else
-	{	MAM::CDarkFrames* pDarkFrames = 
-		   MAM::CDarkFrames::GetInstance(m_iNthGpu);
-		pDarkFrames->AddTiltOffset(m_fTiltOffset);
-	}
 	//-----------------
 	mLogGlobalShift();
 	mLogLocalShift();
@@ -350,6 +359,8 @@ void CAreTomoMain::mRotAlign(void)
 
 void CAreTomoMain::mFindTiltOffset(void)
 {
+	/*
+	m_fTiltOffset = 0.0f;
 	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->m_afTiltCor[0] < 0) return;
 	//-----------------
@@ -366,6 +377,7 @@ void CAreTomoMain::mFindTiltOffset(void)
 	m_fTiltOffset += fTiltOffset;
 	//-----------------
 	pAlignParam->AddAlphaOffset(fTiltOffset);
+	*/
 }
 
 void CAreTomoMain::mPatchAlign(void)
@@ -380,7 +392,7 @@ void CAreTomoMain::mPatchAlign(void)
 	//-----------------
 	MAP::CPatchAlignMain* pPatchAlignMain = 
 	   MAP::CPatchAlignMain::GetInstance(m_iNthGpu);
-	pPatchAlignMain->DoIt(m_fTiltOffset); 
+	pPatchAlignMain->DoIt(); 
 }
 
 void CAreTomoMain::mCorrectCTF(void)

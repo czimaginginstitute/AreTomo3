@@ -50,10 +50,8 @@ CPatchAlignMain::~CPatchAlignMain(void)
 {
 }
 
-void CPatchAlignMain::DoIt(float fTiltOffset)
+void CPatchAlignMain::DoIt(void)
 {	
-	m_fTiltOffset = fTiltOffset;
-	//-----------------
 	MD::CTsPackage* pPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	m_pTiltSeries = pPkg->GetSeries(0);
 	m_pFullParam = MAM::CAlignParam::GetInstance(m_iNthGpu);

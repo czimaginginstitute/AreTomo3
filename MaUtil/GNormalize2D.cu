@@ -43,6 +43,9 @@ void GNormalize2D::DoIt
 	dim3 aBlockDim(1, 512);
 	dim3 aGridDim(iSizeX, 1);
 	aGridDim.y = (iSizeY + aBlockDim.y - 1) / aBlockDim.y;
+	//-----------------
+	if(fStd == 0) fStd = 1.0f;
+	//-----------------
 	mGNorm2D<<<aGridDim, aBlockDim, 0, stream>>>
 	( gfImg, piSize[0], iSizeY, fMean, fStd
 	);

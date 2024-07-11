@@ -158,6 +158,7 @@ public:
 	int m_iOutImod;
 	float m_fDarkTol;
 	bool m_bIntpCor;
+	int m_iCtfTileSize;
 	int m_aiCorrCTF[2];
 	//-----------------
 	char m_acTotalDoseTag[32];

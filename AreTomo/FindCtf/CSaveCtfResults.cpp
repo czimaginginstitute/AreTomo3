@@ -51,9 +51,8 @@ void CSaveCtfResults::mSaveImages(const char* pcCtfFile)
 	   pCtfResults->m_iNumImgs, 1, 1.0f);
 	//-----------------
 	for(int i=0; i<pCtfResults->m_iNumImgs; i++)
-	{	float* pfSpect = pCtfResults->GetSpect(i, bClean);
+	{	float* pfSpect = pCtfResults->GetSpect(i, !bClean);
 		aSaveMrc.DoIt(i, pfSpect);
-		if(pfSpect != 0L) delete[] pfSpect;
 	}
 	aSaveMrc.CloseFile();
 }

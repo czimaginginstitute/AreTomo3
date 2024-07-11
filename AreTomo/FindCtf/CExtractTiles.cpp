@@ -47,7 +47,7 @@ void CExtractTiles::Setup(int iTileSize, int iCoreSize, int* piImgSize)
 	m_aiNumTiles[1] = m_aiImgSize[1] / m_iCoreSize;
 	//-----------------
 	m_iNumTiles = m_aiNumTiles[0] * m_aiNumTiles[1];
-	m_pTiles = new CTile[m_iNumTiles];
+	m_pTiles = new CCoreTile[m_iNumTiles];
 	for(int i=0; i<m_iNumTiles; i++)
 	{	m_pTiles[i].SetTileSize(m_iTileSize);
 		m_pTiles[i].SetCoreSize(m_iCoreSize);
@@ -56,7 +56,7 @@ void CExtractTiles::Setup(int iTileSize, int iCoreSize, int* piImgSize)
 	mCalcTileLocations();
 }
 
-CTile* CExtractTiles::GetTile(int iTile)
+CCoreTile* CExtractTiles::GetTile(int iTile)
 {
 	return &m_pTiles[iTile];
 }

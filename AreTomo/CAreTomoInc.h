@@ -78,13 +78,14 @@ public:
 private:
 	void mDoFull(void);
 	void mSkipAlign(void);
+	void mGenCtfTiles(void);
 	void mEstimateCtf(void);
 	//-----------------
 	void mRemoveDarkFrames(void);
 	void mRemoveDarkCtfs(void);
 	void mRemoveSpikes(void);
 	void mCreateAlnParams(void);
-	void mFindCtf(void);
+	void mFindCtf(bool bRefine);
 	void mMassNorm(void);
 	//-----------------
 	void mAlign(void);
@@ -123,7 +124,6 @@ private:
 	//-----------------
 	MAC::CCorrTomoStack* m_pCorrTomoStack;
 	float m_fRotScore;
-	float m_fTiltOffset;
 	int m_iNthGpu;
 
 };

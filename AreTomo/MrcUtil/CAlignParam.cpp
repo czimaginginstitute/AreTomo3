@@ -169,16 +169,6 @@ void CAlignParam::GetShift(int iFrame, float* pfShift)
 	pfShift[1] = m_pfShiftYs[iFrame];
 }
 
-float* CAlignParam::GetShiftXs(void)
-{	
-	return m_pfShiftXs;
-}
-
-float* CAlignParam::GetShiftYs(void)
-{
-	return m_pfShiftYs;
-}
-
 int CAlignParam::GetFrameIdxFromTilt(float fTilt)
 {
 	int iFrameIdx = 0;

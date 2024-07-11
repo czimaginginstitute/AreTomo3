@@ -232,10 +232,13 @@ public:
 	static void CreateInstances(int iNumGpus);
 	static void DeleteInstances(void);
 	static CCtfResults* GetInstance(int iNthGpu);
+	static void Replace(int iNthGpu, CCtfResults* pInstance);
+	//-----------------
 	~CCtfResults(void);
 	void Clean(void);
 	void Setup(int iNumImgs, int* piSpectSize, CCtfParam* pCtfParam);
 	bool bHasCTF(void);
+	CCtfResults* GetCopy(void);
 	//----------------
 	void SetTilt(int iImage, float fTilt);
 	void SetDfMin(int iImage, float fDfMin);
@@ -244,17 +247,23 @@ public:
 	void SetExtPhase(int iImage, float fExtPhase);
 	void SetScore(int iImage, float fScore);
 	void SetCtfRes(int iImage, float fRes);
+	void SetCtfParam(int iImage, CCtfParam* pCtfParam);
 	void SetSpect(int iImage, float* pfSpect);
 	//-----------------
 	float GetTilt(int iImage);
 	float GetDfMin(int iImage);
 	float GetDfMax(int iImage);
+	float GetDfMean(int iImage);
+	float GetAstMag(int iImage);
 	float GetAzimuth(int iImage);
 	float GetExtPhase(int iImage);
 	float GetScore(int iImage);
+	float GetTsScore(void);
+	float GetLowTiltScore(float fLowTilt);
 	float GetPixSize(int iImage);
 	float GetCtfRes(int iImage);
 	float* GetSpect(int iImage, bool bClean);
+	//-----------------
 	void SaveImod(const char* pcCtfTxtFile);
 	void Display(int iNthCtf, char* pcLog);
 	void DisplayAll(void);
@@ -274,7 +283,7 @@ private:
 	//-----------------
 	CCtfParam** m_ppCtfParams;
 	float** m_ppfSpects;
-	static CCtfResults* m_pInstances;
+	static CCtfResults** m_ppInstances;
 	static int m_iNumGpus;
 };
 

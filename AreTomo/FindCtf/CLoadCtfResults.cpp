@@ -31,8 +31,8 @@ bool CLoadCtfResults::DoIt(int iNthGpu)
 	   pAtInput->m_fAmpContrast, pTiltSeries->m_fPixSize);
 	//-----------------
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
-	pCtfResults->Setup(pTiltSeries->m_aiStkSize[2], 
-	   CFindCtfMain::m_aiSpectSize, &ctfParam);
+	int aiTileSize[] = {pAtInput->m_iCtfTileSize, pAtInput->m_iCtfTileSize};
+	pCtfResults->Setup(pTiltSeries->m_aiStkSize[2], aiTileSize, &ctfParam);
 	//-----------------
 	char acCtfFile[256] = {'\0'};
 	CSaveCtfResults::GenFileName(m_iNthGpu, acCtfFile);

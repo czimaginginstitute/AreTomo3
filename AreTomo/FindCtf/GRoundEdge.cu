@@ -24,6 +24,22 @@ static __global__ void mGRoundEdge(float* gfImg, int iSizeX,
 	gfImg[i] = gfImg[i] * fR;
 }
 
+static __global__ void mGKeepCenter(float* gfImg, int iSizeX,
+        float* gfMaskCent, float fMaskR)
+{
+	int x = blockIdx.x * blockDim.x + threadIdx.x;
+	if(x >= iSizeX) return;
+	int i = blockIdx.y * iSizeX + x;
+	//-----------------
+	float fX = x - gfMaskCent[0]; 
+	float fY = blockIdx.y - gfMaskCent[1];
+	float fR = sqrtf(fX * fX + fY * fY) / fMaskR - 1.0f;
+	if(fR <= 0.0f) return;
+	//-----------------
+	fR = 0.5f * (1 - cosf(3.1415926f * fR));
+	fR = 1.0f - powf(fR, 3.0f);
+	gfImg[i] = gfImg[i] * fR;
+}
 
 GRoundEdge::GRoundEdge(void)
 {
@@ -43,7 +59,7 @@ void GRoundEdge::SetMask(float* pfCent, float* pfSize)
 	m_afMaskSize[1] = pfSize[1];
 }
 
-void GRoundEdge::DoIt(float* gfImg, int* piImgSize)
+void GRoundEdge::DoIt(float* gfImg, int* piImgSize, bool bKeepCenter)
 {
 	if(m_afMaskCent[0] == 0 || m_afMaskCent[1] == 0)
 	{	m_afMaskCent[0] = 0.5f * piImgSize[0];
@@ -53,26 +69,32 @@ void GRoundEdge::DoIt(float* gfImg, int* piImgSize)
 	{	m_afMaskSize[0] = 1.0f * piImgSize[0];
 		m_afMaskSize[1] = 1.0f * piImgSize[1];
 	}
-	//--------------------------------------------
-	cudaMemcpyKind aH2D = cudaMemcpyHostToDevice;
+	//-----------------
 	float* gfMaskCent = 0L;
 	size_t tBytes = sizeof(float) * 2;
 	cudaMalloc(&gfMaskCent, tBytes);
-	cudaMemcpy(gfMaskCent, m_afMaskCent, tBytes, aH2D);
-	//-------------------------------------------------
+	cudaMemcpy(gfMaskCent, m_afMaskCent, tBytes, cudaMemcpyDefault);
+	//-----------------
 	float* gfMaskSize = 0L;
 	cudaMalloc(&gfMaskSize, tBytes);
-	cudaMemcpy(gfMaskSize, m_afMaskSize, tBytes, aH2D);
-	//-------------------------------------------------
+	cudaMemcpy(gfMaskSize, m_afMaskSize, tBytes, cudaMemcpyDefault);
+	//-----------------
 	dim3 aBlockDim(512, 1);
 	int iGridX = piImgSize[0] / aBlockDim.x + 1;
 	dim3 aGridDim(iGridX, piImgSize[1]);
-	//----------------------------------
-	mGRoundEdge<<<aGridDim, aBlockDim>>>
-	(  gfImg, piImgSize[0],
-	   gfMaskCent, gfMaskSize
-	);
-	//-----------------------
+	//-----------------
+	if(!bKeepCenter)
+	{	mGRoundEdge<<<aGridDim, aBlockDim>>>(gfImg, 
+		   piImgSize[0], gfMaskCent, gfMaskSize);
+	}
+	else
+	{	float fMaskR = (float)sqrtf(m_afMaskSize[0] *
+		   m_afMaskSize[0] + m_afMaskSize[1] *
+	   	   m_afMaskSize[1]) * 0.5f;
+		mGKeepCenter<<<aGridDim, aBlockDim>>>(gfImg,
+		   piImgSize[0], gfMaskCent, fMaskR);	
+	}
+	//-----------------
 	if(gfMaskCent != 0L) cudaFree(gfMaskCent);
 	if(gfMaskSize != 0L) cudaFree(gfMaskSize);
 }

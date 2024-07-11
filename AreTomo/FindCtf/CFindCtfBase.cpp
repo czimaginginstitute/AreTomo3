@@ -12,13 +12,21 @@ namespace MU = McAreTomo::MaUtil;
 CFindCtfBase::CFindCtfBase(void)
 {
 	m_fDfMin = 0.0f;
-	m_fDfMax = 0.0f;
-	m_fAstAng = 0.0f;
-	m_fExtPhase = 0.0f;
-	m_fScore = 0.0f;
-	mInitPointers();
-	memset(m_afPhaseRange, 0, sizeof(m_afPhaseRange));
-	memset(m_aiImgSize, 0, sizeof(m_aiImgSize));
+        m_fDfMax = 0.0f;
+        m_fAstAng = 0.0f;
+        m_fExtPhase = 0.0f;
+        m_fScore = 0.0f;
+        //-----------------
+        m_pCtfTheory = 0L;
+        m_gfFullSpect = 0L;
+        //-----------------
+        m_afPhaseRange[0] = 0.0f;
+	m_afPhaseRange[1] = 0.0f;
+	//-----------------
+	m_afDfRange[0] = 3000.0f;
+	m_afDfRange[1] = 40000.0f;
+	//-----------------
+	m_iNthGpu = 0;
 }
 
 CFindCtfBase::~CFindCtfBase(void)
@@ -26,49 +34,36 @@ CFindCtfBase::~CFindCtfBase(void)
 	this->Clean();
 }
 
-void CFindCtfBase::mInitPointers(void)
-{
-	m_pCtfTheory = 0L;
-	m_pGenAvgSpect = 0L;
-	m_gfFullSpect = 0L;
-}
-
 void CFindCtfBase::Clean(void)
 {
 	if(m_pCtfTheory != 0L) delete m_pCtfTheory;
-	if(m_pGenAvgSpect != 0L) delete m_pGenAvgSpect;
 	if(m_gfFullSpect != 0L) cudaFree(m_gfFullSpect);
-	mInitPointers();
+	m_pCtfTheory = 0L;
+	m_gfFullSpect = 0L;
 }
 
-void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory, int iTileSize)
+void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory)
 {
 	this->Clean();
-	//------------
+	m_pCtfTheory = pCtfTheory->GetCopy();
+	//-----------------
+	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
+	int iTileSize = pTsTiles->GetTileSize();
 	m_aiCmpSize[1] = iTileSize;
 	m_aiCmpSize[0] = m_aiCmpSize[1] / 2 + 1;
-	m_pCtfTheory = pCtfTheory->GetCopy();
 	//-----------------
 	float fPixSize = m_pCtfTheory->GetPixelSize();
         m_afResRange[0] = 15.0f * fPixSize;
         m_afResRange[1] = 3.5f * fPixSize;
 	//-----------------
+	float fPixSize2 = fPixSize * fPixSize;
+	m_afDfRange[0] = 3000.0f * fPixSize2;
+	m_afDfRange[1] = 40000.0f * fPixSize2;
+	//-----------------
 	int iCmpSize = m_aiCmpSize[0] * m_aiCmpSize[1];
 	cudaMalloc(&m_gfFullSpect, sizeof(float) * iCmpSize * 4);
 	m_gfRawSpect = m_gfFullSpect + iCmpSize * 2;
 	m_gfCtfSpect = m_gfFullSpect + iCmpSize * 3;
-	//-----------------
-	m_pGenAvgSpect = new CGenAvgSpectrum;
-}
-
-void CFindCtfBase::Setup2(int* piImgSize)
-{
-	if(m_aiImgSize[0] == piImgSize[0] && 
-	   m_aiImgSize[1] == piImgSize[1]) return;
-	//----------------------------------------
-	m_aiImgSize[0] = piImgSize[0];
-	m_aiImgSize[1] = piImgSize[1];
-	m_pGenAvgSpect->SetSizes(m_aiImgSize, m_aiCmpSize[1]);
 }
 
 void CFindCtfBase::SetPhase(float fInitPhase, float fPhaseRange)
@@ -79,6 +74,13 @@ void CFindCtfBase::SetPhase(float fInitPhase, float fPhaseRange)
 	//-----------------
 	m_afPhaseRange[0] = fmax(fMin, 0.0f);
 	m_afPhaseRange[1] = fmin(fMax, 180.0f);
+}
+
+void CFindCtfBase::SetDefocus(float fInitDF, float fDfRange)
+{
+	m_afDfRange[0] = fInitDF - 0.5f * fDfRange;
+	m_afDfRange[1] = fInitDF + 0.5f * fDfRange;
+	if(m_afDfRange[0] < 100.0f) m_afDfRange[0] = 100.0f;
 }
 
 void CFindCtfBase::SetHalfSpect(float* pfCtfSpect)
@@ -106,12 +108,24 @@ void CFindCtfBase::GetSpectSize(int* piSize, bool bHalf)
 	if(!bHalf) piSize[0] = (piSize[0] - 1) * 2;
 }
 
-void CFindCtfBase::GenHalfSpectrum(float* pfImage)
-{	
-	m_pGenAvgSpect->DoIt(pfImage, m_gfRawSpect);
+void CFindCtfBase::GenHalfSpectrum
+(	int iTilt, 
+	float fTiltOffset, 
+	float fBetaOffset
+)
+{	CGenAvgSpectrum genAvgSpect;
+	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	//-----------------
+	float fInitDF = 0.0f, fTiltAxis = 0.0f;
+	if(pCtfResults->m_iNumImgs > 0) fInitDF = pCtfResults->GetDfMean(iTilt);
+	if(pAlnParam->m_iNumFrames > 0) fTiltAxis = pAlnParam->GetTiltAxis(0);
+	//-----------------
+	genAvgSpect.SetTiltOffsets(fTiltOffset, fBetaOffset);
+	genAvgSpect.DoIt(iTilt, fTiltAxis, fInitDF, m_gfRawSpect, m_iNthGpu);
 	mRemoveBackground();
 }
-
+/*
 float* CFindCtfBase::GenFullSpectrum(void)
 {
 	float fAstRad = m_fAstAng * 0.017453f;
@@ -128,6 +142,23 @@ float* CFindCtfBase::GenFullSpectrum(void)
 	   cudaMemcpyDefault);
 	return pfFullSpect;
 }
+*/
+
+void CFindCtfBase::GenFullSpectrum(float* pfFullSpect)
+{
+	float fAstRad = m_fAstAng * 0.017453f;
+	m_pCtfTheory->SetDefocus(m_fDfMin, m_fDfMax, fAstRad);
+	m_pCtfTheory->SetExtPhase(m_fExtPhase, true);
+	//-------------------------------------------
+	CSpectrumImage spectrumImage;
+	spectrumImage.DoIt(m_gfCtfSpect, m_gfRawSpect, m_aiCmpSize,
+	   m_pCtfTheory, m_afResRange, m_gfFullSpect);
+	//--------------------------------------------
+	int iPixels = (m_aiCmpSize[0] - 1) * 2 * m_aiCmpSize[1];
+	cudaMemcpy(pfFullSpect, m_gfFullSpect, iPixels * sizeof(float),
+	   cudaMemcpyDefault);
+}
+
 
 void CFindCtfBase::ShowResult(void)
 {

@@ -27,7 +27,7 @@ static float s_fD2R = 0.0174532f;
 CCorrImgCtf::CCorrImgCtf(void)
 {
 	m_iTileSize = 512;
-	m_iCoreSize = 512;
+	m_iCoreSize = 256;
 	m_pExtractTiles = new CExtractTiles;
 	m_pGCorrCTF2D = new GCorrCTF2D;
 }
@@ -97,6 +97,7 @@ void CCorrImgCtf::DoIt
 		cufftComplex* gCmpTile = (cufftComplex*)gfTile;
 		//----------------
 		mTileToGpu(i);
+		//mRoundEdge(i);
 		m_pForwardFFT->Forward(gfTile, bNorm, m_streams[0]);
 		mCorrectCTF(i);
 		m_pInverseFFT->Inverse(gCmpTile, m_streams[0]);
@@ -107,7 +108,7 @@ void CCorrImgCtf::DoIt
 	/* This is debugging code		
 	MU::CSaveTempMrc saveMrc;
 	saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestTile", ".mrc");
-	CTile* pTile = m_pExtractTiles->GetTile(0);
+	CCoreTile* pTile = m_pExtractTiles->GetTile(0);
 	int aiSize[] = {pTile->m_iPadSize, pTile->m_iTileSize};
 	saveMrc.DoIt(pTile->m_pfTile, 2, aiSize);
 	printf("Tile saved.\n");
@@ -115,7 +116,7 @@ void CCorrImgCtf::DoIt
 
 	//-----------------
 	for(int i=0; i<m_pExtractTiles->m_iNumTiles; i++)
-	{	CTile* pTile = m_pExtractTiles->GetTile(i);
+	{	CCoreTile* pTile = m_pExtractTiles->GetTile(i);
 		pTile->PasteCore(m_pfImage);
 	}
 }
@@ -123,28 +124,44 @@ void CCorrImgCtf::DoIt
 void CCorrImgCtf::mTileToGpu(int iTile)
 {
 	int iStream = iTile % 2;
-	CTile* pTile = m_pExtractTiles->GetTile(iTile);
+	CCoreTile* pTile = m_pExtractTiles->GetTile(iTile);
 	size_t tBytes = pTile->GetTileBytes();
 	//-----------------
 	if(iStream == 1) cudaStreamSynchronize(m_streams[0]);
-	cudaMemcpyAsync(m_ggfTiles[iStream], pTile->m_pfTile, tBytes,
+	cudaMemcpyAsync(m_ggfTiles[iStream], pTile->GetTile(), tBytes,
 	   cudaMemcpyDefault, m_streams[iStream]);
 	if(iStream == 1) cudaStreamSynchronize(m_streams[1]);
 }
 
+void CCorrImgCtf::mRoundEdge(int iTile)
+{
+	GRoundEdge roundEdge;
+	CCoreTile* pTile = m_pExtractTiles->GetTile(iTile);
+	float fCoreSize = (float)pTile->GetCoreSize();
+	float afMaskSize[] = {fCoreSize, fCoreSize};
+	float afMaskCenter[2] = {0.0f};
+	pTile->GetCoreCenterInTile(afMaskCenter);
+	roundEdge.SetMask(afMaskCenter, afMaskSize);
+	//-----------------
+	int aiTileSize[] = {(m_iTileSize / 2 + 1) * 2, m_iTileSize};
+	float* gfTile = m_ggfTiles[iTile % 2];
+	bool bKeepCenter = true;
+	roundEdge.DoIt(gfTile, aiTileSize, bKeepCenter);
+}
+
 void CCorrImgCtf::mGpuToTile(int iTile)
 {
-	CTile* pTile = m_pExtractTiles->GetTile(iTile);
+	CCoreTile* pTile = m_pExtractTiles->GetTile(iTile);
 	size_t tBytes = pTile->GetTileBytes();
 	//-----------------
-	cudaMemcpyAsync(pTile->m_pfTile, m_ggfTiles[iTile % 2],
+	cudaMemcpyAsync(pTile->GetTile(), m_ggfTiles[iTile % 2],
 	   tBytes, cudaMemcpyDefault, m_streams[0]);
 }
 
 float CCorrImgCtf::mCalcDeltaZ(int iTile)
 {
 	float afCent[2] = {0.0f};
-	CTile* pTile = m_pExtractTiles->GetTile(iTile);
+	CCoreTile* pTile = m_pExtractTiles->GetTile(iTile);
 	pTile->GetCoreCenter(afCent);
 	//-----------------
 	afCent[0] -= (m_aiImgSize[0] * 0.5f);
@@ -169,14 +186,13 @@ float CCorrImgCtf::mCalcDeltaZ(int iTile)
 void CCorrImgCtf::mCorrectCTF(int iTile)
 {
 	float fDeltaZ = mCalcDeltaZ(iTile);
-	float fDeltaF = -fDeltaZ;
 	//-----------------
 	bool bAngstrom = true;
 	float fDfMean = m_pImgCtfParam->GetDfMean(!bAngstrom);
 	float fDfSigma = m_pImgCtfParam->GetDfSigma(!bAngstrom);
 	float fRatio = fDfSigma / fDfMean;
 	//-----------------
-	fDfMean += fDeltaF;
+	fDfMean += fDeltaZ;
 	fDfSigma = fDfMean * fRatio;
 	float fDfMin = fDfMean - fDfSigma;
 	float fDfMax = fDfMean + fDfSigma;

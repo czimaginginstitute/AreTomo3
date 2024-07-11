@@ -69,6 +69,7 @@ CAtInput::CAtInput(void)
 	m_iAlign = 1;
 	m_fDarkTol = 0.7f;
 	m_bIntpCor = false;
+	m_iCtfTileSize = 512;
 	m_aiCorrCTF[0] = 1;
 	m_aiCorrCTF[1] = 15;
 	//-----------------

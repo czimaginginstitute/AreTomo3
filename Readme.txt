@@ -203,4 +203,23 @@ AreTomo3 1.0.15: [05-23-2024]
    higher than 2um. The fix is to use Fourier cropping to increase the pixel 
    size to 1A and correspondingly the Thon ring spacing. CFindCtfMain.cpp 
 5. Implemented GCalcFRC.cu that calculates the FRC between a pair of 2D
-   images. (05-31-2024) 
+   images. (05-31-2024)
+
+AreTomo3 1.0.16: [06-17-2024]
+-----------------------------
+1. Bug fix: CAreTomoMain::m_fTiltOffset was not initialized, Added
+   m_fTiltOffset = 0.0f in CAreTomoMain::mFindTiltOffset
+2. Changes in FindCtf: Generate tiles of an entire tilt series. CTF estimation
+   will be done twice, one without taking into account of focus gradient, and
+   one with after tilt axis is determined. 
+3. Implemented spectrum scaling based on local defocus in generating averaged
+   power spectrum per tilt. [06-27-2024]
+4. Implemented tile screening that excludes tiles with low standard deviation.
+   This is per tilt base screening. [06-27-2024].
+5. Implemented CTF based tilt angle refinement in CFindCtfMain. [07-01-2024] 
+6. Bug fix: FindCtf/CFindDefocus1D::mBrutalForceSearch: incorrect calculation
+   of search steps for defocus and phase. fixed on 07-09-2024 
+7. Bug fix: AreTomo/Recon/CDoWbpRecon.cpp: lines 64 & 65 are debugging code.
+   They should be removed. Fixed. [07-11-2024]
+8. Local CTF estimation has been implemented in FindCtf/CRefineCtfMain.
+8. Correct alpha offset based on local CTF estimation.

@@ -88,7 +88,7 @@ static __global__ void mGWeinerFilter
 	fCTF = -sinf(fCTF);
 	//-----------------
 	float fSign = (fCTF <= 0) ? 1.0f : -1.0f; // dark particles
-	fX = 9.0f * expf(fR2);
+	fX = 9.0f * expf(fR2 * 4.0f);
 	fCTF = (fabsf(fCTF) + fX) / (fX + 1.0f) * fSign;
 	fCTF = expf(-fBFactor * sqrtf(fR2)) / fCTF;
 	//-----------------

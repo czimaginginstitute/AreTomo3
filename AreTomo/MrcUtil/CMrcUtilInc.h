@@ -39,8 +39,8 @@ public:
 	float GetTilt(int iFrame);
 	float GetTiltAxis(int iFrame);
 	void GetShift(int iFrame, float* pfShift);
-	float* GetShiftXs(void);  // do not free
-	float* GetShiftYs(void);  // do not free
+	float* GetShiftXs(void) { return m_pfShiftXs; }
+	float* GetShiftYs(void) { return m_pfShiftYs; }
 	int GetFrameIdxFromTilt(float fTilt);
 	float* GetTilts(bool bCopy);
 	float GetMinTilt(void);
