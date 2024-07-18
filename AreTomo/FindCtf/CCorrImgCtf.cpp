@@ -97,27 +97,25 @@ void CCorrImgCtf::DoIt
 		cufftComplex* gCmpTile = (cufftComplex*)gfTile;
 		//----------------
 		mTileToGpu(i);
-		//mRoundEdge(i);
+		mRoundEdge(i);
 		m_pForwardFFT->Forward(gfTile, bNorm, m_streams[0]);
 		mCorrectCTF(i);
 		m_pInverseFFT->Inverse(gCmpTile, m_streams[0]);
 		mGpuToTile(i);
 	}
 	cudaStreamSynchronize(m_streams[0]);
-
-	/* This is debugging code		
+	//-----------------
+	/* Debugging code
 	MU::CSaveTempMrc saveMrc;
-	saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestTile", ".mrc");
-	CCoreTile* pTile = m_pExtractTiles->GetTile(0);
-	int aiSize[] = {pTile->m_iPadSize, pTile->m_iTileSize};
-	saveMrc.DoIt(pTile->m_pfTile, 2, aiSize);
-	printf("Tile saved.\n");
+        saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestTile", ".mrc");
+        CCoreTile* pTile = m_pExtractTiles->GetTile(0);
+        saveMrc.DoIt(pTile->GetTile(), 2, pTile->GetSize());
+        printf("Tile saved.\n");
 	*/
-
 	//-----------------
 	for(int i=0; i<m_pExtractTiles->m_iNumTiles; i++)
 	{	CCoreTile* pTile = m_pExtractTiles->GetTile(i);
-		pTile->PasteCore(m_pfImage);
+		pTile->PasteCore(m_pfImage, m_aiImgSize);
 	}
 }
 

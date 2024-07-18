@@ -61,7 +61,7 @@ static __device__ float mGRandom
 	int iSize = iWin * iWin;
 	unsigned int next = y * giInSize[0] + x;
 	for(int i=0; i<20; i++)
-	{	next = (next * 19 + 57) % iSize;
+	{	next = (next * 509 + 283) % iSize;
 		ix = (next % iSize) - iWin / 2 + x;
 		if(ix < 0 || ix >= iInImgX) continue;
 		//-----------------------------------

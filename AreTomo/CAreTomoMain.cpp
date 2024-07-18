@@ -404,7 +404,6 @@ void CAreTomoMain::mCorrectCTF(void)
 	   MD::CCtfResults::GetInstance(m_iNthGpu);
 	if(!pCtfResults->bHasCTF()) return;
 	//-----------------
-	printf("GPU %d: Tilt series CTF deconvolution\n\n", m_iNthGpu);
 	bool bPhaseFlip = false;
 	if(pAtInput->m_aiCorrCTF[0] == 2) bPhaseFlip = true;
 	//-----------------
@@ -536,6 +535,18 @@ void CAreTomoMain::mReconSeries(int iSeries)
 	MD::CTiltSeries* pAlnSeries = 
 	   m_pCorrTomoStack->GetCorrectedStack(false);
 	if(pAlnSeries == 0L || pAlnSeries->bEmpty()) return;
+	//-----------------
+	/*
+	if(iSeries == 0)
+        {       MU::CSaveTempMrc saveMrc;
+                saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestAlnCTF",
+                   ".mrc");
+                void** ppvImgs = pAlnSeries->GetFrames();
+                saveMrc.DoMany(ppvImgs, 2, pAlnSeries->m_aiStkSize);
+                printf("GPU %d: Save aln tilt series done.\n\n",
+                   m_iNthGpu);
+        }
+	*/
 	//-----------------
 	MAC::CBinStack binStack;
 	MD::CTiltSeries* pBinSeries = binStack.DoFFT(pAlnSeries,

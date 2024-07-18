@@ -21,8 +21,6 @@ using namespace McAreTomo::AreTomo::FindCtf;
 //--------------------------------------------------------------------
 CCoreTile::CCoreTile(void)
 {
-	m_iTileSize = 0;
-	m_iPadSize = 0;
 	memset(m_aiTileStart, 0, sizeof(m_aiTileStart));
 	//-----------------
 	m_iCoreSize = 0;
@@ -33,69 +31,55 @@ CCoreTile::~CCoreTile(void)
 {
 }
 
-void CCoreTile::SetTileSize(int iTileSize)
+void CCoreTile::SetSize(int iTileSize, int iCoreSize)
 {
-	m_iTileSize = iTileSize;
-	m_iPadSize = (m_iTileSize / 2 + 1) * 2;
-	//-----------------
-	int aiTileSize[] = {m_iPadSize, m_iTileSize};
+	int aiTileSize[] = {(iTileSize / 2 + 1) * 2, iTileSize};
 	CTile::SetSize(aiTileSize);
-}
-
-void CCoreTile::SetCoreSize(int iCoreSize)
-{
+	//-----------------
 	m_iCoreSize = iCoreSize;
-}
-
-void CCoreTile::SetTileStart(int iTileStartX, int iTileStartY)
-{
-	m_aiTileStart[0] = iTileStartX;
-	m_aiTileStart[1] = iTileStartY;
 }
 
 void CCoreTile::SetCoreStart(int iCoreStartX, int iCoreStartY)
 {
 	m_aiCoreStart[0] = iCoreStartX;
 	m_aiCoreStart[1] = iCoreStartY;
+	//-----------------------------------------------
+	// 1) Tile center is the same as the core center
+	//-----------------------------------------------
+	this->GetCoreCenter(m_afCenter);
+	//-----------------------------------------------
+	// 1) Tile starting coordinates can be negative.
+	// This means the tile can be partially outside
+	// the belonging image.
+	// 2) Tile is padded and square. m_aiTileSize[1]
+	// is the square size.
+	//-----------------------------------------------
+	int iTileSize = m_aiTileSize[1];
+	m_aiTileStart[0] = m_afCenter[0] - iTileSize * 0.5f;
+	m_aiTileStart[1] = m_afCenter[1] - iTileSize * 0.5f;
+	//-----------------------------------------------
+	// 1) Core center overlaps with tilt center.
+	//-----------------------------------------------
+	m_afCenter[0] = m_aiTileStart[0] + iTileSize * 0.5f;
+	m_afCenter[1] = m_aiTileStart[1] + iTileSize * 0.5f;
+
 }
 
-void CCoreTile::SetImgSize(int* piImgSize)
-{
-	m_aiImgSize[0] = piImgSize[0];
-	m_aiImgSize[1] = piImgSize[1];
-}
-
-void CCoreTile::Extract(float* pfImage)
-{
-	int iBytes = m_iTileSize * sizeof(float);
-	int iOffset = m_aiTileStart[1] * m_aiImgSize[0] + m_aiTileStart[0];
-	float* pfImg = &pfImage[iOffset];
-	//-----------------
-	for(int y=0; y<m_iTileSize; y++)
-	{	float* pfTgt = &m_qfTile[y * m_iPadSize];
-		float* pfSrc = &pfImg[y * m_aiImgSize[0]];
-		memcpy(pfTgt, pfSrc, iBytes);
-	}	
-}
-
-void CCoreTile::PasteCore(float* pfImage)
-{
-	this->PasteCore(m_qfTile, pfImage);
-}
-
-void CCoreTile::PasteCore(float* gfTile, float* pfImage)
+void CCoreTile::PasteCore(float* pfImage, int* piImgSize)
 {
 	int iCoreStartX = m_aiCoreStart[0] - m_aiTileStart[0];
 	int iCoreStartY = m_aiCoreStart[1] - m_aiTileStart[1];
-	float* gfSrc = &gfTile[iCoreStartY * m_iPadSize + iCoreStartX];
+	int iOffset = iCoreStartY * m_aiTileSize[0] + iCoreStartX;
+	float* qfSrc = &m_qfTile[iOffset];
 	//-----------------
-	float* pfDst = &pfImage[m_aiCoreStart[1] * 
-	   m_aiImgSize[0] + m_aiCoreStart[0]];
+	iOffset = m_aiCoreStart[1] * piImgSize[0] + m_aiCoreStart[0];
+	float* pfDst = &pfImage[iOffset];
 	//-----------------
 	int iBytes = m_iCoreSize * sizeof(float);
 	for(int y=0; y<m_iCoreSize; y++)
-	{	cudaMemcpy(&pfDst[y * m_aiImgSize[0]], 
-		   &gfSrc[y * m_iPadSize], iBytes, cudaMemcpyDefault);
+	{	cudaMemcpy(&pfDst[y * piImgSize[0]], 
+		   &qfSrc[y * m_aiTileSize[0]], 
+		   iBytes, cudaMemcpyDefault);
 	}
 }
 
@@ -111,12 +95,6 @@ void CCoreTile::GetCoreStart(int* piStart)
 	piStart[1] = m_aiCoreStart[1];
 }
 
-void CCoreTile::GetTileCenter(float* pfCent)
-{
-	pfCent[0] = m_aiTileStart[0] + m_iTileSize * 0.5f;
-	pfCent[1] = m_aiTileStart[1] + m_iTileSize * 0.5f;
-}
-
 void CCoreTile::GetCoreCenter(float* pfCent)
 {
 	pfCent[0] = m_aiCoreStart[0] + m_iCoreSize * 0.5f;
@@ -125,15 +103,15 @@ void CCoreTile::GetCoreCenter(float* pfCent)
 
 void CCoreTile::GetCoreCenterInTile(float* pfCent)
 {
-	float afTileCent[2] = {0.0f};
 	this->GetCoreCenter(pfCent);
-	this->GetTileCenter(afTileCent);
-	pfCent[0] = pfCent[0] - afTileCent[0] + m_iTileSize * 0.5f;
-	pfCent[1] = pfCent[1] - afTileCent[1] + m_iTileSize * 0.5f;
+	//-----------------
+	int iTileSize = m_aiTileSize[1];
+	pfCent[0] = pfCent[0] - m_afCenter[0] + iTileSize * 0.5f;
+	pfCent[1] = pfCent[1] - m_afCenter[1] + iTileSize * 0.5f;
 }
 
 int CCoreTile::GetTileBytes(void)
 {
-	int iBytes = sizeof(float) * m_iTileSize * m_iPadSize;
+	int iBytes = CTile::GetPixels() * sizeof(float);
 	return iBytes;
 }

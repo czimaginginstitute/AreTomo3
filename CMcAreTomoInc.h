@@ -198,25 +198,61 @@ public:
 	~CAreTomo3Json(void);
 	void Create(char* pcVersion);
 private:
-	void mAddInput(void);
+	void mGenSoftware(char* pcVersion);
+	void mGenInput(void);
+	void mGenOutput(void);
+	void mGenParams(void);
+	//-----------------
+	void mAddMainInput(void);
 	void mAddMcInput(void);
 	void mAddAtInput(void);
 	//-----------------
-	void mAddLine(char* pcLine);
-	void mAddLine(const char* pcKey, const char* pcVal, bool bList=false);
-	void mAddLine(char* pcKey, int iVal);
-	void mAddLine(char* pcKey, float fVal);
-	void mAddLine(char* pcKey, int* piVals, int iNumVals);
-	void mAddLine(char* pcKey, float* pfVals, int iNumVals);
+	void mAddKeyValPair
+	( const char* pcKey, 
+	  const char* pcVal,
+	  int iNumSpaces, 
+	  bool bList, bool bEnd
+	);
+	void mAddKeyFloatPair
+	( const char* pcKey, 
+	  float* pfVals, int iNumVals,
+	  int iNumSpaces, bool bList, bool bEnd
+	);
+	void mAddKeyIntPair
+	( const char* pcKey,
+	  int* piVals, int iNumVals,
+	  int iNumSpaces,
+	  bool bList, bool bEnd
+	);
 	//-----------------
-	void mCreateVal(int* piVals, int iNumVals, char* pcVal);
-	void mCreateVal(float* pfVals, int iNumVals, char* pcVal);
-	void mCreateVal(char** pcToks, int iNumToks, char* pcVal);
+	void mCreateKey
+	( const char* pcKey,
+	  int iNumSpaces,
+	  char* pcRet
+	);
 	//-----------------
-	int m_iNumLines;
-	int m_iLineSize;
-	int m_iLineCount;
-	int m_iIndent;
+	void mAddStrVal(const char* pcVal, bool bEnd, char* pcRet);
+	void mAddStrList(const char* pcList, bool bEnd, char* pcRet);
+	void mAddFloatVal(float fVal, bool bEnd, char* pcRet);
+	void mAddFloatList
+	( float* pfVals, int iNumVals, 
+	  bool bEnd, char* pcRet
+	);
+	void mAddIntVal(int iVal, bool bEnd, char* pcRet);
+	void mAddIntList
+	( int* piVals, int iNumVals,
+	  bool bEnd, char* pcRet
+	);
+	//-----------------
+	void mAddEndBrace(int iNumSpaces, bool bEnd);
+	void mAddFrontSpaces
+	( const char* pcStr,
+	  int iNumSpaces,
+	  char* pcSpaces
+	);
+	void mFloatToStr(float fVal, char* pcRet);
+	void mIntToStr(int iVal, char* pcRet);
+	//-----------------
 	char* m_pcJson;
 };
 

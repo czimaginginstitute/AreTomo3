@@ -250,3 +250,4 @@ void CInput::mAddEndSlash(char* pcDir)
 	int iSize = strlen(pcDir);
 	if(pcDir[iSize-1] != '/') strcat(pcDir, "/");
 }
+

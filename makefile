@@ -7,6 +7,7 @@ PRJINC = $(PRJHOME)/LibSrc/Include
 PRJLIB = $(PRJHOME)/LibSrc/Lib
 #-----------------------------
 CUSRCS = ./MaUtil/GAddFrames.cu \
+	./MaUtil/GCalcFRC.cu \
 	./MaUtil/GCalcMoment2D.cu \
 	./MaUtil/GCorrLinearInterp.cu \
 	./MaUtil/GFFT1D.cu \
@@ -72,7 +73,10 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/FindCtf/GRadialAvg.cu \
 	./AreTomo/FindCtf/GRemoveMean.cu \
 	./AreTomo/FindCtf/GRmBackground2D.cu \
+	./AreTomo/FindCtf/GRmSpikes.cu \
 	./AreTomo/FindCtf/GRoundEdge.cu \
+	./AreTomo/FindCtf/GExtractTile.cu \
+	./AreTomo/FindCtf/GScaleSpect2D.cu \
 	./AreTomo/PatchAlign/GCommonArea.cu \
 	./AreTomo/PatchAlign/GExtractPatch.cu \
 	./AreTomo/PatchAlign/GGenXcfImage.cu \
@@ -193,9 +197,12 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/FindCtf/CFindCtfBase.cpp \
 	./AreTomo/FindCtf/CFindCtfHelp.cpp \
 	./AreTomo/FindCtf/CFindCtfMain.cpp \
+	./AreTomo/FindCtf/CRefineCtfMain.cpp \
 	./AreTomo/FindCtf/CFindDefocus1D.cpp\
 	./AreTomo/FindCtf/CFindDefocus2D.cpp \
 	./AreTomo/FindCtf/CTile.cpp \
+	./AreTomo/FindCtf/CCoreTile.cpp \
+	./AreTomo/FindCtf/CTsTiles.cpp \
 	./AreTomo/FindCtf/CExtractTiles.cpp \
 	./AreTomo/FindCtf/CCorrImgCtf.cpp \
 	./AreTomo/FindCtf/CGenAvgSpectrum.cpp \

@@ -55,7 +55,7 @@ void CGenAvgSpectrum::mDoNoScaling(void)
 	int iImgTiles = pTsTiles->GetImgTiles();
 	//-----------------
 	CTile* pTile = pTsTiles->GetTile(m_iTilt, 0);
-	int* piTileSize = pTile->GetTileSize();
+	int* piTileSize = pTile->GetSize();
 	//-----------------
 	MU::GAddFrames addFrames;
 	float fFactor2 = 1.0f / iImgTiles;
@@ -79,7 +79,7 @@ void CGenAvgSpectrum::mDoScaling(void)
 	int iImgTiles = pTsTiles->GetImgTiles();
 	//-----------------
 	CTile* pTile = pTsTiles->GetTile(m_iTilt, 0);
-	int* piTileSize = pTile->GetTileSize();
+	int* piTileSize = pTile->GetSize();
 	//-----------------
 	MU::GAddFrames addFrames;
 	float fFactor2 = 1.0f / iImgTiles;
@@ -116,7 +116,7 @@ void CGenAvgSpectrum::mScaleTile(int iTile, float* gfScaled)
 	//-----------------
 	float fScale = sqrtf(m_fCentDF / fTileDF);
 	//-----------------
-	int* piTileSize = pTile->GetTileSize();
+	int* piTileSize = pTile->GetSize();
 	float* qfTile = pTile->GetTile();
 	//-----------------
 	scaleSpect2D.DoIt(qfTile, gfScaled, fScale, piTileSize);

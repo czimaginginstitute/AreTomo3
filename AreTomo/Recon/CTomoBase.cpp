@@ -45,6 +45,7 @@ void CTomoBase::Setup
 	//-----------------
 	size_t tBytes = sizeof(bool) * m_iNumProjs;
 	cudaMalloc(&m_gbNoProjs, tBytes);
+	cudaMemset(m_gbNoProjs, 0, tBytes);
 	//-----------------
 	tBytes = sizeof(float) * m_iNumProjs * 2;
 	cudaMalloc(&m_gfCosSin, tBytes);

@@ -221,6 +221,22 @@ public:
 	void DoIt(float* gfSpect, float* gfAverage, int* piCmpSize);
 };
 
+class GExtractTile
+{
+public:
+	GExtractTile(void);
+	~GExtractTile(void);
+	void SetImg(float* gfImg, int* piImgSize, bool bPadded);
+	void SetTileSize(int* piTileSize, bool bPadded);
+	void DoIt(float* gfTile, int* piStart, cudaStream_t stream = 0);
+private:
+	float* m_gfImg;
+	int m_aiImgSize[2];
+	int m_aiTileSize[2];
+	int m_iImgPadX;
+	int m_iTilePadX;
+};
+
 class GRoundEdge
 {
 public:
@@ -371,14 +387,20 @@ public:
 	void SetPixSize(float fPixSize) { m_fPixSize = fPixSize; }
 	void SetGood(bool bGood) { m_bGood = bGood; }
 	//-----------------
-	int* GetTileSize(void) { return m_aiTileSize; }
+	int* GetSize(void) { return m_aiTileSize; }
+	int GetSizeX(void) { return m_aiTileSize[0]; }
+	int GetSizeY(void) { return m_aiTileSize[1]; }
+	int GetPixels(void) { return m_aiTileSize[0] * m_aiTileSize[1]; };
+	//-----------------
 	float* GetCenter(void) { return m_afCenter; }
-	float* GetTile(void)   { return m_qfTile; }
-	float GetTilt(void) { return m_fTilt; }
-	float GetPixSize(void) { return m_fPixSize; }
 	float GetCentX(void) { return m_afCenter[0]; }
 	float GetCentY(void) { return m_afCenter[1]; }
 	float GetCentZ(void) { return m_afCenter[2]; }
+	//-----------------
+	float* GetTile(void)   { return m_qfTile; }
+	//-----------------
+	float GetTilt(void) { return m_fTilt; }
+	float GetPixSize(void) { return m_fPixSize; }
 	bool IsGood(void) { return m_bGood; }
 protected:
 	float* m_qfTile;
@@ -394,33 +416,24 @@ class CCoreTile : public CTile
 public:
 	CCoreTile(void);
 	virtual ~CCoreTile(void);
-	void SetTileSize(int iTileSize);
-	void SetCoreSize(int iCoreSize);
-	void SetTileStart(int iTileStartX, int iTileStartY);
+	void SetSize(int iTileSize, int iCoreSize);
 	void SetCoreStart(int iCoreStartX, int iCoreStartY);
-	void SetImgSize(int* piImgSize);
 	//-----------------
-	void Extract(float* pfImage);
-	void PasteCore(float* pfImage);
-	void PasteCore(float* gfTile, float* pfImage);
+	void PasteCore(float* pfImage, int* piImgSize);
 	//-----------------
-	void GetTileCenter(float* pfCent);
 	void GetCoreCenter(float* pfCent);
 	void GetCoreCenterInTile(float* pfCent);
+	//-----------------
 	void GetTileStart(int* piStart);
 	void GetCoreStart(int* piStart);
-	int GetCoreSize(void) { return m_iCoreSize; }
-	int GetTileSize(void) { return m_iTileSize; }
-	int GetTilePixels(void) { return m_iTileSize * m_iPadSize; }
-	int GetTileBytes(void);
 	//-----------------
-	int m_iPadSize;
+	int GetCoreSize(void) { return m_iCoreSize; }
+	//-----------------
+	int GetTileBytes(void);
 private:
 	int m_aiTileStart[2];
 	int m_aiCoreStart[2];
-	int m_aiImgSize[2];
-	int m_iTileSize;
-	int m_iCoreSize;
+	int m_iCoreSize; // unpadded size
 };
 
 class CTsTiles
@@ -489,11 +502,10 @@ public:
 	void Setup(int iTileSize, int iCoreSize, int* piImgSize);
 	void DoIt(float* pfImage);
 	CCoreTile* GetTile(int iNthTile);
-	bool bEdgeTile(int iNthTile);
 	int m_iNumTiles;
 private:
+	void mDoIt(float* gfImg, int iTile);
 	void mCalcTileLocations(void);
-	void mCheckTileBound(int* piVal, int iImgSize);
 	void mClean(void);
 	//-----------------
 	int m_aiNumTiles[2];

@@ -198,13 +198,9 @@ int CStackFolder::mReadFolder(void)
 		iNumRead += 1;
 	}
 	closedir(pDir);
+	if(iNumRead <= 0) return 0;
 	//-----------------
-	if(iNumRead <= 0)
-	{	fprintf(stderr, "Error: no files are found.");
-		fprintf(stderr, "   in %s\n\n", m_acDirName);
-	}
-	else printf("\n");
-	//-----------------
+	printf("%d files have been found in %s\n\n", iNumRead, m_acDirName);
 	return iNumRead;
 }
 

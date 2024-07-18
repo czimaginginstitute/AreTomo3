@@ -75,6 +75,7 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/FindCtf/GRmBackground2D.cu \
 	./AreTomo/FindCtf/GRmSpikes.cu \
 	./AreTomo/FindCtf/GRoundEdge.cu \
+	./AreTomo/FindCtf/GExtractTile.cu \
 	./AreTomo/FindCtf/GScaleSpect2D.cu \
 	./AreTomo/PatchAlign/GCommonArea.cu \
 	./AreTomo/PatchAlign/GExtractPatch.cu \

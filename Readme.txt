@@ -223,3 +223,17 @@ AreTomo3 1.0.16: [06-17-2024]
    They should be removed. Fixed. [07-11-2024]
 8. Local CTF estimation has been implemented in FindCtf/CRefineCtfMain.
 8. Correct alpha offset based on local CTF estimation.
+
+AreTomo3 1.0.17: [07-11-2024]
+-----------------------------
+1. Local CTF correction: CTF correction is carried out on a tile of
+   which the core, the central square, is assembled into a CTF corrected
+   image.
+2. Local CTF correction: Rounding the edge outside the core area is done
+   before CTF correction of each tile. 
+3. Revised CAreTomo3Json.cpp to generate nested json file for internal
+   need.
+4. Revised Correct/GCorrPatchShift.cu for better randomization.
+Bug fix:
+1. AreTomo/Recon/CTomoBase::Setup: m_gbNoProjs is not initialized.
+   Fixed on [07-15-2024].

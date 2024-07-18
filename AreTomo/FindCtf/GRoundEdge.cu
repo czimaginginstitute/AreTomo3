@@ -37,7 +37,7 @@ static __global__ void mGKeepCenter(float* gfImg, int iSizeX,
 	if(fR <= 0.0f) return;
 	//-----------------
 	fR = 0.5f * (1 - cosf(3.1415926f * fR));
-	fR = 1.0f - powf(fR, 3.0f);
+	fR = 1.0f - powf(fR, 2.0f);
 	gfImg[i] = gfImg[i] * fR;
 }
 
