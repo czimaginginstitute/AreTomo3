@@ -201,6 +201,7 @@ void CTsPackage::SaveVol(CTiltSeries* pVol, int iVol)
 	if(iVol == 0) strcpy(acExt, "_Vol.mrc");
 	else if(iVol == 1) strcpy(acExt, "_EVN_Vol.mrc");
 	else if(iVol == 2) strcpy(acExt, "_ODD_Vol.mrc");
+	else if(iVol == 3) strcpy(acExt, "_2ND_Vol.mrc");
 	//-----------------
 	mSaveMrc(acExt, pVol);	
 }

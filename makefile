@@ -100,6 +100,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./MaUtil/CSaveTempMrc.cpp \
 	./MaUtil/CSimpleFuncs.cpp \
 	./DataUtil/CAlnSums.cpp \
+	./DataUtil/CAsyncSaveVol.cpp \
 	./DataUtil/CBufferPool.cpp \
 	./DataUtil/CCtfResults.cpp \
 	./DataUtil/CDuInstances.cpp \

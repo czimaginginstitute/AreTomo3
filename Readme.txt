@@ -237,3 +237,12 @@ AreTomo3 1.0.17: [07-11-2024]
 Bug fix:
 1. AreTomo/Recon/CTomoBase::Setup: m_gbNoProjs is not initialized.
    Fixed on [07-15-2024].
+
+AreTomo3 1.0.18: [07-22-2024]
+-----------------------------
+1. Implemented multi-res reconstruction based on user input -AtBin,
+   which will take two floating numbers. The volume reconstructed
+   with the second binning has _2ND_Vol" in its file name.
+2. Added CAsyncSaveVol in DataUtil to overlap saving volumes with
+   reconstruction.
+3. Added tools/Remap3D folder and copied alnFile.py and remap3D.py into it.

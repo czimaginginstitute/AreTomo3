@@ -465,6 +465,35 @@ private:
 	FILE* m_pLogFile;
 	static CSaveMdocDone* m_pInstance;
 };
+
+class CAsyncSaveVol : public Util_Thread
+{
+public:
+	static void CreateInstances(int iNumGpus);
+	static void DeleteInstances(void);
+	static CAsyncSaveVol* GetInstance(int iNthGpu);
+	//-----------------
+	~CAsyncSaveVol(void);
+	bool DoIt
+	( CTiltSeries* pVolSeries,
+	  int iNthVol,
+	  bool bAsync,
+	  bool bClean
+	);
+	void ThreadMain(void);
+private:
+	CAsyncSaveVol(void);
+	void mSaveVol(void);
+	void mGenFullPath(const char* pcExt, char* pcMrcFile);
+	//-----------------
+	CTiltSeries* m_pVolSeries;
+	int m_iNthVol;
+	bool m_bClean;
+	int m_iNthGpu;
+	//-----------------
+	static CAsyncSaveVol* m_pInstances;
+	static int m_iNumGpus;
+};
 	
 class CLogFiles
 {

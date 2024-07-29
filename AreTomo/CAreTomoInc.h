@@ -103,9 +103,10 @@ private:
 	void mCorrectCTF(void);
 	void mAlignCTF(void);
 	//-----------------
+	void mRecon2nd(void);
 	void mRecon(void);
 	void mSetPositivity(void);
-	void mReconSeries(int iSeries);
+	void mReconVol(float fBin, int iSeries);
 	void mSartRecon
 	( int iVolZ, int iSeries, 
 	  MD::CTiltSeries* pSeries
@@ -113,6 +114,10 @@ private:
 	void mWbpRecon
 	( int iVolZ, int iSeries, 
 	  MD::CTiltSeries* pSeries
+	);
+	void mSaveVol
+	( MD::CTiltSeries* pVolSeries,
+	  int iNthVol, bool bClean
 	);
 	//-----------------
 	void mSaveAlignment(void);

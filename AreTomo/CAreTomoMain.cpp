@@ -66,7 +66,10 @@ bool CAreTomoMain::DoIt(int iNthGpu)
 	else if(pInput->m_iCmd == 3) mEstimateCtf();
 	//-----------------
 	FindCtf::CTsTiles::DeleteInstance(m_iNthGpu);
-	printf("Process thread exits.\n\n");
+	//-----------------
+	MD::CAsyncSaveVol* pSaveVol = 
+	   MD::CAsyncSaveVol::GetInstance(m_iNthGpu);
+	pSaveVol->WaitForExit(10.0f);
 	return true;
 }
 
@@ -96,7 +99,8 @@ void CAreTomoMain::mDoFull(void)
 	mRemoveDarkCtfs();
 	mSetupTsCorrection();
 	mSaveForImod();
-	//-----------------	
+	//-----------------
+	mRecon2nd();	
 	mCorrectCTF();
 	mRecon();
 	//-----------------------------------------------
@@ -138,8 +142,10 @@ void CAreTomoMain::mSkipAlign(void)
 	mRemoveSpikes();
 	mMassNorm();
 	//-----------------
-	mCorrectCTF();
 	mSetupTsCorrection();
+	mRecon2nd();
+	//-----------------
+	mCorrectCTF();
 	mRecon();
 }
 
@@ -270,6 +276,8 @@ void CAreTomoMain::mAlign(void)
 		}
 		mProjAlign();
 	}
+	pAlignParam->FitRotCenterZ();
+        pAlignParam->RemoveOffsetZ(1.0f);
 	//-----------------
 	mPatchAlign();
 	//-----------------
@@ -516,28 +524,40 @@ void CAreTomoMain::mAlignCTF(void)
 
 void CAreTomoMain::mRecon(void)
 {
+	CAtInput* pAtInput = CAtInput::GetInstance();
 	int iNumSeries = MD::CAlnSums::m_iNumSums;
 	for(int i=0; i<iNumSeries; i++)
 	{	m_pCorrTomoStack->DoIt(i, 0L);
-		mReconSeries(i);
+		mReconVol(pAtInput->m_afAtBin[0], i);
 	}
 	//-----------------
 	if(m_pCorrTomoStack != 0L) delete m_pCorrTomoStack;
 	m_pCorrTomoStack = 0L;
 }
 
-void CAreTomoMain::mReconSeries(int iSeries)
+void CAreTomoMain::mRecon2nd(void)
 {
-	CAtInput* pInput = CAtInput::GetInstance();
-	int iVolZ = (int)(pInput->m_iVolZ / pInput->m_fAtBin) / 2 * 2;
-	if(iVolZ <= 16) return;
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	if(pAtInput->m_afAtBin[1] <= 0) return;
 	//-----------------
-	MD::CTiltSeries* pAlnSeries = 
+	m_pCorrTomoStack->DoIt(0, 0L);
+	mReconVol(pAtInput->m_afAtBin[1], 3);
+}
+
+void CAreTomoMain::mReconVol(float fBin, int iSeries)
+{
+	if(fBin <= 0.0f) return;
+	//-----------------
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	int iVolZ = (int)(pAtInput->m_iVolZ / fBin) / 2 * 2;
+        if(iVolZ <= 16) return;
+	//-----------------
+	MD::CTiltSeries* pAlnSeries =
 	   m_pCorrTomoStack->GetCorrectedStack(false);
-	if(pAlnSeries == 0L || pAlnSeries->bEmpty()) return;
+        if(pAlnSeries == 0L || pAlnSeries->bEmpty()) return;
 	//-----------------
 	/*
-	if(iSeries == 0)
+        if(iSeries == 0)
         {       MU::CSaveTempMrc saveMrc;
                 saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestAlnCTF",
                    ".mrc");
@@ -546,14 +566,14 @@ void CAreTomoMain::mReconSeries(int iSeries)
                 printf("GPU %d: Save aln tilt series done.\n\n",
                    m_iNthGpu);
         }
-	*/
+        */
 	//-----------------
 	MAC::CBinStack binStack;
-	MD::CTiltSeries* pBinSeries = binStack.DoFFT(pAlnSeries,
-	   pInput->m_fAtBin, m_iNthGpu);
+	MD::CTiltSeries* pBinSeries = 0L;
+	pBinSeries = binStack.DoFFT(pAlnSeries, fBin, m_iNthGpu);
 	//-----------------
-	if(pInput->m_iWbp != 0) mWbpRecon(iVolZ, iSeries, pBinSeries);
-	else mSartRecon(iVolZ, iSeries, pBinSeries);
+	if(pAtInput->m_iWbp != 0) mWbpRecon(iVolZ, iSeries, pBinSeries);
+        else mSartRecon(iVolZ, iSeries, pBinSeries);
 	//-----------------
 	if(pBinSeries != 0L) delete pBinSeries;
 }
@@ -593,10 +613,9 @@ void CAreTomoMain::mSartRecon
 	//-----------------
 	pVolStack = mFlipVol(pVolStack);
 	//-----------------
-	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
-	pTsPackage->SaveVol(pVolStack, iSeries);
-	//-----------------
-	if(pVolStack != 0L) delete pVolStack;
+	bool bClean = true;
+	mSaveVol(pVolStack, iSeries, bClean);
+	if(!bClean && pVolStack != 0L) delete pVolStack;
 }
 
 
@@ -621,10 +640,21 @@ void CAreTomoMain::mWbpRecon
 	//-----------------
 	pVolStack = mFlipVol(pVolStack);
 	//-----------------
-	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
-        pTsPackage->SaveVol(pVolStack, iSeries);
-	//-----------------
-	if(pVolStack != 0L) delete pVolStack;
+	bool bClean = true;
+	mSaveVol(pVolStack, iSeries, bClean);
+	if(!bClean && pVolStack != 0L) delete pVolStack;
+}
+
+void CAreTomoMain::mSaveVol
+(	MD::CTiltSeries* pVolSeries, 
+	int iNthVol,
+	bool bClean
+)
+{	bool bAsync = true;
+	MD::CAsyncSaveVol* pSaveVol = 
+	   MD::CAsyncSaveVol::GetInstance(m_iNthGpu);
+	pSaveVol->WaitForExit(-1.0f);
+	pSaveVol->DoIt(pVolSeries, iNthVol, bAsync, bClean);
 }
 
 MD::CTiltSeries* CAreTomoMain::mFlipVol(MD::CTiltSeries* pVolSeries)

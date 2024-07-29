@@ -54,7 +54,8 @@ CAtInput::CAtInput(void)
 	m_afTiltAxis[1] = 1.0f;
 	m_iAlignZ = 600;
 	m_iVolZ = 1200;
-	m_fAtBin = 1.0f;
+	m_afAtBin[0] = 1.0f;  // 1st res
+	m_afAtBin[1] = -1.0f;  // no second res
 	m_afTiltCor[0] = 0.0f;
 	m_afTiltCor[1] = 0.0f;
 	m_afReconRange[0] = -90.0f;
@@ -98,7 +99,12 @@ void CAtInput::ShowTags(void)
 	printf("      generated.\n\n");
 	//-----------------
 	printf("%-10s\n", m_acAtBinTag);
-	printf("   Binning for aligned output tilt series, default 1\n\n");
+	printf("   1. Binnings for tomograms with respect to motion\n"
+	   "      corrected tilt series. Users can specify two floats.\n"
+	   "       2. The first number is required and 1.0 is default.\n"
+	   "       3. The second number is optional. By default, the\n"
+	   "      second resolution is disabled. It is actived only\n"
+	   "      when users provide a different number.\n\n");
 	//-----------------
 	printf("%-10s\n", m_acTiltCorTag);
         printf("   1. Correct the offset of tilt angle.\n");
@@ -194,33 +200,35 @@ void CAtInput::Parse(int argc, char* argv[])
 	aParseArgs.FindVals(m_acTiltAxisTag, aiRange);
 	if(aiRange[1] >= 2) aiRange[1] = 2;
 	aParseArgs.GetVals(aiRange, m_afTiltAxis);
-	//----------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acAlignZTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.FindVals(m_acAlignZTag, aiRange);
 	aParseArgs.GetVals(aiRange, &m_iAlignZ);
-	//--------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acVolZTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_iVolZ);
-	//------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acAtBinTag, aiRange);
-	if(aiRange[1] > 1) aiRange[1] = 1;
-	aParseArgs.GetVals(aiRange, &m_fAtBin);
-	if(m_fAtBin < 1) m_fAtBin = 1;
-	//------------------------------
+	if(aiRange[1] > 2) aiRange[1] = 2;
+	aParseArgs.GetVals(aiRange, m_afAtBin);
+	if(m_afAtBin[0] < 1) m_afAtBin[0] = 1.0f;
+	if(aiRange[1] == 1) m_afAtBin[1] = -1.0f;
+	else if(m_afAtBin[1] < 1) m_afAtBin[1] = -1.0f;  
+	//-----------------
 	aParseArgs.FindVals(m_acTiltCorTag, aiRange);
 	if(aiRange[1] > 2) aiRange[1] = 2;
 	aParseArgs.GetVals(aiRange, m_afTiltCor);	
-	//---------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acReconRangeTag, aiRange);
 	if(aiRange[1] > 2) aiRange[1] = 2;
 	aParseArgs.GetVals(aiRange, m_afReconRange);
-	//------------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acAmpContrastTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_fAmpContrast);
-	//-------------------------------------------
+	//-----------------
 	aParseArgs.FindVals(m_acExtPhaseTag, aiRange);
 	if(aiRange[1] > 2) aiRange[1] = 2;
 	aParseArgs.GetVals(aiRange, m_afExtPhase);
@@ -302,9 +310,10 @@ void CAtInput::mPrint(void)
 	printf("%-10s  %d\n", m_acAlignZTag, m_iAlignZ);
 	printf("%-10s  %d\n", m_acVolZTag, m_iVolZ);
 	//-----------------
-	printf("%-10s  %.2f\n", m_acAtBinTag, m_fAtBin);
+	printf("%-10s  %.2f  %.2f\n", m_acAtBinTag, 
+	   m_afAtBin[0], m_afAtBin[1]);
 	printf("%-10s  %.2f  %.2f\n", m_acTiltAxisTag, 
-		m_afTiltAxis[0], m_afTiltAxis[1]);
+	   m_afTiltAxis[0], m_afTiltAxis[1]);
 	printf("%-10s  %.2f  %.2f\n", m_acTiltCorTag, m_afTiltCor[0],
 	   m_afTiltCor[1]);
 	printf( "%-10s  %.2f  %.2f\n", m_acReconRangeTag, 
