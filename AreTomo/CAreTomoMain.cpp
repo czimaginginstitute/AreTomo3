@@ -522,41 +522,13 @@ void CAreTomoMain::mAlignCTF(void)
 	pImodUtil->SaveCtfFile();
 }
 
-void CAreTomoMain::mRecon(void)
+MD::CTiltSeries* CAreTomoMain::mBinAlnSeries(float fBin)
 {
-	CAtInput* pAtInput = CAtInput::GetInstance();
-	int iNumSeries = MD::CAlnSums::m_iNumSums;
-	for(int i=0; i<iNumSeries; i++)
-	{	m_pCorrTomoStack->DoIt(i, 0L);
-		mReconVol(pAtInput->m_afAtBin[0], i);
-	}
-	//-----------------
-	if(m_pCorrTomoStack != 0L) delete m_pCorrTomoStack;
-	m_pCorrTomoStack = 0L;
-}
-
-void CAreTomoMain::mRecon2nd(void)
-{
-	CAtInput* pAtInput = CAtInput::GetInstance();
-	if(pAtInput->m_afAtBin[1] <= 0) return;
-	//-----------------
-	m_pCorrTomoStack->DoIt(0, 0L);
-	mReconVol(pAtInput->m_afAtBin[1], 3);
-}
-
-void CAreTomoMain::mReconVol(float fBin, int iSeries)
-{
-	if(fBin <= 0.0f) return;
-	//-----------------
-	CAtInput* pAtInput = CAtInput::GetInstance();
-	int iVolZ = (int)(pAtInput->m_iVolZ / fBin) / 2 * 2;
-        if(iVolZ <= 16) return;
-	//-----------------
 	MD::CTiltSeries* pAlnSeries =
-	   m_pCorrTomoStack->GetCorrectedStack(false);
-        if(pAlnSeries == 0L || pAlnSeries->bEmpty()) return;
-	//-----------------
-	/*
+           m_pCorrTomoStack->GetCorrectedStack(false);
+        if(pAlnSeries == 0L || pAlnSeries->bEmpty()) return 0L;
+        //-----------------
+        /*
         if(iSeries == 0)
         {       MU::CSaveTempMrc saveMrc;
                 saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestAlnCTF",
@@ -567,15 +539,63 @@ void CAreTomoMain::mReconVol(float fBin, int iSeries)
                    m_iNthGpu);
         }
         */
+        //-----------------
+        MAC::CBinStack binStack;
+        MD::CTiltSeries* pBinSeries = 0L;
+        pBinSeries = binStack.DoFFT(pAlnSeries, fBin, m_iNthGpu);
+	return pBinSeries;
+}
+
+void CAreTomoMain::mRecon(void)
+{
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	int iVolZ = (int)(pAtInput->m_iVolZ / pAtInput->m_afAtBin[0]) / 2 * 2;
+	bool bWbp = (pAtInput->m_iWbp == 1);
 	//-----------------
-	MAC::CBinStack binStack;
-	MD::CTiltSeries* pBinSeries = 0L;
-	pBinSeries = binStack.DoFFT(pAlnSeries, fBin, m_iNthGpu);
+	int iNumSeries = MD::CAlnSums::m_iNumSums;
+	MD::CTiltSeries* pBinnedSeries = 0L;
 	//-----------------
-	if(pAtInput->m_iWbp != 0) mWbpRecon(iVolZ, iSeries, pBinSeries);
-        else mSartRecon(iVolZ, iSeries, pBinSeries);
+	for(int i=0; i<iNumSeries; i++)
+	{	m_pCorrTomoStack->DoIt(i, 0L);
+		pBinnedSeries = mBinAlnSeries(pAtInput->m_afAtBin[0]);
+		mReconVol(pBinnedSeries, iVolZ, i, bWbp);
+		if(pBinnedSeries != 0L) delete pBinnedSeries;
+	}
 	//-----------------
-	if(pBinSeries != 0L) delete pBinSeries;
+	if(m_pCorrTomoStack != 0L) delete m_pCorrTomoStack;
+	m_pCorrTomoStack = 0L;
+}
+
+void CAreTomoMain::mRecon2nd(void)
+{
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	if(pAtInput->m_afAtBin[1] < 1 && pAtInput->m_afAtBin[2] < 1) return;
+	//-----------------
+	m_pCorrTomoStack->DoIt(0, 0L);
+	//-----------------
+	int iVolZ = (int)(pAtInput->m_iVolZ / pAtInput->m_afAtBin[1]) / 2 * 2;
+	MD::CTiltSeries* pBinnedSeries = 0L;
+	pBinnedSeries = mBinAlnSeries(pAtInput->m_afAtBin[1]);
+	mReconVol(pBinnedSeries, iVolZ, 3, true);
+	if(pBinnedSeries != 0L) delete pBinnedSeries;
+	//-----------------
+	if(pAtInput->m_afAtBin[2] < 1) return;
+	iVolZ = (int)(pAtInput->m_iVolZ / pAtInput->m_afAtBin[2]) / 2 * 2;
+	pBinnedSeries = mBinAlnSeries(pAtInput->m_afAtBin[2]);
+        mReconVol(pBinnedSeries, iVolZ, 4, false);
+        if(pBinnedSeries != 0L) delete pBinnedSeries;
+}
+
+void CAreTomoMain::mReconVol
+(	MD::CTiltSeries* pTiltSeries, 
+	int iVolZ,
+	int iSeries, 
+	bool bWbp
+)
+{	if(iVolZ <= 16) return;
+	if(pTiltSeries == 0L) return;
+	if(bWbp) mWbpRecon(iVolZ, iSeries, pTiltSeries);
+        else mSartRecon(iVolZ, iSeries, pTiltSeries);
 }
 
 //--------------------------------------------------------------------
@@ -611,7 +631,8 @@ void CAreTomoMain::mSartRecon
 	printf("GPU %d: SART Recon: %.2f sec\n\n", m_iNthGpu, 
 	   aTimer.GetElapsedSeconds());
 	//-----------------
-	pVolStack = mFlipVol(pVolStack);
+	MD::CTiltSeries* pNewVol = mFlipVol(pVolStack);
+        if(pNewVol != 0L) pVolStack = pNewVol;
 	//-----------------
 	bool bClean = true;
 	mSaveVol(pVolStack, iSeries, bClean);
@@ -638,7 +659,8 @@ void CAreTomoMain::mWbpRecon
 	printf("GPU %d: WBP Recon: %.2f sec\n\n", m_iNthGpu,
 	   aTimer.GetElapsedSeconds());
 	//-----------------
-	pVolStack = mFlipVol(pVolStack);
+	MD::CTiltSeries* pNewVol = mFlipVol(pVolStack);
+	if(pNewVol != 0L) pVolStack = pNewVol;
 	//-----------------
 	bool bClean = true;
 	mSaveVol(pVolStack, iSeries, bClean);
@@ -660,16 +682,15 @@ void CAreTomoMain::mSaveVol
 MD::CTiltSeries* CAreTomoMain::mFlipVol(MD::CTiltSeries* pVolSeries)
 {
 	CAtInput* pInput = CAtInput::GetInstance();
-	if(pInput->m_iFlipVol == 0) return pVolSeries;
-	if(pVolSeries == 0L) return 0L;
+	if(pInput->m_iFlipVol == 0) return 0L;
 	//-----------------
 	printf("GPU %d: Flip volume from xzy view to xyz view.\n", m_iNthGpu);
 	bool bFlip = (pInput->m_iFlipVol == 1) ? true : false;
-	MD::CTiltSeries* pVolXZY = pVolSeries->FlipVol(bFlip);
+	MD::CTiltSeries* pVolXYZ = pVolSeries->FlipVol(bFlip);
 	printf("GPU %d: Flip volume completed.\n\n", m_iNthGpu);
 	//-----------------
 	delete pVolSeries;
-	return pVolXZY;
+	return pVolXYZ;
 }
 
 void CAreTomoMain::mSaveAlignment(void)

@@ -77,6 +77,7 @@ void CAsyncSaveVol::mSaveVol(void)
 	else if(m_iNthVol == 1) strcpy(acExt, "_EVN_Vol.mrc");
 	else if(m_iNthVol == 2) strcpy(acExt, "_ODD_Vol.mrc");
 	else if(m_iNthVol == 3) strcpy(acExt, "_2ND_Vol.mrc");
+	else if(m_iNthVol == 4) strcpy(acExt, "_3RD_Vol.mrc");
 	mGenFullPath(acExt, acMrcFile);
 	//-----------------
 	Mrc::CSaveMrc saveMrc;

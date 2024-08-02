@@ -246,3 +246,10 @@ AreTomo3 1.0.18: [07-22-2024]
 2. Added CAsyncSaveVol in DataUtil to overlap saving volumes with
    reconstruction.
 3. Added tools/Remap3D folder and copied alnFile.py and remap3D.py into it.
+
+AreTomo3 1.0.19 [07-30-2024]
+----------------------------
+1. Goal: implement sample thickness detection scheme (07-30-2024)
+2. Added GLocalCC2D.cu in AreTomo/Util for measuring sample thickness.
+3. Added 3rd AreTomo binning to reconstruction 3rd volume. This volume is
+   reconstrcuted with SART. [08-01-2024]

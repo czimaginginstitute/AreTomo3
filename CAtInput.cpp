@@ -55,7 +55,8 @@ CAtInput::CAtInput(void)
 	m_iAlignZ = 600;
 	m_iVolZ = 1200;
 	m_afAtBin[0] = 1.0f;  // 1st res
-	m_afAtBin[1] = -1.0f;  // no second res
+	m_afAtBin[1] = 0.0f;  // no second res
+	m_afAtBin[2] = 0.0f;  // no third res
 	m_afTiltCor[0] = 0.0f;
 	m_afTiltCor[1] = 0.0f;
 	m_afReconRange[0] = -90.0f;
@@ -211,11 +212,11 @@ void CAtInput::Parse(int argc, char* argv[])
 	aParseArgs.GetVals(aiRange, &m_iVolZ);
 	//-----------------
 	aParseArgs.FindVals(m_acAtBinTag, aiRange);
-	if(aiRange[1] > 2) aiRange[1] = 2;
+	if(aiRange[1] > 3) aiRange[1] = 3;
 	aParseArgs.GetVals(aiRange, m_afAtBin);
 	if(m_afAtBin[0] < 1) m_afAtBin[0] = 1.0f;
-	if(aiRange[1] == 1) m_afAtBin[1] = -1.0f;
-	else if(m_afAtBin[1] < 1) m_afAtBin[1] = -1.0f;  
+	if(m_afAtBin[1] < 1) m_afAtBin[1] = 0.0f;
+	if(m_afAtBin[2] < 1) m_afAtBin[2] = 0.0f;
 	//-----------------
 	aParseArgs.FindVals(m_acTiltCorTag, aiRange);
 	if(aiRange[1] > 2) aiRange[1] = 2;
@@ -310,8 +311,8 @@ void CAtInput::mPrint(void)
 	printf("%-10s  %d\n", m_acAlignZTag, m_iAlignZ);
 	printf("%-10s  %d\n", m_acVolZTag, m_iVolZ);
 	//-----------------
-	printf("%-10s  %.2f  %.2f\n", m_acAtBinTag, 
-	   m_afAtBin[0], m_afAtBin[1]);
+	printf("%-10s  %.2f  %.2f  %.2f\n", m_acAtBinTag, 
+	   m_afAtBin[0], m_afAtBin[1], m_afAtBin[2]);
 	printf("%-10s  %.2f  %.2f\n", m_acTiltAxisTag, 
 	   m_afTiltAxis[0], m_afTiltAxis[1]);
 	printf("%-10s  %.2f  %.2f\n", m_acTiltCorTag, m_afTiltCor[0],

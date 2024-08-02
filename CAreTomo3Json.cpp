@@ -236,7 +236,7 @@ void CAreTomo3Json::mAddAtInput(void)
 	   &(pAtInput->m_iVolZ), 1, 10, !bList, !bEnd);
 	//-----------------
         mAddKeyFloatPair(pAtInput->m_acAtBinTag + 1, 
-	   pAtInput->m_afAtBin, 2, 10, bList, !bEnd);
+	   pAtInput->m_afAtBin, 3, 10, bList, !bEnd);
 	//-----------------
         mAddKeyFloatPair(pAtInput->m_acTiltAxisTag + 1, 
 	   pAtInput->m_afTiltAxis, 2, 10, bList, !bEnd);

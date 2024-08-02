@@ -1,6 +1,7 @@
 #pragma once
 #include "../CAreTomoInc.h"
 #include "../MrcUtil/CMrcUtilFwd.h"
+#include "../Util/CUtilInc.h"
 
 namespace McAreTomo::AreTomo::Recon
 {
@@ -281,6 +282,28 @@ private:
 	CTomoSart m_aTomoSart;
 	cudaStream_t m_stream;
 	cudaEvent_t m_eventSino;
+};
+
+class CCalcVolThick
+{
+public:
+	CCalcVolThick(void);
+	~CCalcVolThick(void);
+	void DoIt
+	( MD::CTiltSeries* pTiltSeries,
+	  MAM::CAlignParam* pAlnParam
+	);
+	float m_fThickness;
+private:
+	float mMeasure(int iZ, int* piStart);
+	void mSetup(void);
+	void mClean(void);
+	//-----------------
+	MD::CTiltSeries* m_pVolSeries;
+	MAU::GLocalCC2D* m_gLocalCC2D;
+	float* m_gfImg1;
+	float* m_gfImg2;
+	int m_aiTileSize[2];
 };
 
 }

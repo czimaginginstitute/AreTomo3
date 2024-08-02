@@ -103,10 +103,14 @@ private:
 	void mCorrectCTF(void);
 	void mAlignCTF(void);
 	//-----------------
+	MD::CTiltSeries* mBinAlnSeries(float fBin);
 	void mRecon2nd(void);
 	void mRecon(void);
 	void mSetPositivity(void);
-	void mReconVol(float fBin, int iSeries);
+	void mReconVol
+	( MD::CTiltSeries* pTiltSeries, 
+	  int iVolZ, int iSeries, bool bWbp
+	);
 	void mSartRecon
 	( int iVolZ, int iSeries, 
 	  MD::CTiltSeries* pSeries

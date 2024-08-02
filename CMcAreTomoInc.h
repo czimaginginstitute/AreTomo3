@@ -142,7 +142,7 @@ public:
 	float m_afTiltAxis[2];
 	int m_iAlignZ;
 	int m_iVolZ;
-	float m_afAtBin[2];
+	float m_afAtBin[3];
 	float m_afTiltCor[2];
 	float m_afReconRange[2];
 	float m_fAmpContrast;

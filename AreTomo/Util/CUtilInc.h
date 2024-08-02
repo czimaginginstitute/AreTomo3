@@ -319,6 +319,20 @@ private:
 	float m_fBFactor;
 };
 
+class GLocalCC2D
+{
+public:
+	GLocalCC2D(void);
+	~GLocalCC2D(void);
+	void SetSizes(int* piImgSize, int* piTileSize);
+	float DoIt(float* gfImg1, float* gfImg2, int* piStart);
+private:
+	float* m_gfSums;
+	int m_aiSizes[4];
+	dim3 m_aBlockDim;
+	dim3 m_aGridDim;
+};
+
 //-------------------------------------------------------------------
 // 1. Decompose a 2D cartesian vector along tangential and radial
 //    direction.
