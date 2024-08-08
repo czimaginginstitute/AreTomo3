@@ -121,6 +121,7 @@ public:
 	void GetCoordXY(int iTilt, int iPatch, float* pfCoord);
 	void GetShift(int iTilt, int iPatch, float* pfShift);
 	float GetGood(int iTilt, int iPatch);
+	float GetBadPercentage(float fMaxTilt);
 	//-----------------
 	float* m_pfCoordXs;
 	float* m_pfCoordYs;
@@ -132,6 +133,9 @@ public:
 	int m_iNumParams; // x,y,sx,sy,bad per tilt
 private:
 	CLocalAlignParam(void);
+	int mGetNumBads(int iTilt);
+	//-----------------
+	int m_iNthGpu;
 	static CLocalAlignParam* m_pInstances;
 	static int m_iNumGpus;
 };

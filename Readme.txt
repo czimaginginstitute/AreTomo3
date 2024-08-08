@@ -253,3 +253,14 @@ AreTomo3 1.0.19 [07-30-2024]
 2. Added GLocalCC2D.cu in AreTomo/Util for measuring sample thickness.
 3. Added 3rd AreTomo binning to reconstruction 3rd volume. This volume is
    reconstrcuted with SART. [08-01-2024]
+
+AreTomo3 1.0.20 [08-06-2024]
+----------------------------
+1. Finished implementation of sample-thickness estimation.
+2. Adjust the tilt range in which angular offsets are estimated in
+   FindCtf/CRefineCtfMain.cpp.
+3. -AlignZ is optional now. When not given, the measured thickness is
+   used in projection matching. (08-07-2024).
+4. Added CTsMetrics.cpp in AreTomo to generate TiltSeries_Metrics.csv file 
+   containing metrics for each tilt series including sample thickness, 
+   tilt axis, bad local alignments, etc. (08-08-2024).

@@ -244,6 +244,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/StreAlign/CStreAlignMain.cpp \
 	./AreTomo/TiltOffset/CTiltOffsetMain.cpp \
 	./AreTomo/CAtInstances.cpp \
+	./AreTomo/CTsMetrics.cpp \
 	./AreTomo/CAreTomoMain.cpp \
 	./CInput.cpp \
 	./CMcInput.cpp \

@@ -913,7 +913,11 @@ public:
 	void DoIt(int iNthGpu);
 protected:
 	void mInit(bool bRefine);
-	void mGenAvgSpects(float fTiltOffset, float fBetaOffset);
+	void mGenAvgSpects
+	( float fTiltOffset, 
+	  float fBetaOffset, 
+	  float fMaxTilt
+	);
 	//-----------------
 	void mSaveSpectFile(void);
 	float mGetResults(int iTilt);
@@ -943,13 +947,14 @@ public:
 	void DoIt(int iNthGpu);
 private:
 	void mRefineOffset(float fStep, bool bBeta);
-	float mRefineCTF(bool bBeta);
+	float mRefineCTF(int iKind);
 	//-----------------
 	float m_fTiltOffset;
 	float m_fBetaOffset;
 	//-----------------
 	float m_fBestScore;
 	MD::CCtfResults* m_pBestCtfRes;
+	float m_fLowTilt;
 };
 
 class CCorrCtfMain

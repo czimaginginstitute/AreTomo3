@@ -85,7 +85,7 @@ void CProjAlignMain::Set1(CParam* pParam)
 	m_pCorrTomoStack->Set3(!bShiftOnly, false, !bRWeight);
 	m_pBinSeries = m_pCorrTomoStack->GetCorrectedStack(false);
 	//-----------------
-	m_iVolZ = pParam->m_iVolZ / m_iBin / 2 * 2;
+	m_iVolZ = pParam->m_iAlignZ / m_iBin / 2 * 2;
 	//-----------------
 	int iPixels = m_pBinSeries->GetPixels();
 	if(m_pfReproj != 0L) cudaFreeHost(m_pfReproj);

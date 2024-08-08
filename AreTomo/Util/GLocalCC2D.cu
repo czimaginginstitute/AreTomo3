@@ -6,8 +6,10 @@
 
 using namespace McAreTomo::AreTomo::Util;
 
-static __constant__ float c_aiSizes[4]; // iImgX, iImgY, iTileX, iTileY
-extern __shared__ char s_acArray[];
+//------------------------------------------
+// c_aiSizes: iImgX, iImgY, iTileX, iTileY
+//------------------------------------------
+static __device__ __constant__ int c_aiSizes[4]; 
 
 static __global__ void mGConv
 (	float* gfImg1, 
@@ -16,7 +18,7 @@ static __global__ void mGConv
 	int iStartY,
 	float* gfSums
 )
-{	float* sfSum0 = (float*)&s_acArray[0];
+{	extern __shared__ float sfSum0[];
 	float* sfSum1 = sfSum0 + blockDim.x;
 	float* sfSum2 = sfSum1 + blockDim.x;
 	float* sfSum3 = sfSum2 + blockDim.x;
@@ -24,7 +26,7 @@ static __global__ void mGConv
 	//-----------------
 	int i = 0;
 	float afSum[5] = {0.0f};
-	for(int y=blockIdx.x; i<c_aiSizes[3]; i+=gridDim.x)
+	for(int y=blockIdx.x; y<c_aiSizes[3]; y+=gridDim.x)
 	{	i = (y + iStartY) * c_aiSizes[0] + iStartX;
 		float* gfTile1 = gfImg1 + i;
 		float* gfTile2 = gfImg2 + i;
@@ -69,7 +71,7 @@ static __global__ void mGConv
 
 static __global__ void mGSum1D(float* gfSums)
 {	
-	float* sfSum0 = (float*)&s_acArray[0];
+	extern __shared__ float sfSum0[];
 	float* sfSum1 = sfSum0 + blockDim.x;
 	float* sfSum2 = sfSum1 + blockDim.x;
 	float* sfSum3 = sfSum2 + blockDim.x;
@@ -130,11 +132,10 @@ void GLocalCC2D::SetSizes(int* piImgSize, int* piTileSize)
 	int iGridDimX = (iTilePixels + m_aBlockDim.x - 1) / m_aBlockDim.x;
 	iGridDimX = (iGridDimX / 32) * 32;
 	if(iGridDimX < 32) iGridDimX = 32;
-	else if(iGridDimX > 512) iGridDimX = 512;
+	else if(iGridDimX > 256) iGridDimX = 256;
 	m_aGridDim.x = iGridDimX;
 	//-----------------
 	if(m_gfSums != 0L) cudaFree(m_gfSums);
-	m_gfSums = 0L;
 	cudaMalloc(&m_gfSums, m_aGridDim.x * 5 * sizeof(float));
 }
 
@@ -143,7 +144,7 @@ float GLocalCC2D::DoIt
 	float* gfImg2, 
 	int* piStart
 )
-{	int iShmBytes = sizeof(float) * m_aGridDim.x * 5;
+{	int iShmBytes = sizeof(float) * m_aBlockDim.x * 5;
         mGConv<<<m_aGridDim, m_aBlockDim, iShmBytes>>>(gfImg1,
 	   gfImg2, piStart[0], piStart[1], m_gfSums);
 	//-----------------

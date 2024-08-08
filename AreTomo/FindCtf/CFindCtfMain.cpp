@@ -62,7 +62,7 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	m_iNthGpu = iNthGpu;
 	mInit(false);
 	//-----------------
-	mGenAvgSpects(0.0f, 0.0f);
+	mGenAvgSpects(0.0f, 0.0f, 100.0f);
 	printf("GPU %d: initial estimation of tilt series CTF, "
 	   "please wait ......\n\n", m_iNthGpu);
 	//-----------------
@@ -106,13 +106,20 @@ void CFindCtfMain::mInit(bool bRefine)
            aInitCTF.GetParam(false));
 }
 
-void CFindCtfMain::mGenAvgSpects(float fTiltOffset, float fBetaOffset)
-{
-	bool bRaw = true, bToHost = true;
+void CFindCtfMain::mGenAvgSpects
+(	float fTiltOffset, 
+	float fBetaOffset,
+	float fMaxTilt
+)
+{	bool bRaw = true, bToHost = true;
 	if(m_ppfHalfSpects == 0L) m_ppfHalfSpects = new float*[m_iNumTilts];
+	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
 	//-----------------
 	for(int i=0; i<m_iNumTilts; i++)
-	{	m_pFindCtf2D->GenHalfSpectrum(i, fTiltOffset, fBetaOffset);
+	{	float fTilt = fabs(pCtfRes->GetTilt(i));
+		if(fTilt > fMaxTilt) continue;
+		//----------------	
+		m_pFindCtf2D->GenHalfSpectrum(i, fTiltOffset, fBetaOffset);
 		m_ppfHalfSpects[i] = m_pFindCtf2D->GetHalfSpect(!bRaw, bToHost);
 	}
 }

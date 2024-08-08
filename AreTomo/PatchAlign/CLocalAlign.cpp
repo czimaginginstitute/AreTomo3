@@ -52,7 +52,6 @@ void CLocalAlign::DoIt(MAM::CAlignParam* pAlignParam, int* piRoi)
 	//-------------------------------------
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
-	pParam->m_iVolZ = pAtInput->m_iAlignZ;
 	pParam->m_fXcfSize = 1024.0f * 1.0f;
 	pParam->m_afMaskSize[0] = 0.8f;
 	pParam->m_afMaskSize[1] = 0.8f;

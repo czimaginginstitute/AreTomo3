@@ -43,6 +43,7 @@ CTsPackage::CTsPackage(void)
 	{	m_ppTsStacks[i] = new CTiltSeries;
 		m_ppVolStacks[i] = 0L;
 	}
+	m_iThickness = 0;
 }
 
 CTsPackage::~CTsPackage(void)

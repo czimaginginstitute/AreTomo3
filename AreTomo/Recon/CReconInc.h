@@ -289,21 +289,25 @@ class CCalcVolThick
 public:
 	CCalcVolThick(void);
 	~CCalcVolThick(void);
-	void DoIt
-	( MD::CTiltSeries* pTiltSeries,
-	  MAM::CAlignParam* pAlnParam
-	);
-	float m_fThickness;
+	void DoIt(int iNthGpu);
+	float GetThickness(bool bAngstrom);
+	float GetLowEdge(bool bAngstrom);
+	float GetHighEdge(bool bAngstrom);
 private:
 	float mMeasure(int iZ, int* piStart);
 	void mSetup(void);
 	void mClean(void);
+	void mDetectEdges(float* pfCCs, int iSize);
 	//-----------------
 	MD::CTiltSeries* m_pVolSeries;
 	MAU::GLocalCC2D* m_gLocalCC2D;
 	float* m_gfImg1;
 	float* m_gfImg2;
 	int m_aiTileSize[2];
+	//-----------------
+	int m_aiSampleEdges[2];
+	float m_fBinning;
+	float m_fPixSize;
 };
 
 }

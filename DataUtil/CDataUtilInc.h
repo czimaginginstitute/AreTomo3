@@ -375,6 +375,7 @@ public:
 	//-----------------
 	char* m_pcMdocFile;
 	char m_acMrcMain[256];
+	int m_iThickness;
 	int m_iNthGpu;
 private:
 	void mCreateTiltSeries(int* piImgSize, 

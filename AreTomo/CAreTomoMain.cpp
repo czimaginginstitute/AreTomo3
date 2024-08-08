@@ -258,6 +258,7 @@ void CAreTomoMain::mAlign(void)
 	m_fRotScore = 0.0f;
 	mCoarseAlign();
 	mFindCtf(true);
+	mCalcThickness();
 	//-----------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->ResetShift();
@@ -280,6 +281,9 @@ void CAreTomoMain::mAlign(void)
         pAlignParam->RemoveOffsetZ(1.0f);
 	//-----------------
 	mPatchAlign();
+	//-----------------
+	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance();
+	pTsMetrics->Save(m_iNthGpu);
 	//-----------------
 	mLogGlobalShift();
 	mLogLocalShift();
@@ -320,7 +324,6 @@ void CAreTomoMain::mProjAlign(void)
 {
 	CAtInput* pInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
-	pParam->m_iVolZ = pInput->m_iAlignZ;
         pParam->m_afMaskSize[0] = 0.7f;
         pParam->m_afMaskSize[1] = 0.7f;
 	//-----------------
@@ -367,24 +370,29 @@ void CAreTomoMain::mRotAlign(void)
 
 void CAreTomoMain::mFindTiltOffset(void)
 {
+	//-----------------------------------------------
+	// 1) This function is deprecated and replaced
+	// by FindCtf/CRefineCtfMain.cpp to estimate
+	// the tilt angle offset. 2) Do not delete util
+	// CRefineCtfMain is tested with more cases.
+	//-----------------------------------------------
 	/*
-	m_fTiltOffset = 0.0f;
+	float fTiltOffset = 0.0f;
 	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->m_afTiltCor[0] < 0) return;
 	//-----------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	if(fabs(pInput->m_afTiltCor[1]) > 0.1)
-        {       m_fTiltOffset = pInput->m_afTiltCor[1];
-                pAlignParam->AddAlphaOffset(m_fTiltOffset);
+        {       fTiltOffset = pInput->m_afTiltCor[1];
+                pAlignParam->AddAlphaOffset(fTiltOffset);
 		return;
         }
 	//-----------------
 	TiltOffset::CTiltOffsetMain aTiltOffsetMain;
 	aTiltOffsetMain.Setup(4, m_iNthGpu);
-	float fTiltOffset = aTiltOffsetMain.DoIt();
-	m_fTiltOffset += fTiltOffset;
+	fTiltOffset = aTiltOffsetMain.DoIt();
 	//-----------------
-	pAlignParam->AddAlphaOffset(fTiltOffset);
+	printf("Stretching based tilt offset: %f\n\n", fTiltOffset);
 	*/
 }
 
@@ -401,6 +409,20 @@ void CAreTomoMain::mPatchAlign(void)
 	MAP::CPatchAlignMain* pPatchAlignMain = 
 	   MAP::CPatchAlignMain::GetInstance(m_iNthGpu);
 	pPatchAlignMain->DoIt(); 
+}
+
+void CAreTomoMain::mCalcThickness(void)
+{
+	Recon::CCalcVolThick calcVolThick;
+        calcVolThick.DoIt(m_iNthGpu);
+	float fThickness = calcVolThick.GetThickness(false);
+	m_iThickness = (int)fThickness / 2 * 2;
+	//-----------------
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
+	int iThickness = m_iThickness * 9 / 20 * 2;
+	if(pAtInput->m_iAlignZ <= 0) pParam->m_iAlignZ = iThickness;
+	else pParam->m_iAlignZ = pAtInput->m_iAlignZ;
 }
 
 void CAreTomoMain::mCorrectCTF(void)

@@ -96,6 +96,7 @@ private:
 	void mFindTiltOffset(void);
 	void mProjAlign(void);
 	void mPatchAlign(void);
+	void mCalcThickness(void);
 	//-----------------
 	void mSetupTsCorrection(void);
 	void mSaveForImod(void);
@@ -133,8 +134,45 @@ private:
 	//-----------------
 	MAC::CCorrTomoStack* m_pCorrTomoStack;
 	float m_fRotScore;
+	int m_iThickness;
 	int m_iNthGpu;
-
 };
+
+class CTsMetrics
+{
+public:
+	static CTsMetrics* GetInstance(void);
+	static void DeleteInstance(void);
+	~CTsMetrics(void);
+	void Save(int iNthGpu);
+private:
+	CTsMetrics(void);
+	void mGetMrcName(void);
+	void mGetPixelSize(void);
+	void mGetThickness(void);
+	void mGetGlobalShift(void);
+	void mGetTiltAxis(void);
+	void mGetBadPatches(void);
+	void mGetCTF(void);
+	void mOpenFile(void);
+	void mSave(void);
+	//-----------------
+	char m_acMrcName[256];
+	float m_fPixSize;
+	int m_iThickness;
+	float m_fTiltAxis;
+	float m_fGlobalShift;
+	float m_fBadPatchLow;
+	float m_fBadPatchAll;
+	float m_fCtfRes;
+	float m_fCtfScore;
+	//-----------------
+	bool m_bFirstTime;
+	FILE* m_pFile;
+	int m_iNthGpu;
+	pthread_mutex_t m_aMutex;
+	static CTsMetrics* m_pInstance;
+};
+
 }
 namespace MA = McAreTomo::AreTomo;

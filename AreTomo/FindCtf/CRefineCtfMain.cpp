@@ -13,6 +13,7 @@ CRefineCtfMain::CRefineCtfMain(void)
 	m_fBetaOffset = 0.0f;
 	m_fBestScore = 0.0f;
 	m_pBestCtfRes = 0L;
+	m_fLowTilt = 30.9f;
 }
 
 CRefineCtfMain::~CRefineCtfMain(void)
@@ -33,18 +34,26 @@ void CRefineCtfMain::Clean(void)
 
 void CRefineCtfMain::DoIt(int iNthGpu)
 {
-	printf("GPU %d: local CTF estimation, "
-	   "please wait ......\n\n", iNthGpu);
+	const char* pcMsg = "local CTF estimation, please wait ......";
 	//-----------------
 	this->Clean();
 	m_iNthGpu = iNthGpu;
 	//-----------------
 	mInit(true);
 	bool bBeta = true;
+	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
 	mRefineOffset(3.0f, !bBeta);
+	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
 	mRefineOffset(1.0f, !bBeta);
+	//-----------------
+	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
 	mRefineOffset(3.0f, bBeta);
+	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
 	mRefineOffset(1.0f, bBeta);
+	//-----------------
+	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
+	mGenAvgSpects(m_fTiltOffset, m_fBetaOffset, 100.0f);
+	mRefineCTF(3);
 	//-----------------
 	CSaveCtfResults saveCtfResults;
 	saveCtfResults.DoIt(m_iNthGpu);
@@ -73,15 +82,17 @@ void CRefineCtfMain::mRefineOffset(float fStep, bool bBeta)
 	//-----------------
 	float fInitOffset = m_fTiltOffset;
 	if(bBeta) fInitOffset = m_fBetaOffset;
+	int iKind = bBeta ? 2 : 1;
+	float fMaxTilt = m_fLowTilt + 1.0f;
 	//-----------------
 	for(int i=-3; i<=3; i++)
 	{	float fOffset = fInitOffset + i * fStep;
 		if(fabs(fOffset) > 15) continue;
 		//----------------
-		if(bBeta) mGenAvgSpects(m_fTiltOffset, fOffset);
-		else mGenAvgSpects(fOffset, m_fBetaOffset);
+		if(bBeta) mGenAvgSpects(m_fTiltOffset, fOffset, fMaxTilt);
+		else mGenAvgSpects(fOffset, m_fBetaOffset, fMaxTilt);
 		//----------------
-		float fScore = mRefineCTF(bBeta);
+		float fScore = mRefineCTF(iKind);
 		if(fScore <= m_fBestScore) continue;
 		//----------------
 		if(bBeta) m_fBetaOffset = fOffset;
@@ -96,7 +107,12 @@ void CRefineCtfMain::mRefineOffset(float fStep, bool bBeta)
 	m_pBestCtfRes = 0L;
 }
 
-float CRefineCtfMain::mRefineCTF(bool bBeta)
+//--------------------------------------------------------------------
+// iKind = 1: refine for better alpha offset
+// iKind = 2: refine for better beta offset
+// iKind = 3: refine for all better CTFs at all tilts
+//--------------------------------------------------------------------
+float CRefineCtfMain::mRefineCTF(int iKind)
 {
         CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
         //-----------------
@@ -110,12 +126,10 @@ float CRefineCtfMain::mRefineCTF(bool bBeta)
         afExtPhase[1] = 0.0f;
         int iNumTilts = pTsTiles->GetNumTilts();
         //-----------------
-	float fLowTilt = 20.9f;
-	//-----------------
         for(int i=0; i<iNumTilts; i++)
         {       float fTilt = fabs(pCtfRes->GetTilt(i));
-		if(bBeta && fTilt > fLowTilt) continue;
-		if(!bBeta && fTilt <= fLowTilt) continue;
+		if(iKind == 1 && fTilt > m_fLowTilt) continue;
+		if(iKind == 2 && fTilt > m_fLowTilt) continue;
 		//----------------
 		afDfRange[0] = pCtfRes->GetDfMean(i);
 		afAstRatio[0] = pCtfRes->GetAstMag(i);
