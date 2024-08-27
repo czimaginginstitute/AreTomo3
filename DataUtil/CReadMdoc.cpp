@@ -132,7 +132,7 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 	}
 	fclose(pFile);
 	//-----------------
-	if(m_iNumTilts > 0) return true;
+	if(m_iNumTilts >= 7) return true;
 	else return false;
 }
 

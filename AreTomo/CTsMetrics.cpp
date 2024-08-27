@@ -137,9 +137,9 @@ void CTsMetrics::mOpenFile(void)
 		return;
 	}
 	//-----------------
-	fprintf(m_pFile, "Tilt_Series, Thickness(Pix), Tilt_Axis, "
-	   "Global_Shift(Pix), Bad_Patch_Low, Bad_Patch_All, "
-   	   "CTF_Res(A), CTF_Score, Pix_Size(A)\n");   
+	fprintf(m_pFile, "Tilt_Series,Thickness(Pix),Tilt_Axis,"
+	   "Global_Shift(Pix),Bad_Patch_Low,Bad_Patch_All,"
+   	   "CTF_Res(A),CTF_Score,Pix_Size(A)\n");   
 }
 
 void CTsMetrics::mSave(void)

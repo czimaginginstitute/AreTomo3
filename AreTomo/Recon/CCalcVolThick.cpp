@@ -79,6 +79,7 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	int iVolZ = pAlnSeries->m_aiStkSize[0] * 3 / 8 * 2;
 	int iNumTilts = pAlnSeries->m_aiStkSize[2];
 	int iNumSubsets = iNumTilts / 5;
+	if(iNumSubsets == 0) iNumSubsets = 1;
 	int iIters = 20;
 	MD::CTiltSeries* pVolSeries = pDoSartRecon->DoIt(pAlnSeries,
 	   pAlnParam, 0, iNumTilts, iVolZ, iIters, iNumSubsets);
@@ -104,12 +105,10 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	int iEndZ = m_pVolSeries->m_aiStkSize[2] - 1;
 	float* pfCCs = new float[iEndZ];
 	//-----------------
-	printf("Estimate sample thickness\n");
 	for(int z=0; z<iEndZ; z++)
 	{	pfCCs[z] = mMeasure(z, aiStart);
-		printf(" %4d  %.4f\n", z, pfCCs[z]);
+		//printf(" %4d  %.4f\n", z, pfCCs[z]);
 	}
-	printf("\n");
 	//-----------------
 	mDetectEdges(pfCCs, iEndZ);
 	if(pfCCs != 0L) delete[] pfCCs;

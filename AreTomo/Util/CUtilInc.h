@@ -326,11 +326,27 @@ public:
 	~GLocalCC2D(void);
 	void SetSizes(int* piImgSize, int* piTileSize);
 	float DoIt(float* gfImg1, float* gfImg2, int* piStart);
+	float m_fCC;  // normalized
 private:
 	float* m_gfSums;
 	int m_aiSizes[4];
 	dim3 m_aBlockDim;
 	dim3 m_aGridDim;
+};
+
+class GLocalRms2D
+{
+public:
+        GLocalRms2D(void);
+        ~GLocalRms2D(void);
+        void SetSizes(int* piImgSize, int* piTileSize);
+        float DoIt(float* gfImg1, float* gfImg2, int* piStart);
+        float m_fRms;  // normalized
+private:
+        float* m_gfSums;
+        int m_aiSizes[4];
+        dim3 m_aBlockDim;
+        dim3 m_aGridDim;
 };
 
 //-------------------------------------------------------------------

@@ -260,12 +260,20 @@ void CAreTomoMain::mAlign(void)
 	mFindCtf(true);
 	mCalcThickness();
 	//-----------------
+	Recon::CAlignMetric alignMetric;
+	//alignMetric.Calculate(m_iNthGpu, m_iThickness);
+	//printf("Coarse align: %e\n", alignMetric.m_fRms);
+	
+	
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->ResetShift();
 	//-----------------
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	pParam->m_fXcfSize = 2048.0f;
 	mProjAlign();
+
+	//alignMetric.Calculate(m_iNthGpu, m_iThickness);
+        //printf("Global align 1: %e\n", alignMetric.m_fRms);
 	//-----------------
 	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->m_afTiltAxis[1] >= 0)
@@ -277,10 +285,18 @@ void CAreTomoMain::mAlign(void)
 		}
 		mProjAlign();
 	}
+	
+	//alignMetric.Calculate(m_iNthGpu, m_iThickness);
+        //printf("Global align 2: %e\n", alignMetric.m_fRms);
+	
+
 	pAlignParam->FitRotCenterZ();
         pAlignParam->RemoveOffsetZ(1.0f);
 	//-----------------
 	mPatchAlign();
+
+	//alignMetric.Calculate(m_iNthGpu, m_iThickness);
+        //printf("Patch align: %e\n", alignMetric.m_fRms);
 	//-----------------
 	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance();
 	pTsMetrics->Save(m_iNthGpu);
@@ -420,7 +436,10 @@ void CAreTomoMain::mCalcThickness(void)
 	//-----------------
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
-	int iThickness = m_iThickness * 9 / 20 * 2;
+	int iThickness = m_iThickness * 8 / 20 * 2;
+	if(iThickness < 100) iThickness = 100;
+	else if(iThickness > 2000) iThickness = 2000;
+	//-----------------
 	if(pAtInput->m_iAlignZ <= 0) pParam->m_iAlignZ = iThickness;
 	else pParam->m_iAlignZ = pAtInput->m_iAlignZ;
 }
@@ -548,7 +567,8 @@ MD::CTiltSeries* CAreTomoMain::mBinAlnSeries(float fBin)
 {
 	MD::CTiltSeries* pAlnSeries =
            m_pCorrTomoStack->GetCorrectedStack(false);
-        if(pAlnSeries == 0L || pAlnSeries->bEmpty()) return 0L;
+	if(pAlnSeries == 0L || pAlnSeries->bEmpty()) return 0L;
+	if(fBin < 0.01f) return 0L;
         //-----------------
         /*
         if(iSeries == 0)
@@ -571,7 +591,11 @@ MD::CTiltSeries* CAreTomoMain::mBinAlnSeries(float fBin)
 void CAreTomoMain::mRecon(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
-	int iVolZ = (int)(pAtInput->m_iVolZ / pAtInput->m_afAtBin[0]) / 2 * 2;
+	int iVolZ = pAtInput->m_iVolZ;
+	if(iVolZ < 0) iVolZ = m_iThickness + 64;
+	iVolZ = (int)(iVolZ / pAtInput->m_afAtBin[0]) / 2 * 2;
+	if(iVolZ < 16) iVolZ = 16;
+	//-----------------
 	bool bWbp = (pAtInput->m_iWbp == 1);
 	//-----------------
 	int iNumSeries = MD::CAlnSums::m_iNumSums;
@@ -591,20 +615,27 @@ void CAreTomoMain::mRecon(void)
 void CAreTomoMain::mRecon2nd(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
-	if(pAtInput->m_afAtBin[1] < 1 && pAtInput->m_afAtBin[2] < 1) return;
+	float fBin1 = pAtInput->m_afAtBin[1];
+	float fBin2 = pAtInput->m_afAtBin[2];
+	if(fBin1 < 1 && fBin2 < 1) return;
 	//-----------------
 	m_pCorrTomoStack->DoIt(0, 0L);
 	//-----------------
-	int iVolZ = (int)(pAtInput->m_iVolZ / pAtInput->m_afAtBin[1]) / 2 * 2;
-	MD::CTiltSeries* pBinnedSeries = 0L;
-	pBinnedSeries = mBinAlnSeries(pAtInput->m_afAtBin[1]);
-	mReconVol(pBinnedSeries, iVolZ, 3, true);
-	if(pBinnedSeries != 0L) delete pBinnedSeries;
+	int iVolZ = pAtInput->m_iVolZ;
+	if(iVolZ < 0) iVolZ = m_iThickness + 64;
 	//-----------------
-	if(pAtInput->m_afAtBin[2] < 1) return;
-	iVolZ = (int)(pAtInput->m_iVolZ / pAtInput->m_afAtBin[2]) / 2 * 2;
-	pBinnedSeries = mBinAlnSeries(pAtInput->m_afAtBin[2]);
-        mReconVol(pBinnedSeries, iVolZ, 4, false);
+	MD::CTiltSeries* pBinnedSeries = 0L;
+	if(fBin1 >= 1)
+	{	int iVolZ1 = (int)(iVolZ / fBin1) / 2 * 2;
+		pBinnedSeries = mBinAlnSeries(fBin1);
+		mReconVol(pBinnedSeries, iVolZ1, 3, true);
+		if(pBinnedSeries != 0L) delete pBinnedSeries;
+	}
+	//-----------------
+	if(fBin2 < 1) return;
+	int iVolZ2 = (int)(iVolZ / fBin2) / 2 * 2;
+	pBinnedSeries = mBinAlnSeries(fBin2);
+        mReconVol(pBinnedSeries, iVolZ2, 4, false);
         if(pBinnedSeries != 0L) delete pBinnedSeries;
 }
 

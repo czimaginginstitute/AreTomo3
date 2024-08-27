@@ -264,3 +264,18 @@ AreTomo3 1.0.20 [08-06-2024]
 4. Added CTsMetrics.cpp in AreTomo to generate TiltSeries_Metrics.csv file 
    containing metrics for each tilt series including sample thickness, 
    tilt axis, bad local alignments, etc. (08-08-2024).
+
+AreTomo3 1.0.21 [08-14-2024]
+----------------------------
+1. Goal: implement r-factor to quantify tomo alignment accuracy.
+2. Bug fix: when -AtBin is followed by zeroes, AreTomo3 crashes. The fix
+   is to skip the tomogram reconstruction if the binning is less than 1.
+3. Bug fix: when a tilt series contains only 1 tilt image, AreTomo3 crashes
+   at calculation of sample thickness using SART reconstruction. The fix is
+   to set the minimum subset to 1.
+4. Added a check to number of tilt images in a tilt series. The minimum 
+   number is now 7.
+5. Added: when -AtBin's 2nd and 3rd binnings are zeros, the corresponding 
+   volumes are not reconstructed.
+6. Added: when -VolZ is not shown in the command line, the measured 
+   thickness is set as VolZ.

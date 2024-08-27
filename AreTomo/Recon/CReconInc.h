@@ -310,4 +310,26 @@ private:
 	float m_fPixSize;
 };
 
+class CAlignMetric
+{
+public:
+	CAlignMetric(void);
+	~CAlignMetric(void);
+	void Calculate(int iNthGpu, int iThickness);
+	float m_fRms;
+private:
+	void mReproj(void);
+	void mSetup(int* piImgSize);
+	void mClean(void);
+	//-----------------
+	MD::CTiltSeries* m_pVolSeries;
+	float* m_gfImg1;
+	float* m_gfImg2;
+	float* m_gfImg3;
+	int m_aiTileSize[2];
+	//-----------------
+	float m_fBinning;
+	float m_fPixSize;
+};
+
 }

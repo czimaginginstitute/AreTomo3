@@ -46,6 +46,7 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/Util/GCC1D.cu \
 	./AreTomo/Util/GCC2D.cu \
 	./AreTomo/Util/GLocalCC2D.cu \
+	./AreTomo/Util/GLocalRms2D.cu \
 	./AreTomo/Util/GMutualMask2D.cu \
 	./AreTomo/Util/GRealCC2D.cu \
 	./AreTomo/Util/GRemoveSpikes2D.cu \
@@ -238,6 +239,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/Recon/CTomoSart.cpp \
 	./AreTomo/Recon/CTomoWbp.cpp \
 	./AreTomo/Recon/CCalcVolThick.cpp \
+	./AreTomo/Recon/CAlignMetric.cpp \
 	./AreTomo/StreAlign/CStretchAlign.cpp \
 	./AreTomo/StreAlign/CStretchCC2D.cpp \
 	./AreTomo/StreAlign/CStretchXcf.cpp \
