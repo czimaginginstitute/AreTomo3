@@ -15,6 +15,7 @@ CCalcVolThick::CCalcVolThick(void)
 	m_gfImg2 = 0L;
 	m_fBinning = 10.0f;
 	m_fPixSize = 1.0f;
+	m_iNthGpu = 0;
 }
 
 CCalcVolThick::~CCalcVolThick(void)
@@ -47,6 +48,7 @@ void CCalcVolThick::DoIt(int iNthGpu)
 {	
 	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(iNthGpu);
 	float fTiltAxis = pAlnParam->GetTiltAxis(0);
+	m_iNthGpu = iNthGpu;
 	//-------------------------------------------------
 	// 1) align tilt series 0 and then 2) reconstruct.
 	//-------------------------------------------------
@@ -67,14 +69,6 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	//--------------------------------------------------
 	// 3) reconstruct the aligned tilt series by WBP.
 	//--------------------------------------------------
-	/*
-	CDoWbpRecon* pDoWbpRecon = new CDoWbpRecon;
-	int iVolZ = pAlnSeries->m_aiStkSize[0] / 2;
-	MD::CTiltSeries* pVolSeries = pDoWbpRecon->DoIt(pAlnSeries,
-	   pAlnParam, iVolZ);
-	if(pAlnSeries != 0L) delete pAlnSeries;
-	if(pDoWbpRecon != 0L) delete pDoWbpRecon;
-	*/
 	CDoSartRecon* pDoSartRecon = new CDoSartRecon;
 	int iVolZ = pAlnSeries->m_aiStkSize[0] * 3 / 8 * 2;
 	int iNumTilts = pAlnSeries->m_aiStkSize[2];
@@ -90,10 +84,7 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	//--------------------------------------------------
 	m_pVolSeries = pVolSeries->FlipVol(true);
 	if(pVolSeries != 0L) delete pVolSeries;
-
-	MU::CSaveTempMrc saveMrc;
-	saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestVolThick", ".mrc");
-	saveMrc.DoMany(m_pVolSeries->GetFrames(), 2, m_pVolSeries->m_aiStkSize);
+	mSaveTmpVol(); // for debugging 	
 	//--------------------------------------------------
 	// 5) meaure sample thickness inside the volume.
 	//--------------------------------------------------
@@ -107,15 +98,11 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	//-----------------
 	for(int z=0; z<iEndZ; z++)
 	{	pfCCs[z] = mMeasure(z, aiStart);
-		//printf(" %4d  %.4f\n", z, pfCCs[z]);
 	}
+	mSaveTmpCCs(pfCCs, iEndZ); // for debugging
 	//-----------------
 	mDetectEdges(pfCCs, iEndZ);
 	if(pfCCs != 0L) delete[] pfCCs;
-	//-----------------
-	int iThick = (int)this->GetThickness(false);
-	MD::CTsPackage* pPackage = MD::CTsPackage::GetInstance(iNthGpu);
-	pPackage->m_iThickness = iThick;
 	//-----------------
 	mClean();
 }
@@ -145,8 +132,8 @@ float CCalcVolThick::mMeasure(int iZ, int* piStart)
 
 void CCalcVolThick::mSetup(void)
 {
-	m_aiTileSize[0] = m_pVolSeries->m_aiStkSize[0] * 3 / 8 * 2;
-	m_aiTileSize[1] = m_pVolSeries->m_aiStkSize[1] * 3 / 8 * 2;
+	m_aiTileSize[0] = (int)(m_pVolSeries->m_aiStkSize[0] * 3.5) / 8 * 2;
+	m_aiTileSize[1] = (int)(m_pVolSeries->m_aiStkSize[1] * 3.5) / 8 * 2;
 	//-----------------`
 	int iPixels = m_pVolSeries->GetPixels();
 	size_t tBytes = sizeof(float) * iPixels * 2;
@@ -259,27 +246,86 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	// 1) The sample edges are in the middle between
 	// true minimum and maximum
 	//-----------------------------------------------
-	float fEdgeCC1 = (pfCCs[aiMaxLocs[0]] + fMeanCC1) * 0.5f;
-	float fEdgeCC2 = (pfCCs[aiMaxLocs[1]] + fMeanCC2) * 0.5f;
-	float fMinDif = (float)1e20;
+	float fW = 0.85f;
+	float fEdgeCC1 = pfCCs[aiMaxLocs[0]] * (1 - fW) + fMeanCC1 * fW;
+	float fEdgeCC2 = pfCCs[aiMaxLocs[1]] * (1 - fW) + fMeanCC2 * fW;
+	float fEdgeCC = (fEdgeCC1 + fEdgeCC2) * 0.5f;
+	//if(fEdgeCC1 < fEdgeCC) fEdgeCC1 = fEdgeCC;
+	//if(fEdgeCC2 < fEdgeCC) fEdgeCC2 = fEdgeCC;
+	//-----------------------------------------------
+	// 1) This is initialization just in case
+	//-----------------------------------------------
+	m_aiSampleEdges[0] = aiMinLocs[0];
+	m_aiSampleEdges[1] = aiMinLocs[1];
+	//-----------------
 	for(int i=aiMaxLocs[0]; i>aiMinLocs[0]; i--)
-	{	float fDif = fabs(pfCCs[i] - fEdgeCC1);
-		if(fDif < fMinDif)
-		{	fMinDif = fDif;
-			m_aiSampleEdges[0] = i;
+	{	if(pfCCs[i] < fEdgeCC)
+		{	m_aiSampleEdges[0] = i;
+			break;
 		}
 	}
 	//-----------------
-	fMinDif = (float)1e20;
 	for(int i=aiMaxLocs[1]; i<aiMinLocs[1]; i++)
-	{	float fDif = fabs(pfCCs[i] - fEdgeCC2);
-		if(fDif < fMinDif)
-		{	fMinDif = fDif;
-			m_aiSampleEdges[1] = i;
+	{	if(pfCCs[i] < fEdgeCC)
+		{	m_aiSampleEdges[1] = i;
+			break;
 		}
 	}
 	m_aiSampleEdges[0] *= m_fBinning;
 	m_aiSampleEdges[1] *= m_fBinning;
 	//-----------------
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	pAlnParam->m_iThickness = m_aiSampleEdges[1] - m_aiSampleEdges[0];
+	//-----------------
+	int iSampleCent = (m_aiSampleEdges[0] + m_aiSampleEdges[1]) / 2;
+	int iVolCent = (int)(iHalfZ * m_fBinning);
+	pAlnParam->m_iOffsetZ = iSampleCent - iVolCent;
+	//-----------------
 	printf("Sample edges: %6d  %6d\n", m_aiSampleEdges[0], m_aiSampleEdges[1]);
+}
+
+void CCalcVolThick::mSaveTmpVol(void)
+{
+	char* pcMrcName = mGenTmpName();
+	if(pcMrcName == 0L) return;
+	//-----------------
+	MU::CSaveTempMrc saveMrc;
+        saveMrc.SetFile(pcMrcName, ".mrc");
+        saveMrc.DoMany(m_pVolSeries->GetFrames(), 2, m_pVolSeries->m_aiStkSize);
+	//-----------------
+	delete[] pcMrcName;
+}
+
+void CCalcVolThick::mSaveTmpCCs(float* pfCCs, int iSize)
+{
+	char* pcCCName = mGenTmpName();
+	if(pcCCName == 0L) return;
+	//-----------------
+	strcat(pcCCName, "_CC.csv");
+	FILE* pFile = fopen(pcCCName, "w");
+	if(pFile != 0L)
+	{	for(int i=0; i<iSize; i++)
+		{	fprintf(pFile, "%d,%.5f\n", i, pfCCs[i]);
+		}
+		fclose(pFile);
+	}
+	//-----------------
+	if(pcCCName != 0L) delete[] pcCCName;
+}
+
+char* CCalcVolThick::mGenTmpName(void)
+{
+	CInput* pInput = CInput::GetInstance();
+	if(strlen(pInput->m_acTmpDir) == 0) return 0L;
+	//-----------------
+	char* pcTmpName = new char[256];
+	memset(pcTmpName, 0, sizeof(char) * 256);
+	strcpy(pcTmpName, pInput->m_acTmpDir);
+	//-----------------
+	MD::CTsPackage* pPackage = 0L; 
+        pPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
+        strcat(pcTmpName, pPackage->m_acMrcMain);
+        strcat(pcTmpName, "_Thick");
+	//-----------------
+	return pcTmpName;
 }

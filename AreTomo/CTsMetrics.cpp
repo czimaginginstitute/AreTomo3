@@ -81,8 +81,8 @@ void CTsMetrics::mGetPixelSize(void)
 
 void CTsMetrics::mGetThickness(void)
 {
-	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
-	m_iThickness = pTsPackage->m_iThickness;
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	m_iThickness = pAlnParam->m_iThickness;
 }
 
 void CTsMetrics::mGetGlobalShift(void)
@@ -129,7 +129,9 @@ void CTsMetrics::mOpenFile(void)
 	CInput* pInput = CInput::GetInstance();
 	strcpy(acFile, pInput->m_acOutDir);
 	strcat(acFile, "TiltSeries_Metrics.csv");
-	m_pFile = fopen(acFile, "wt");
+	//-----------------
+	if(pInput->m_iResume == 0) m_pFile = fopen(acFile, "w");
+	else m_pFile = fopen(acFile, "wa");
 	//-----------------
 	if(m_pFile == 0L)
 	{	printf("Warning: metrics file cannot be created, "

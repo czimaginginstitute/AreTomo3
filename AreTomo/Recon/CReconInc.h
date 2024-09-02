@@ -299,6 +299,10 @@ private:
 	void mClean(void);
 	void mDetectEdges(float* pfCCs, int iSize);
 	//-----------------
+	void mSaveTmpVol(void);
+	void mSaveTmpCCs(float* pfCCs, int iSize);
+	char* mGenTmpName(void);
+	//-----------------
 	MD::CTiltSeries* m_pVolSeries;
 	MAU::GLocalCC2D* m_gLocalCC2D;
 	float* m_gfImg1;
@@ -308,6 +312,7 @@ private:
 	int m_aiSampleEdges[2];
 	float m_fBinning;
 	float m_fPixSize;
+	int m_iNthGpu;
 };
 
 class CAlignMetric

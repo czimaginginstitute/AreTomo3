@@ -81,6 +81,8 @@ public:
 	//-----------------
 	float m_fAlphaOffset;
 	float m_fBetaOffset;
+	int m_iThickness; // in raw tilt-series pixel
+	int m_iOffsetZ;   // between sample center and volume center
 	//-----------------
 	int m_iNumFrames;
 	int m_iNthGpu;

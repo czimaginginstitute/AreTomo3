@@ -592,7 +592,7 @@ void CAreTomoMain::mRecon(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	int iVolZ = pAtInput->m_iVolZ;
-	if(iVolZ < 0) iVolZ = m_iThickness + 64;
+	if(iVolZ < 0) iVolZ = m_iThickness + 200;
 	iVolZ = (int)(iVolZ / pAtInput->m_afAtBin[0]) / 2 * 2;
 	if(iVolZ < 16) iVolZ = 16;
 	//-----------------
@@ -622,7 +622,7 @@ void CAreTomoMain::mRecon2nd(void)
 	m_pCorrTomoStack->DoIt(0, 0L);
 	//-----------------
 	int iVolZ = pAtInput->m_iVolZ;
-	if(iVolZ < 0) iVolZ = m_iThickness + 64;
+	if(iVolZ < 0) iVolZ = m_iThickness + 200;
 	//-----------------
 	MD::CTiltSeries* pBinnedSeries = 0L;
 	if(fBin1 >= 1)

@@ -23,7 +23,7 @@ public:
 	char m_acInMdoc[256];
 	char m_acInSuffix[256];
 	char m_acInSkips[256];
-	char m_acTmpFile[256];
+	char m_acTmpDir[256];
 	char m_acLogDir[256];
 	char m_acOutDir[256];
 	char m_acInDir[256]; // extract from m_acInMdoc
@@ -43,7 +43,7 @@ public:
 	char m_acInMdocTag[32];
 	char m_acInSuffixTag[32];
 	char m_acInSkipsTag[32];
-	char m_acTmpFileTag[32];
+	char m_acTmpDirTag[32];
 	char m_acLogDirTag[32];
 	char m_acOutDirTag[32];
 	//-----------------

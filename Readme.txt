@@ -279,3 +279,12 @@ AreTomo3 1.0.21 [08-14-2024]
    volumes are not reconstructed.
 6. Added: when -VolZ is not shown in the command line, the measured 
    thickness is set as VolZ.
+
+AreTomo3 1.0.22 [08-28-2024]
+----------------------------
+1. Bug fix: when AreTomo3 is restarted with -resume 1, the content of
+   TiltSeries_Metrics.csv is erased when it is opened.
+   The fix is to open with appending if -resume is enabled.
+2. Bug fix: memory leak at AreTomo/PatchAlign/CDetectFeatures.cpp::136,
+   pfBinnedImg is not freed.
+3. Support sm_86, sm_89, sm_90 for H100 and H200.

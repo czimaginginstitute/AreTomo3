@@ -28,7 +28,7 @@ CInput::CInput(void)
 	strcpy(m_acInMdocTag, "-InMdoc");
 	strcpy(m_acInSuffixTag, "-InSuffix");
 	strcpy(m_acInSkipsTag, "-InSkips");
-	strcpy(m_acTmpFileTag, "-TmpFile");
+	strcpy(m_acTmpDirTag, "-TmpDir");
 	strcpy(m_acLogDirTag, "-LogDir");
 	strcpy(m_acOutDirTag, "-OutDir");
 	//-----------------
@@ -136,7 +136,7 @@ void CInput::Parse(int argc, char* argv[])
 	memset(m_acInSuffix, 0, sizeof(m_acInSuffix));
 	memset(m_acInSkips, 0, sizeof(m_acInSkips));
 	memset(m_acOutDir, 0, sizeof(m_acOutDir));
-	memset(m_acTmpFile, 0, sizeof(m_acTmpFile));
+	memset(m_acTmpDir, 0, sizeof(m_acTmpDir));
 	memset(m_acLogDir, 0, sizeof(m_acLogDir));
 	//-----------------
 	int aiRange[2];
@@ -151,8 +151,8 @@ void CInput::Parse(int argc, char* argv[])
 	aParseArgs.FindVals(m_acInSkipsTag, aiRange);
 	aParseArgs.GetVal(aiRange[0], m_acInSkips);
 	//-----------------
-	aParseArgs.FindVals(m_acTmpFileTag, aiRange);
-        aParseArgs.GetVal(aiRange[0], m_acTmpFile);
+	aParseArgs.FindVals(m_acTmpDirTag, aiRange);
+        aParseArgs.GetVal(aiRange[0], m_acTmpDir);
 	//-----------------
 	aParseArgs.FindVals(m_acLogDirTag, aiRange);
         aParseArgs.GetVal(aiRange[0], m_acLogDir);
@@ -207,6 +207,7 @@ void CInput::Parse(int argc, char* argv[])
 	mExtractInDir();
 	mAddEndSlash(m_acOutDir);
 	mAddEndSlash(m_acLogDir);
+	mAddEndSlash(m_acTmpDir);
 	mPrint();
 }
 
@@ -218,7 +219,7 @@ void CInput::mPrint(void)
 	printf("%-15s  %s\n", m_acInSkipsTag, m_acInSkips);
 	printf("%-15s  %s\n", m_acOutDirTag, m_acOutDir);
 	//-----------------
-	printf("%-15s  %s\n", m_acTmpFileTag, m_acTmpFile);
+	printf("%-15s  %s\n", m_acTmpDirTag, m_acTmpDir);
 	printf("%-15s  %s\n", m_acLogDirTag, m_acLogDir);
 	//-----------------
 	printf("%-15s  %.2f\n", m_acPixSizeTag, m_fPixSize);
