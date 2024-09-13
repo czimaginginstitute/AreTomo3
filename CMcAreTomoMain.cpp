@@ -65,10 +65,13 @@ bool CMcAreTomoMain::DoIt(void)
 	CInput* pInput = CInput::GetInstance();
 	cudaSetDevice(pInput->m_piGpuIDs[0]);
 	//-----------------------------------
-	// load gain and/or dark references.
+	// load gain and/or dark references
+	// only when we start from movies.
 	//-----------------------------------
-	MM::CMotionCorMain::LoadRefs();	
-	MM::CMotionCorMain::LoadFmIntFile();
+	if(pInput->m_iCmd == 0)
+	{	MM::CMotionCorMain::LoadRefs();	
+		MM::CMotionCorMain::LoadFmIntFile();
+	}
 	//--------------------------------------------------------
 	// wait a new movie for 10 minutes and quit if not found.
 	//--------------------------------------------------------
@@ -77,14 +80,16 @@ bool CMcAreTomoMain::DoIt(void)
 	{	int iQueueSize = s_pStackFolder->GetQueueSize();
 		if(iQueueSize > 0) 
 		{	mProcess();
-			s_pStackFolder->WaitForExit(5.0f);
+			if(pInput->m_iCmd == 0)
+			{	s_pStackFolder->WaitForExit(5.0f);
+			}
 			continue;
 		}
 		bExit = s_pStackFolder->WaitForExit(1.0f);
 		if(bExit) break;
 	}
-	printf("All mdoc files have been processed, "
-	   "waiting processing to finish.\n\n");	
+	printf("All input files have been processed, "
+	   "waiting processing to finish.\n\n");
 	//-----------------
 	while(true)
 	{	bExit = CProcessThread::WaitExitAll(1.0f);
@@ -103,15 +108,10 @@ void CMcAreTomoMain::mProcess(void)
 	}
 	int iNthGpu = pProcessThread->m_iNthGpu; 
 	//-----------------
-	char acMdoc[256] = {'\0'};
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(iNthGpu);
-	char* pcMdocFile = s_pStackFolder->GetFile(true);
-	char* pcMainFile = strrchr(pcMdocFile, '/');
-	if(pcMainFile == 0L) strcpy(acMdoc, pcMdocFile);
-	else strcpy(acMdoc, &pcMainFile[1]);
-	//-----------------
-	pTsPackage->SetMdoc(pcMdocFile);
-	if(pcMdocFile != 0L) delete[] pcMdocFile;
+	char* pcInFile = s_pStackFolder->GetFile(true);
+	pTsPackage->SetInFile(pcInFile);
+	if(pcInFile != 0L) delete[] pcInFile;
 	//-----------------
 	pProcessThread->DoIt();
 }

@@ -36,12 +36,14 @@ void CGenAvgSpectrum::DoIt
 (	int iTilt, 
 	float fTiltAxis,
 	float fCentDF,     // in Angstrom
+	int iHandedness,   // 1 or -1
 	float* gfAvgSpect,
 	int iNthGpu
 )
 {	m_iTilt = iTilt;
 	m_fTiltAxis = fTiltAxis;
 	m_fCentDF = fCentDF;
+	m_iHandedness = iHandedness;
 	m_gfAvgSpect = gfAvgSpect;
 	m_iNthGpu = iNthGpu;
 	//-----------------
@@ -109,10 +111,11 @@ void CGenAvgSpectrum::mScaleTile(int iTile, float* gfScaled)
 	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
 	CTile* pTile = pTsTiles->GetTile(m_iTilt, iTile);
 	float fCentZ = pTile->GetCentZ();
+	float fPixSize = pTile->GetPixSize();
 	//-------------------------------------
-	// This should be sum, not subtract.
+	// This depends on defocus handedness
 	//-------------------------------------
-	float fTileDF = m_fCentDF + fCentZ * pTile->GetPixSize();
+	float fTileDF = m_fCentDF + fCentZ * fPixSize * m_iHandedness;
 	//-----------------
 	float fScale = sqrtf(m_fCentDF / fTileDF);
 	//-----------------
@@ -143,7 +146,7 @@ void CGenAvgSpectrum::mCalcTileCentZs(void)
 		//-----------------
 		float fX = fCentX * fCosTx + fCentY * fSinTx;
 		float fY = -fCentX * fSinTx + fCentY * fCosTx;
-		float fZ = fX * fTanTilt + fY * fTanBeta * fCosTilt;
+		float fZ = fX * fTanTilt - fY * fTanBeta * fCosTilt;
 		pTile->SetCentZ(fZ);
 	}
 }

@@ -81,6 +81,8 @@ private:
 	MD::CTiltSeries* m_pTiltSeries;
 	MAM::CAlignParam* m_pAlignParam;
 	CStretchXcf m_stretchXcf;
+	bool* m_pbBadImgs;
+	int m_iZeroTilt;
 	char* m_pcLog;
 };
 

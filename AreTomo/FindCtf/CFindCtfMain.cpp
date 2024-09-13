@@ -69,12 +69,12 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	mDoLowTilts();
 	mDoHighTilts();
 	//-----------------
-	/*
+	
 	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
 	pCtfRes->DisplayAll();
 	printf("GPU %d: initial estimation of tilt series CTF, "
 	   "done.\n\n", m_iNthGpu);
-	*/
+	
 }
 
 void CFindCtfMain::mInit(bool bRefine)

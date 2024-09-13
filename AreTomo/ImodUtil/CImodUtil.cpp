@@ -87,7 +87,7 @@ void CImodUtil::CreateFolder(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	if(pAtInput->m_iOutImod == 0) return;
-	if(!this->bFolderExist()) mkdir(m_acOutFolder, 0700);
+	if(!this->bFolderExist()) mkdir(m_acOutFolder, 2775);
 	//----------------
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	strcpy(m_acTltFile, pTsPackage->m_acMrcMain);

@@ -81,9 +81,9 @@ void CCorrImgCtf::DoIt
 	m_fTilt = fTilt;
 	m_fTiltAxis = fTiltAxis;
 	//-----------------
-	MD::CCtfResults* pCtfResults = 
-	   MD::CCtfResults::GetInstance(m_iNthGpu);
+	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
 	m_pImgCtfParam = pCtfResults->GetCtfParamFromTilt(m_fTilt);
+	m_iDfHand = pCtfResults->m_iDfHand;
 	//-----------------
 	m_pGCorrCTF2D->SetParam(m_pImgCtfParam);
 	m_pGCorrCTF2D->SetPhaseFlip(bPhaseFlip);
@@ -190,7 +190,7 @@ void CCorrImgCtf::mCorrectCTF(int iTile)
 	float fDfSigma = m_pImgCtfParam->GetDfSigma(!bAngstrom);
 	float fRatio = fDfSigma / fDfMean;
 	//-----------------
-	fDfMean += fDeltaZ;
+	fDfMean = fDfMean + fDeltaZ * m_iDfHand;
 	fDfSigma = fDfMean * fRatio;
 	float fDfMin = fDfMean - fDfSigma;
 	float fDfMax = fDfMean + fDfSigma;

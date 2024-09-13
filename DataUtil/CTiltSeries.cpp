@@ -17,6 +17,7 @@ CTiltSeries::CTiltSeries(void)
 	m_piSecIndices = 0L;
 	m_ppfCenters = 0L;
 	m_ppfImages = 0L;
+	m_bLoaded = false;
 	memset(m_aiStkSize, 0, sizeof(m_aiStkSize));
 }
 
@@ -71,6 +72,8 @@ void CTiltSeries::Create(int* piImgSize, int iNumTilts)
 	for(int i=0; i<m_aiStkSize[2]; i++)
 	{	m_ppfImages[i] = (float*)m_ppvFrames[i];
 	}
+	//-----------------
+	m_bLoaded = false;
 }
 
 void CTiltSeries::SortByTilt(void)

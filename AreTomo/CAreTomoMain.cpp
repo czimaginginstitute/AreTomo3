@@ -407,6 +407,7 @@ void CAreTomoMain::mFindTiltOffset(void)
 	TiltOffset::CTiltOffsetMain aTiltOffsetMain;
 	aTiltOffsetMain.Setup(4, m_iNthGpu);
 	fTiltOffset = aTiltOffsetMain.DoIt();
+	pAlignParam->AddAlphaOffset(fTiltOffset);
 	//-----------------
 	printf("Stretching based tilt offset: %f\n\n", fTiltOffset);
 	*/
@@ -598,11 +599,16 @@ void CAreTomoMain::mRecon(void)
 	//-----------------
 	bool bWbp = (pAtInput->m_iWbp == 1);
 	//-----------------
+	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	int iNumSeries = MD::CAlnSums::m_iNumSums;
+	MD::CTiltSeries* pRawSeries = 0L;
 	MD::CTiltSeries* pBinnedSeries = 0L;
 	//-----------------
 	for(int i=0; i<iNumSeries; i++)
-	{	m_pCorrTomoStack->DoIt(i, 0L);
+	{	pRawSeries = pTsPackage->GetSeries(i);
+		if(!pRawSeries->m_bLoaded) continue;
+		//----------------
+		m_pCorrTomoStack->DoIt(i, 0L);
 		pBinnedSeries = mBinAlnSeries(pAtInput->m_afAtBin[0]);
 		mReconVol(pBinnedSeries, iVolZ, i, bWbp);
 		if(pBinnedSeries != 0L) delete pBinnedSeries;

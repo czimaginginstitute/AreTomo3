@@ -83,6 +83,8 @@ void CTsMetrics::mGetThickness(void)
 {
 	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
 	m_iThickness = pAlnParam->m_iThickness;
+	m_fAlphaOffset = pAlnParam->m_fAlphaOffset;
+	m_fBetaOffset = pAlnParam->m_fBetaOffset;
 }
 
 void CTsMetrics::mGetGlobalShift(void)
@@ -121,6 +123,7 @@ void CTsMetrics::mGetCTF(void)
 	int iZeroTilt = pCtfRes->GetImgIdxFromTilt(0.0f);
 	m_fCtfScore = pCtfRes->GetScore(iZeroTilt);
 	m_fCtfRes = pCtfRes->GetCtfRes(iZeroTilt);
+	m_iDfHand = pCtfRes->m_iDfHand;
 }
 
 void CTsMetrics::mOpenFile(void)
@@ -141,14 +144,19 @@ void CTsMetrics::mOpenFile(void)
 	//-----------------
 	fprintf(m_pFile, "Tilt_Series,Thickness(Pix),Tilt_Axis,"
 	   "Global_Shift(Pix),Bad_Patch_Low,Bad_Patch_All,"
-   	   "CTF_Res(A),CTF_Score,Pix_Size(A)\n");   
+   	   "CTF_Res(A),CTF_Score,DF_Hand,Pix_Size(A),"
+	   "Cs(nm),Kv,Alpha0,Beta0\n");   
 }
 
 void CTsMetrics::mSave(void)
 {
+	CInput* pInput = CInput::GetInstance();
 	fprintf(m_pFile, "%s, %6d, %6.2f, %8.2f, %5.2f, %5.2f, "
-	   "%5.2f, %7.4f, %5.2f\n", m_acMrcName, m_iThickness,
-	   m_fTiltAxis, m_fGlobalShift, m_fBadPatchLow,
-	   m_fBadPatchAll, m_fCtfRes, m_fCtfScore, m_fPixSize);
+	   "%5.2f, %7.4f, %2d, %5.2f, %.1f, %3d, %.1f, %.1f\n", 
+	   m_acMrcName, m_iThickness, m_fTiltAxis, m_fGlobalShift, 
+	   m_fBadPatchLow, m_fBadPatchAll, 
+	   m_fCtfRes, m_fCtfScore, m_iDfHand,
+	   m_fPixSize, pInput->m_fCs, pInput->m_iKv, 
+	   m_fAlphaOffset, m_fBetaOffset);
       	fflush(m_pFile);
 }	

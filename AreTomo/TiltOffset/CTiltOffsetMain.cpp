@@ -83,7 +83,7 @@ float CTiltOffsetMain::mCalcAveragedCC(float fTiltOffset)
 	for(int i=0; i<m_pAlignParam->m_iNumFrames; i++)
 	{	if(i == iZeroTilt) continue;
 		float fTilt = m_pAlignParam->GetTilt(i);
-		if(fabs(fTilt) > 25.0f) continue;
+		if(fabs(fTilt) > 40.0f) continue;
 		//----------------
 		int iRefTilt = (i < iZeroTilt) ? i+1 : i-1;
 		float fCC = mCorrelate(iRefTilt, i);

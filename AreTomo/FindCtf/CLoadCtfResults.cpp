@@ -46,6 +46,7 @@ bool CLoadCtfResults::mLoadFittings(const char* pcCtfFile)
 {
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
 	int iNumImgs = pCtfResults->m_iNumImgs;
+	int iNumCols = 6;
 	//-----------------
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* pTiltSeries = pTsPkg->GetSeries(0);
@@ -53,26 +54,29 @@ bool CLoadCtfResults::mLoadFittings(const char* pcCtfFile)
 	FILE* pFile = fopen(pcCtfFile, "rt");
 	if(pFile == 0L) return false;
 	//-----------------
+	int iSize = iNumImgs * iNumCols;
 	int* piTilts = new int[iNumImgs];
-	float* pfRes = new float[6 * iNumImgs];
+	float* pfRes = new float[iSize];
 	memset(piTilts, 0, sizeof(int) * iNumImgs);
-	memset(pfRes, 0, sizeof(float) * iNumImgs * 6);
+	memset(pfRes, 0, sizeof(float) * iSize);
 	//-----------------
 	int iNumReads = 0;
 	int iMinIdx = 1000000;
-	char acLine[256] = {'\0'};
+	char acLine[512] = {'\0'};
+	int iDfHand = 0;
 	//-----------------
 	while(!feof(pFile))
 	{	memset(acLine, 0, sizeof(acLine));
-		char* pcRet = fgets(acLine, 256, pFile);
+		char* pcRet = fgets(acLine, 512, pFile);
 		if(pcRet == 0L) continue;
 		if(acLine[0] == '#') continue;
 		//----------------
-		int j = iNumReads * 6;
-		int iNumItems = sscanf(&acLine[1], "%d %f %f %f %f "
-		   "%f  %f", &piTilts[iNumReads], &pfRes[j], &pfRes[j+1],
-		   &pfRes[j+2], &pfRes[j+3], &pfRes[j+4], &pfRes[j+5]);
-		if(iNumItems != 7) continue;
+		int j = iNumReads * iNumCols;
+		int iItems = sscanf(&acLine[1], "%d %f %f %f %f "
+		   "%f  %f  %d", &piTilts[iNumReads], &pfRes[j], 
+		   &pfRes[j+1], &pfRes[j+2], &pfRes[j+3], 
+		   &pfRes[j+4], &pfRes[j+5], &iDfHand);
+		if(iItems < 6) continue;
 		//----------------
 		if(piTilts[iNumReads] < iMinIdx) 
 		{	iMinIdx = piTilts[iNumReads];
@@ -96,7 +100,10 @@ bool CLoadCtfResults::mLoadFittings(const char* pcCtfFile)
 			pCtfResults->SetScore(iTilt, pfRes[j+4]);
 			pCtfResults->SetCtfRes(iTilt, pfRes[j+5]);
 		}
+		if(iDfHand == 0) pCtfResults->m_iDfHand = 1;
+		else pCtfResults->m_iDfHand = iDfHand;
 		m_bLoaded = true;
+		//pCtfResults->DisplayAll();
 	}
 	else 
 	{	m_bLoaded = false;

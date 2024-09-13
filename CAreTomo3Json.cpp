@@ -83,9 +83,9 @@ void CAreTomo3Json::mGenInput(void)
 	strcat(m_pcJson, acBuf);
 	strcat(m_pcJson, "{\n");
 	//-----------------
-	strcpy(acBuf, pInput->m_acInMdoc);
+	strcpy(acBuf, pInput->m_acInPrefix);
 	MU::UseFullPath(acBuf);
-	mAddKeyValPair(pInput->m_acInMdocTag + 1, acBuf, 10, !bList, !bEnd);
+	mAddKeyValPair(pInput->m_acInPrefixTag + 1, acBuf, 10, !bList, !bEnd);
 	//-----------------
 	strcpy(acBuf, pMcInput->m_acFmIntFile);
 	MU::UseFullPath(acBuf);
@@ -119,6 +119,10 @@ void CAreTomo3Json::mGenOutput(void)
 	mCreateKey("output", 5, acBuf);
 	strcat(m_pcJson, acBuf);
 	strcat(m_pcJson, "{\n");
+	//-----------------
+	strcpy(acBuf, pInput->m_acTmpDir);
+	MU::UseFullPath(acBuf);
+	mAddKeyValPair(pInput->m_acTmpDirTag + 1, acBuf, 10, !bList, !bEnd);
 	//-----------------
 	strcpy(acBuf, pInput->m_acOutDir);
 	MU::UseFullPath(acBuf);

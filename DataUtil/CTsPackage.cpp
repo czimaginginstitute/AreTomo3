@@ -36,7 +36,6 @@ CTsPackage* CTsPackage::GetInstance(int iNthGpu)
 
 CTsPackage::CTsPackage(void)
 {
-	m_pcMdocFile = 0L;
 	m_ppTsStacks = new CTiltSeries*[CAlnSums::m_iNumSums];
 	m_ppVolStacks = new CTiltSeries*[CAlnSums::m_iNumSums];
 	for(int i=0; i<CAlnSums::m_iNumSums; i++)
@@ -47,7 +46,6 @@ CTsPackage::CTsPackage(void)
 
 CTsPackage::~CTsPackage(void)
 {
-	if(m_pcMdocFile != 0L) delete[] m_pcMdocFile;
 	for(int i=0; i<CAlnSums::m_iNumSums; i++)
 	{	if(m_ppTsStacks[i] != 0L) delete m_ppTsStacks[i];
 		if(m_ppVolStacks[i] != 0L) delete m_ppVolStacks[i];
@@ -56,18 +54,20 @@ CTsPackage::~CTsPackage(void)
 	delete[] m_ppVolStacks;
 }
 
-void CTsPackage::SetMdoc(char* pcMdocFile)
+void CTsPackage::SetInFile(char* pcInFile)
 {
-	if(m_pcMdocFile != 0L) delete[] m_pcMdocFile;
-	m_pcMdocFile = 0L;
+	memset(m_acInFile, 0, sizeof(m_acInFile));
+	memset(m_acInDir, 0, sizeof(m_acInDir));
+	//-----------------
 	memset(m_acMrcMain, 0, sizeof(m_acMrcMain));
 	//-----------------
-	if(pcMdocFile == 0L || strlen(pcMdocFile) == 0) return;
-	m_pcMdocFile = new char[256];
-	strcpy(m_pcMdocFile, pcMdocFile);
+	if(pcInFile == 0L || strlen(pcInFile) == 0) return;
+	strcpy(m_acInFile, pcInFile);
 	//-----------------
-	MU::CFileName fileName(m_pcMdocFile);
+	MU::CFileName fileName(m_acInFile);
 	fileName.GetName(m_acMrcMain);
+	fileName.GetFolder(m_acInDir);
+	fileName.GetExt(m_acMrcExt);
 }
 
 void CTsPackage::CreateTiltSeries(void)
@@ -80,17 +80,30 @@ void CTsPackage::CreateTiltSeries(void)
 	   pReadMdoc->m_iNumTilts, pAlnSums->m_fPixSize);
 }
 
+void CTsPackage::SetLoaded(bool bLoaded)
+{
+	for(int i=0; i<MD::CAlnSums::m_iNumSums; i++)
+	{	m_ppTsStacks[i]->m_bLoaded = bLoaded;
+	}
+}
+
 bool CTsPackage::LoadTiltSeries(void)
 {
+	char* pcExt = strrchr(m_acInFile, '.');
+	if(pcExt == 0L) return false;	
+	//-----------------------------------------------
+	// 1) If the input is a mdoc file, load the tilt
+	// series from the output directory.
+	// 2) Otherwise, it is a mrc file file, load
+	// from the input directory.
+	//-----------------------------------------------
 	char acMrcFile[256] = {'0'};
-	mGenFullPath(".mrc", acMrcFile);
+	if(strstr(pcExt, ".mdoc") != 0L) mGenOutPath(".mrc", acMrcFile);
+	else strcpy(acMrcFile, m_acInFile);
         //-----------------
         Mrc::CLoadMrc loadMrc;
         bool bLoaded = loadMrc.OpenFile(acMrcFile);
         if(!bLoaded) return false;
-        //-----------------
-        int iMode = loadMrc.m_pLoadMain->GetMode();
-        if(iMode != Mrc::eMrcFloat) return false;
         //-----------------
         int aiStkSize[3] = {0};
         loadMrc.m_pLoadMain->GetSize(aiStkSize, 3);
@@ -109,6 +122,7 @@ bool CTsPackage::LoadTiltSeries(void)
 	mCreateTiltSeries(aiStkSize, aiStkSize[2], fPixSize);
 	//-----------------
         bLoaded = mLoadMrc(".mrc", m_ppTsStacks[0]);
+	if(!bLoaded) bLoaded = mLoadMrc(".st", m_ppTsStacks[0]);
 	if(!bLoaded) return false;
 	//-----------------
 	mLoadMrc("_EVN.mrc", m_ppTsStacks[1]);
@@ -219,7 +233,7 @@ void CTsPackage::mSaveMrc
 	CTiltSeries* pTiltSeries
 )
 {	char acMrcFile[256] = {'0'};
-	mGenFullPath(pcExt, acMrcFile);
+	mGenOutPath(pcExt, acMrcFile);
 	//-----------------
 	Mrc::CSaveMrc saveMrc;
 	saveMrc.OpenFile(acMrcFile);
@@ -243,7 +257,7 @@ void CTsPackage::mSaveMrc
 void CTsPackage::mSaveTiltFile(CTiltSeries* pTiltSeries)
 {	
 	char acTiltFile[256] = {'0'};
-	mGenFullPath("_TLT.txt", acTiltFile);
+	mGenOutPath("_TLT.txt", acTiltFile);
 	//-----------------
 	FILE* pFile = fopen(acTiltFile, "wt");
 	if(pFile == 0L)
@@ -277,49 +291,66 @@ bool CTsPackage::mLoadMrc
 	CTiltSeries* pTiltSeries
 )
 {	char acMrcFile[256] = {'0'};
-	mGenFullPath(pcExt, acMrcFile);
+	mGenInPath(pcExt, acMrcFile);
 	//-----------------
+	pTiltSeries->m_bLoaded = false;
 	Mrc::CLoadMrc loadMrc;
 	bool bLoaded = loadMrc.OpenFile(acMrcFile);
 	if(!bLoaded) return false;
 	//-----------------
 	int iMode = loadMrc.m_pLoadMain->GetMode();
-	if(iMode != Mrc::eMrcFloat) return false;
-	//-----------------
 	int aiStkSize[3] = {0};
 	loadMrc.m_pLoadMain->GetSize(aiStkSize, 3);
-	if(aiStkSize[2] != pTiltSeries->m_aiStkSize[2]) return false;
-	if(aiStkSize[1] != pTiltSeries->m_aiStkSize[1]) return false;
-	if(aiStkSize[0] != pTiltSeries->m_aiStkSize[0]) return false;
 	//-----------------
-	for(int i=0; i<pTiltSeries->m_aiStkSize[2]; i++)
-	{	void* pvFrm = pTiltSeries->GetFrame(i);
-		loadMrc.m_pLoadImg->DoIt(i, pvFrm);
+	if(iMode == Mrc::eMrcFloat)
+	{	for(int i=0; i<pTiltSeries->m_aiStkSize[2]; i++)
+		{	void* pvFrm = pTiltSeries->GetFrame(i);
+			loadMrc.m_pLoadImg->DoIt(i, pvFrm);
+		}
+		pTiltSeries->m_bLoaded = true;
+		return true;
 	}
-	return true;
+	//----------------
+	int iPixels = aiStkSize[0] * aiStkSize[1];
+	if(iMode == 1)
+	{	short* psBuf = new short[iPixels];
+		for(int i=0; i<pTiltSeries->m_aiStkSize[2]; i++)
+		{	loadMrc.m_pLoadImg->DoIt(i, (void*)psBuf);
+			float* pfImg = (float*)pTiltSeries->GetFrame(i);
+			for(int k=0; k<iPixels; k++) pfImg[k] = psBuf[k];
+		}
+		pTiltSeries->m_bLoaded = true;
+		delete[] psBuf;
+		return true;
+	}
+	else if(iMode == 6)
+	{	unsigned short* pusBuf = new unsigned short[iPixels];
+                for(int i=0; i<pTiltSeries->m_aiStkSize[2]; i++)
+                {       loadMrc.m_pLoadImg->DoIt(i, (void*)pusBuf);
+                        float* pfImg = (float*)pTiltSeries->GetFrame(i);
+                        for(int k=0; k<iPixels; k++) pfImg[k] = pusBuf[k];
+                }
+		pTiltSeries->m_bLoaded = true;
+		delete[] pusBuf;
+                return true;
+	}
+	return false;
 }
 
 bool CTsPackage::mLoadTiltFile(void)
 {
-	char acTiltFile[256] = {'0'};
-	mGenFullPath("_TLT.txt", acTiltFile);
-	FILE* pFile = fopen(acTiltFile, "rt");
-        if(pFile == 0L)
-        {       printf("GPU %d warning: Unable to load tilt angles from\n"
-		   "   file: %s\n", m_iNthGpu, acTiltFile);
-		//----------------
-		mGenFullPath(".rawtlt", acTiltFile);
-		printf("GPU %d: try loading tilt angles from\n"
-		   "   file: %s\n\n", m_iNthGpu, acTiltFile);
-		pFile = fopen(acTiltFile, "rt");
-		//----------------
-		if(pFile == 0L)
-		{	fprintf(stderr, "GPU %d error: unable to load "
-			   "tilt angles. Tilt angle files not "
-			   "found.\n\n", m_iNthGpu);
-			return false;
-		}
-        }
+	char acTlt[256] = {'\0'}, acRawTlt[256] = {'\0'};
+	mGenInPath("_TLT.txt", acTlt);
+	mGenInPath(".rawtlt", acRawTlt);
+	FILE* pFile = fopen(acTlt, "rt");
+        if(pFile == 0L) pFile = fopen(acRawTlt, "rt");
+	//-----------------
+	if(pFile == 0L)
+	{	fprintf(stderr, "Error (GPU %d): Unable to load tilt "
+		   " angles from TLT.txt or rawtlt files\n"
+		   "   %s\n   %s\n\n", m_iNthGpu, acTlt, acRawTlt);
+		return false;
+	}
 	//-----------------
 	float fTilt = 0.0f;
 	int iAcqIdx = 0, iCount = 0;
@@ -343,12 +374,34 @@ bool CTsPackage::mLoadTiltFile(void)
 	return true;
 }
 
-void CTsPackage::mGenFullPath(const char* pcSuffix, char* pcFullPath)
+void CTsPackage::mGenInPath(const char* pcSuffix, char* pcInPath)
+{
+	//-----------------------------------------------
+	// 1) when the input is mdoc file, we search the
+	// output directory for input tilt series.
+	//-----------------------------------------------
+	char* pcExt = strrchr(m_acInFile, '.');
+	if(pcExt != 0L && strcasestr(pcExt, ".mdoc") != 0L)
+	{	mGenOutPath(pcSuffix, pcInPath);
+		return;
+	}
+	//-----------------------------------------------
+	// 2) otherwise we search the input directory
+	// for input tilt series.
+	//-----------------------------------------------
+	strcpy(pcInPath, m_acInDir);
+	strcat(pcInPath, m_acMrcMain);
+	if(pcSuffix != 0L && strlen(pcSuffix) > 0)
+	{	strcat(pcInPath, pcSuffix);
+	}
+}
+
+void CTsPackage::mGenOutPath(const char* pcSuffix, char* pcOutPath)
 {
 	CInput* pInput = CInput::GetInstance();
-	strcpy(pcFullPath, pInput->m_acOutDir);
-        strcat(pcFullPath, m_acMrcMain);
+	strcpy(pcOutPath, pInput->m_acOutDir);
+        strcat(pcOutPath, m_acMrcMain);
 	if(pcSuffix != 0L && strlen(pcSuffix) > 0)
-	{	strcat(pcFullPath, pcSuffix);
+	{	strcat(pcOutPath, pcSuffix);
 	}
 }

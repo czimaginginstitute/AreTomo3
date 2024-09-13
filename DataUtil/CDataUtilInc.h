@@ -66,6 +66,7 @@ public:
 	int* m_piAcqIndices; // acquistion index, same as mdoc z value.
 	int* m_piSecIndices; // section index in input MRC file.
 	float m_fImgDose;
+	bool m_bLoaded;
 private:
 	void mSwap(int iIdx1, int iIdx2);
 	CTiltSeries* mGenVolXZY(void);
@@ -276,6 +277,7 @@ public:
 	//-----------------
 	int m_aiSpectSize[2];
 	int m_iNumImgs;
+	int m_iDfHand; // 1 or -1
 	int m_iNthGpu;
 private:
 	CCtfResults(void);
@@ -354,10 +356,11 @@ public:
 	static CTsPackage* GetInstance(int iNthGpu);
 	//-----------------
 	~CTsPackage(void);
-	void SetMdoc(char* pcMdocFile);
+	void SetInFile(char* pcInFile);
 	//-----------------
 	void CreateTiltSeries(void);
 	bool LoadTiltSeries(void);
+	void SetLoaded(bool bLoaded);
 	//-----------------
 	void SetTiltAngle(int iTilt, float fTiltAngle);
 	void SetAcqIdx(int iTilt, int iAcqIdx);
@@ -373,8 +376,11 @@ public:
 	//-----------------
 	void SaveVol(CTiltSeries* pVol, int iVol);
 	//-----------------
-	char* m_pcMdocFile;
+	char m_acInFile[256];
+	char m_acInDir[256];
 	char m_acMrcMain[256];
+	char m_acMrcExt[16];
+	int m_iNumSeries;
 	int m_iNthGpu;
 private:
 	void mCreateTiltSeries(int* piImgSize, 
@@ -386,7 +392,8 @@ private:
 	bool mLoadMrc(const char* pcExt, CTiltSeries* pTiltSeries);
 	bool mLoadTiltFile(void);
 	//-----------------
-	void mGenFullPath(const char* pcSuffix, char* pcFullPath);
+	void mGenInPath(const char* pcSuffix, char* pcInPath);
+	void mGenOutPath(const char* pcSuffix, char* pcOutPath);
 	//-----------------
 	CTsPackage(void);
 	CTiltSeries** m_ppTsStacks;
@@ -401,7 +408,7 @@ public:
 	static CStackFolder* GetInstance(void);
 	static void DeleteInstance(void);
 	~CStackFolder(void);
-	void PushFile(char* pcMdocFile);
+	void PushFile(char* pcInFile);
 	char* GetFile(bool bPop);
 	void DeleteFront(void);
 	int GetQueueSize(void);
@@ -418,7 +425,6 @@ private:
 	//-----------------
 	bool mCheckSkips(const char* pcString);
 	//-----------------
-	void mLogFiles(void);
         void mClean(void);
 	//-----------------
         char m_acDirName[256];

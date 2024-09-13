@@ -88,30 +88,55 @@ CProcessThread::~CProcessThread(void)
 
 int CProcessThread::DoIt(void)
 {
+	//-----------------------------------------------
+	// 1) Input is a MRC file, bypass loading mdoc.
+	//-----------------------------------------------
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
+	char* pcExt = strrchr(pTsPackage->m_acInFile, '.');
+	if(strcasestr(pcExt, ".mrc") != 0L)
+	{	this->Start();
+		return 1;
+	}
+	//-----------------------------------------------
+	// 2) Input is a st file, which is also a MRC
+	// file, bypass loading mdoc file.
+	//-----------------------------------------------
+	if(strcasestr(pcExt, ".st") != 0L)
+        {       this->Start();
+                return 1;
+        }
+	//-----------------------------------------------
+	// 1) If the input is a mdoc file and can be 
+	// loaded, start the processing thread.
+	//-----------------------------------------------
 	MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
-	bool bLoaded = pReadMdoc->DoIt(pTsPackage->m_pcMdocFile);
+	bool bLoaded = pReadMdoc->DoIt(pTsPackage->m_acInFile);
 	if(bLoaded)
 	{	this->Start();
 		return 1;
 	}
-	//-----------------
+	//-----------------------------------------------
+	// 2) If the mdoc cannot be loaded, then try to
+	// load it some other time.
+	//-----------------------------------------------
 	MD::CStackFolder* pStackFolder = MD::CStackFolder::GetInstance();
-	auto item = m_pMdocFiles->find(pTsPackage->m_pcMdocFile);
+	auto item = m_pMdocFiles->find(pTsPackage->m_acInFile);
 	if(item == m_pMdocFiles->end())
-	{	m_pMdocFiles->insert({pTsPackage->m_pcMdocFile, 1});
-		pStackFolder->PushFile(pTsPackage->m_pcMdocFile);
+	{	m_pMdocFiles->insert({pTsPackage->m_acInFile, 1});
+		pStackFolder->PushFile(pTsPackage->m_acInFile);
 		return 0;
 	}
-	//-----------------
+	//-----------------------------------------------
+	// 3) Try reload no more than 10 times.
+	//-----------------------------------------------
 	if(item->second < 10)
 	{	item->second = item->second + 1;
-		pStackFolder->PushFile(pTsPackage->m_pcMdocFile);
+		pStackFolder->PushFile(pTsPackage->m_acInFile);
 		return 0;
 	}
 	//-----------------
 	printf("Warning: failed to read mdoc file.\n");
-	printf("   mdoc file: %s\n\n", pTsPackage->m_pcMdocFile);
+	printf("   mdoc file: %s\n\n", pTsPackage->m_acInFile);
 	return -1;
 }
 
@@ -134,15 +159,27 @@ void CProcessThread::ThreadMain(void)
 
 void CProcessThread::mProcessTsPackage(void)
 {
+	bool bMrcFile = false;
+	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
+	char* pcExt = strrchr(pTsPackage->m_acInFile, '.');
+	if(pcExt != 0L)
+	{	if(strcasestr(pcExt, ".mrc")  != 0L) bMrcFile = true;
+		else if(strcasestr(pcExt, ".st") != 0L) bMrcFile = true;
+	}	
+	//-----------------
 	CInput* pInput = CInput::GetInstance();
-	if(pInput->m_iCmd == 0) 
+	if(pInput->m_iCmd == 0 && !bMrcFile) 
 	{	mProcessMovies();
 		mProcessTiltSeries();
 	}
-	else 
+	else if(pInput->m_iCmd >= 1 || bMrcFile)
 	{	bool bLoaded = mLoadTiltSeries();
 		if(!bLoaded) return;
 		mProcessTiltSeries();
+	}
+	else
+	{	printf("GPU %d: Warning: input files must be mdoc "
+		   "or mrc(s) files, skip.\n\n", m_iNthGpu);
 	}
 }
 
@@ -155,6 +192,7 @@ void CProcessThread::mProcessMovies(void)
 	{	mProcessMovie(i);
 		mAssembleTiltSeries(i);
 	}
+	pTsPackage->SetLoaded(true);
 	//--------------------------------------------------
 	// 1) Tilt series are sorted by tilt angle and then
 	// saved into MRC file.

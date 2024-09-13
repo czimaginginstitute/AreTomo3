@@ -288,3 +288,34 @@ AreTomo3 1.0.22 [08-28-2024]
 2. Bug fix: memory leak at AreTomo/PatchAlign/CDetectFeatures.cpp::136,
    pfBinnedImg is not freed.
 3. Support sm_86, sm_89, sm_90 for H100 and H200.
+
+AreTomo3 1.0.23 [09-02-2024]
+----------------------------
+1.  Goal: Add -InMrc for skipping mdoc files, which starts sequential tilt
+    series alignment followed by reconstruction. This behaves the same as 
+    -Cmd 1.
+2.  Change: Load gain reference only when -Cmd 0 is present.
+3.  Change: Replaced -InMdoc with -InPrefix.
+4.  Change: With -InSuffix .mrc, AreTomo3 takes tilt series as input
+    rather than mdoc files. In this case, motion correction is skipped.
+5.  Added: -TmpDir followed by a path enables writting sample thickness
+    temporary files in that folder. Updated json file.
+6.  Change: FindCtf/CRefineCtfMain: low tilt threshold changed from 30
+    to 20 degree.
+7.  Change: CImodUtil::CreateFolder: change the mode to 2775
+8.  Added new feature for determining defocus handedness. This is done in
+    AreTomo/FindCtf/CRefineCtfMain.cpp. Added m_iDfHand in CCtfResults in
+    DataUtil, which is used in FindCtf/CCorrImgCtf.cpp. [09-12-2024]
+9.  Added DfHand, Cs, Kv in AreTomo/CTsMetrics.cpp. [09-12-2024]
+10. Implemented the goal by replacing -InMdoc with -InPrefix, which is
+    used with -InSuffix to select either mdoc or mrc as input.
+    -InPrefix mydir/position_ -InSuffix .mrc together will process all
+    position_*.mrc files in mydir directory.
+    -InPrefix mydir/position_ -InSuffix .mdoc together will process all
+    position_*.mdoc files in mydir directory.
+11. Renamed to 1.0.24, not pushed to Github.
+
+AreTomo3 1.0.24 [09-12-2024]
+----------------------------
+1.  Renamed from 1.0.23 to 1.0.24.
+

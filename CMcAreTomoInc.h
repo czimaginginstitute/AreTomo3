@@ -20,13 +20,13 @@ public:
 	void ShowTags(void);
 	void Parse(int argc, char* argv[]);
 	//-----------------
-	char m_acInMdoc[256];
+	char m_acInPrefix[256];
 	char m_acInSuffix[256];
 	char m_acInSkips[256];
 	char m_acTmpDir[256];
 	char m_acLogDir[256];
 	char m_acOutDir[256];
-	char m_acInDir[256]; // extract from m_acInMdoc
+	char m_acInDir[256]; // extract from m_acInPrefix
 	//-----------------
 	int* m_piGpuIDs;
 	int m_iNumGpus;
@@ -40,7 +40,7 @@ public:
 	int m_iResume;
 	int m_iSerial;
 	//-----------------
-	char m_acInMdocTag[32];
+	char m_acInPrefixTag[32];
 	char m_acInSuffixTag[32];
 	char m_acInSkipsTag[32];
 	char m_acTmpDirTag[32];

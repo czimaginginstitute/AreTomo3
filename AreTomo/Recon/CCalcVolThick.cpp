@@ -99,9 +99,9 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	for(int z=0; z<iEndZ; z++)
 	{	pfCCs[z] = mMeasure(z, aiStart);
 	}
-	mSaveTmpCCs(pfCCs, iEndZ); // for debugging
 	//-----------------
 	mDetectEdges(pfCCs, iEndZ);
+	mSaveTmpCCs(pfCCs, iEndZ); // for debugging
 	if(pfCCs != 0L) delete[] pfCCs;
 	//-----------------
 	mClean();
@@ -301,11 +301,15 @@ void CCalcVolThick::mSaveTmpCCs(float* pfCCs, int iSize)
 	char* pcCCName = mGenTmpName();
 	if(pcCCName == 0L) return;
 	//-----------------
+	float fBotEdge = m_aiSampleEdges[0] / m_fBinning;
+        float fTopEdge = m_aiSampleEdges[1] / m_fBinning;
+	//-----------------
 	strcat(pcCCName, "_CC.csv");
 	FILE* pFile = fopen(pcCCName, "w");
 	if(pFile != 0L)
 	{	for(int i=0; i<iSize; i++)
-		{	fprintf(pFile, "%d,%.5f\n", i, pfCCs[i]);
+		{	fprintf(pFile, "%d,%.5f,%.1f,%.1f\n", 
+			   i, pfCCs[i], fBotEdge, fTopEdge);
 		}
 		fclose(pFile);
 	}

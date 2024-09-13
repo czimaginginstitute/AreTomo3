@@ -552,6 +552,7 @@ private:
 	int m_aiImgSize[2];
 	float m_fTilt;
 	float m_fTiltAxis;
+	int m_iDfHand;
 	int m_iBFactor;
 	//-----------------
 	int m_iNthGpu;
@@ -629,6 +630,7 @@ public:
 	( int iTilt,
 	  float fTiltAxis,
 	  float fCentDF,
+	  int iHandedness, // 1 or -1
 	  float* gfAvgSpect,
 	  int iNthGpu
 	);
@@ -643,6 +645,7 @@ private:
 	float m_fBetaOffset;
 	float m_fTiltAxis;
 	float m_fCentDF;
+	int m_iHandedness;
 	float* m_gfAvgSpect;
 	int m_iNthGpu;
 };
@@ -793,7 +796,8 @@ public:
 	float* GetHalfSpect(bool bRaw, bool bToHost);
 	void GetSpectSize(int* piSize, bool bHalf);
 	//-----------------
-	void GenHalfSpectrum(int iTilt, float fTiltOffset, float fBetaOffset);
+	void GenHalfSpectrum(int iTilt, float fTiltOffset, 
+	   float fBetaOffset);
 	void GenFullSpectrum(float* pfFullSpect);
 	void ShowResult(void);
 	//-----------------
@@ -946,6 +950,7 @@ public:
 	void Clean(void);
 	void DoIt(int iNthGpu);
 private:
+	void mFindHandedness(void);
 	void mRefineOffset(float fStep, bool bBeta);
 	float mRefineCTF(int iKind);
 	//-----------------

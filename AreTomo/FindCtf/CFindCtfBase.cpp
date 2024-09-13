@@ -122,7 +122,10 @@ void CFindCtfBase::GenHalfSpectrum
 	if(pAlnParam->m_iNumFrames > 0) fTiltAxis = pAlnParam->GetTiltAxis(0);
 	//-----------------
 	genAvgSpect.SetTiltOffsets(fTiltOffset, fBetaOffset);
-	genAvgSpect.DoIt(iTilt, fTiltAxis, fInitDF, m_gfRawSpect, m_iNthGpu);
+	genAvgSpect.DoIt(iTilt, fTiltAxis, fInitDF, 
+	   pCtfResults->m_iDfHand,
+	   m_gfRawSpect, m_iNthGpu);
+	//-----------------
 	mRemoveBackground();
 }
 /*

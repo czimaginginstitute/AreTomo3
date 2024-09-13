@@ -13,7 +13,7 @@ CRefineCtfMain::CRefineCtfMain(void)
 	m_fBetaOffset = 0.0f;
 	m_fBestScore = 0.0f;
 	m_pBestCtfRes = 0L;
-	m_fLowTilt = 30.9f;
+	m_fLowTilt = 35.9f;
 }
 
 CRefineCtfMain::~CRefineCtfMain(void)
@@ -42,14 +42,16 @@ void CRefineCtfMain::DoIt(int iNthGpu)
 	mInit(true);
 	bool bBeta = true;
 	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
+	mFindHandedness();
+	//-----------------
 	mRefineOffset(3.0f, !bBeta);
 	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
-	mRefineOffset(1.0f, !bBeta);
+	mRefineOffset(1.1f, !bBeta);
 	//-----------------
 	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
 	mRefineOffset(3.0f, bBeta);
 	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
-	mRefineOffset(1.0f, bBeta);
+	mRefineOffset(1.1f, bBeta);
 	//-----------------
 	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
 	mGenAvgSpects(m_fTiltOffset, m_fBetaOffset, 100.0f);
@@ -74,10 +76,30 @@ void CRefineCtfMain::DoIt(int iNthGpu)
 
 }
 
+void CRefineCtfMain::mFindHandedness(void)
+{
+	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
+	pCtfRes->m_iDfHand = 1;
+	mGenAvgSpects(0.0f, 0.0f, 100.0f);
+	float fScore1 = mRefineCTF(3);
+	//pCtfRes->DisplayAll();
+	//-----------------
+	pCtfRes->m_iDfHand = -1;
+	mGenAvgSpects(0.0f, 0.0f, 100.0f);
+	float fScore2 = mRefineCTF(3);
+	//pCtfRes->DisplayAll();
+	//-----------------
+	if(fScore1 > fScore2) pCtfRes->m_iDfHand = 1;
+	else pCtfRes->m_iDfHand = -1;
+	printf("Defocus handedness (GPU %d): "
+	   "1 score: %.5f; -1 score: %.5f\n\n",
+	   m_iNthGpu, fScore1, fScore2);
+}
+
 void CRefineCtfMain::mRefineOffset(float fStep, bool bBeta)
 {
 	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
-        m_fBestScore = pCtfRes->GetTsScore();
+	m_fBestScore = pCtfRes->GetLowTiltScore(m_fLowTilt);
         m_pBestCtfRes = pCtfRes->GetCopy();
 	//-----------------
 	float fInitOffset = m_fTiltOffset;
@@ -87,7 +109,7 @@ void CRefineCtfMain::mRefineOffset(float fStep, bool bBeta)
 	//-----------------
 	for(int i=-3; i<=3; i++)
 	{	float fOffset = fInitOffset + i * fStep;
-		if(fabs(fOffset) > 15) continue;
+		if(fabs(fOffset) > 16) continue;
 		//----------------
 		if(bBeta) mGenAvgSpects(m_fTiltOffset, fOffset, fMaxTilt);
 		else mGenAvgSpects(fOffset, m_fBetaOffset, fMaxTilt);
@@ -120,7 +142,7 @@ float CRefineCtfMain::mRefineCTF(int iKind)
         float afAstAngle[2], afExtPhase[2];
         //-----------------
         MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
-        afDfRange[1] = 4000.0f;
+        afDfRange[1] = 5000.0f;
         afAstRatio[1] = 0.0f;
         afAstAngle[1] = 0.0f;
         afExtPhase[1] = 0.0f;
@@ -141,6 +163,6 @@ float CRefineCtfMain::mRefineCTF(int iKind)
 		   afAstAngle, afExtPhase);
 		mGetResults(i);
         }
-	return pCtfRes->GetTsScore();
+	return pCtfRes->GetLowTiltScore(m_fLowTilt);
 }
 

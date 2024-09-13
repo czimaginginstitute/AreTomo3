@@ -73,16 +73,18 @@ void CSaveCtfResults::mSaveFittings(const char* pcCtfFile)
 	   "#5 - additional phase shift [radian]; "
 	   "#6 - cross correlation; "
 	   "#7 - spacing (in Angstroms) up to which CTF rings were "
-	   "fit successfully\n");
+	   "fit successfully; "
+	   "#8 - dfHand\n");
 	for(int i=0; i<pCtfResults->m_iNumImgs; i++)
 	{	fprintf(pFile, "%4d   %8.2f  %8.2f  %8.2f  %8.2f  "
-		   "%8.4f  %8.4f\n", i+1,
+		   "%8.4f  %8.4f  %3d\n", i+1,
 		   pCtfResults->GetDfMax(i),
 		   pCtfResults->GetDfMin(i),
 		   pCtfResults->GetAzimuth(i),
 		   pCtfResults->GetExtPhase(i) * s_fD2R,
 		   pCtfResults->GetScore(i),
-		   pCtfResults->GetCtfRes(i));
+		   pCtfResults->GetCtfRes(i),
+		   pCtfResults->m_iDfHand);
 	}
 	fclose(pFile);
 }

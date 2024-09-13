@@ -52,6 +52,7 @@ void CCtfResults::Replace(int iNthGpu, CCtfResults* pInstance)
 
 CCtfResults::CCtfResults(void)
 {
+	m_iDfHand = 1;
 	m_iNumImgs = 0;
 	m_ppCtfParams = 0L;
 	m_ppfSpects = 0L;
@@ -121,6 +122,8 @@ CCtfResults* CCtfResults::GetCopy(void)
 	{	pCopy->SetCtfParam(i, m_ppCtfParams[i]);
 		pCopy->SetSpect(i, m_ppfSpects[i]);
 	}
+	pCopy->m_iNthGpu = m_iNthGpu;
+	pCopy->m_iDfHand = m_iDfHand;
 	return pCopy;
 }
 
@@ -301,14 +304,13 @@ void CCtfResults::SaveImod(const char* pcCtfTxtFile)
 void CCtfResults::Display(int iNthCtf, char* pcLog)
 {
 	char acBuf[128] = {'\0'};
-	sprintf(acBuf, "%4d  %8.2f  %8.2f  %6.2f "
-	   "%6.2f %6.2f %9.5f\n", 
-	   iNthCtf+1, this->GetDfMin(iNthCtf), 
-	   this->GetDfMax(iNthCtf), 
-	   this->GetAzimuth(iNthCtf), 
-	   this->GetExtPhase(iNthCtf),
-	   this->GetCtfRes(iNthCtf),
-	   this->GetScore(iNthCtf));
+	sprintf(acBuf, "%4d  %7.2f  %8.2f  %8.2f  %6.2f "
+	   "%6.2f %6.2f %9.5f %3d\n", 
+	   iNthCtf+1, this->GetTilt(iNthCtf),
+	   this->GetDfMin(iNthCtf),   this->GetDfMax(iNthCtf), 
+	   this->GetAzimuth(iNthCtf), this->GetExtPhase(iNthCtf),
+	   this->GetCtfRes(iNthCtf),  this->GetScore(iNthCtf), 
+	   m_iDfHand);
 	strcat(pcLog, acBuf);
 }
 
@@ -319,8 +321,8 @@ void CCtfResults::DisplayAll(void)
 	memset(pcLog, 0, sizeof(char) * iSize);
 	//-----------------
 	sprintf(pcLog, "GPU %d: Estimated CTFs\n", m_iNthGpu);
-        strcat(pcLog, "Index  dfmin     dfmax    azimuth  phase  "
-	   "res   score\n");
+	strcat(pcLog, "#index  tilt  dfmin     dfmax    azimuth  phase  "
+	   "res   score   DfHand\n");
 	//-----------------
 	for(int i=0; i<m_iNumImgs; i++) 
 	{	this->Display(i, pcLog);

@@ -159,13 +159,16 @@ private:
 	//-----------------
 	char m_acMrcName[256];
 	float m_fPixSize;
-	int m_iThickness;
 	float m_fTiltAxis;
 	float m_fGlobalShift;
 	float m_fBadPatchLow;
 	float m_fBadPatchAll;
 	float m_fCtfRes;
 	float m_fCtfScore;
+	float m_fAlphaOffset;
+	float m_fBetaOffset;
+	int m_iThickness;
+	int m_iDfHand;
 	//-----------------
 	bool m_bFirstTime;
 	FILE* m_pFile;
