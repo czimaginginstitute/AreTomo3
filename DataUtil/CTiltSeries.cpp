@@ -13,6 +13,7 @@ using namespace McAreTomo::DataUtil;
 CTiltSeries::CTiltSeries(void)
 {
 	m_pfTilts = 0L;
+	m_pfDoses = 0L;
 	m_piAcqIndices = 0L;
 	m_piSecIndices = 0L;
 	m_ppfCenters = 0L;
@@ -24,8 +25,10 @@ CTiltSeries::CTiltSeries(void)
 CTiltSeries::~CTiltSeries(void)
 {
 	if(m_pfTilts != 0L) delete[] m_pfTilts;
+	if(m_pfDoses != 0L) delete[] m_pfDoses;
 	if(m_piAcqIndices != 0L) delete[] m_piAcqIndices;
 	m_pfTilts = 0L;
+	m_pfDoses = 0L;
 	m_piAcqIndices = 0L;
 	m_piSecIndices = 0L;
 	//--------------------------------------------
@@ -51,8 +54,11 @@ void CTiltSeries::Create(int* piImgSize, int iNumTilts)
 	CMrcStack::Create(2, aiStkSize);
 	//-----------------
 	if(m_pfTilts != 0L) delete[] m_pfTilts;
+	if(m_pfDoses != 0L) delete[] m_pfDoses;
 	m_pfTilts = new float[iNumTilts];
+	m_pfDoses = new float[iNumTilts];
 	memset(m_pfTilts, 0, sizeof(float) * iNumTilts);
+	memset(m_pfDoses, 0, sizeof(float) * iNumTilts);
 	//----------------
 	if(m_piAcqIndices != 0L) delete[] m_piAcqIndices;
 	m_piAcqIndices = new int[iNumTilts * 2];
@@ -106,9 +112,18 @@ void CTiltSeries::SortByAcq(void)
 
 void CTiltSeries::SetTilts(float* pfTilts)
 {
+	if(pfTilts == 0L) return;
 	int iBytes = sizeof(float) * m_aiStkSize[2];
 	if(iBytes == 0) return;
 	memcpy(m_pfTilts, pfTilts, iBytes);
+}
+
+void CTiltSeries::SetDoses(float* pfDoses)
+{
+	if(pfDoses == 0L) return;
+	int iBytes = sizeof(float) * m_aiStkSize[2];
+	if(iBytes == 0) return;
+	memcpy(m_pfDoses, pfDoses, iBytes);
 }
 
 void CTiltSeries::SetAcqs(int* piAcqIndices)
@@ -183,6 +198,7 @@ void CTiltSeries::RemoveFrame(int iFrame)
 		m_ppfImages[k] = m_ppfImages[i];
 		m_ppfCenters[k] = m_ppfCenters[i];
 		m_pfTilts[k] = m_pfTilts[i];
+		m_pfDoses[k] = m_pfDoses[i];
 		m_piAcqIndices[k] = m_piAcqIndices[i];
 		m_piSecIndices[k] = m_piSecIndices[i];
 	};
@@ -201,18 +217,6 @@ void CTiltSeries::GetAlignedSize(float fTiltAxis, int* piAlnSize)
 	if(dRot <= 0.707) return;
 	piAlnSize[0] = m_aiStkSize[1];
 	piAlnSize[1] = m_aiStkSize[0];
-}
-
-float* CTiltSeries::GetAccDose(void)
-{
-	CAtInput* pAtInput = CAtInput::GetInstance();
-	float fTiltDose = pAtInput->m_fTotalDose / m_aiStkSize[2];
-	//-----------------
-	float* pfAccDose = new float[m_aiStkSize[2]];
-	for(int i=0; i<m_aiStkSize[2]; i++)
-	{	pfAccDose[i] = fTiltDose * m_piAcqIndices[i];
-	}
-	return pfAccDose;
 }
 
 int CTiltSeries::GetTiltIdx(float fTilt)
@@ -292,18 +296,21 @@ void CTiltSeries::mSwap(int k1, int k2)
 	if(k1 == k2) return;
 	//-----------------
 	float fTilt1 = m_pfTilts[k1];
+	float fDose1 = m_pfDoses[k1];
 	int iAcqIdx1 = m_piAcqIndices[k1];
 	int iSecIdx1 = m_piSecIndices[k1];
 	void* pvFrm1 = m_ppvFrames[k1];
 	float* pfImg1 = m_ppfImages[k1];
 	//-----------------
 	m_pfTilts[k1] = m_pfTilts[k2];
+	m_pfDoses[k1] = m_pfDoses[k2];
 	m_piAcqIndices[k1] = m_piAcqIndices[k2];
 	m_piSecIndices[k1] = m_piSecIndices[k2];
 	m_ppvFrames[k1] = m_ppvFrames[k2];
 	m_ppfImages[k1] = m_ppfImages[k2];
 	//-----------------
 	m_pfTilts[k2] = fTilt1;
+	m_pfDoses[k2] = fDose1;
 	m_piAcqIndices[k2] = iAcqIdx1;
 	m_piSecIndices[k2] = iSecIdx1;
 	m_ppvFrames[k2] = pvFrm1;

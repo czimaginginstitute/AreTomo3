@@ -121,12 +121,18 @@ bool CTsPackage::LoadTiltSeries(void)
 	loadMrc.CloseFile();
 	mCreateTiltSeries(aiStkSize, aiStkSize[2], fPixSize);
 	//-----------------
-        bLoaded = mLoadMrc(".mrc", m_ppTsStacks[0]);
-	if(!bLoaded) bLoaded = mLoadMrc(".st", m_ppTsStacks[0]);
+	char acExt[32] = {'\0'};
+	strcpy(acExt, pcExt);
+        bLoaded = mLoadMrc(acExt, m_ppTsStacks[0]);
 	if(!bLoaded) return false;
 	//-----------------
-	mLoadMrc("_EVN.mrc", m_ppTsStacks[1]);
-        mLoadMrc("_ODD.mrc", m_ppTsStacks[2]);
+	strcpy(acExt, "_EVN");
+	strcat(acExt, pcExt);
+	mLoadMrc(acExt, m_ppTsStacks[1]);
+	//-----------------
+	strcpy(acExt, "_ODD");
+	strcat(acExt, pcExt);
+        mLoadMrc(acExt, m_ppTsStacks[2]);
 	//-----------------
 	bLoaded = mLoadTiltFile();
 	if(!bLoaded) return false;
@@ -178,12 +184,13 @@ void CTsPackage::SetSums(int iTilt, CAlnSums* pAlnSums)
 	}
 }
 
-void CTsPackage::SetImgDose(float fImgDose)
+void CTsPackage::SetImgDose(int iTilt, float fImgDose)
 {
 	for(int i=0; i<CAlnSums::m_iNumSums; i++)
 	{	CTiltSeries* pSeries = this->GetSeries(i);
-		if(i == 0) pSeries->m_fImgDose = fImgDose;
-		else pSeries->m_fImgDose = fImgDose * 0.5f;
+		if(pSeries == 0L) continue;
+		if(i == 0) pSeries->m_pfDoses[iTilt] =  fImgDose;
+		else pSeries->m_pfDoses[iTilt] = fImgDose * 0.5f;
 	}
 }
 
@@ -280,8 +287,10 @@ void CTsPackage::mSaveTiltFile(CTiltSeries* pTiltSeries)
 	//-----------------
 	for(int i=0; i<pTiltSeries->m_aiStkSize[2]; i++)
 	{	float fTilt = pTiltSeries->m_pfTilts[i];
+		float fDose = pTiltSeries->m_pfDoses[i];
 		int iAcqIdx = pTiltSeries->m_piAcqIndices[i] + iAdd;
-		fprintf(pFile, "%8.2f  %4d\n", fTilt, iAcqIdx);
+		fprintf(pFile, "%8.2f  %4d  %8.2f\n", 
+		   fTilt, iAcqIdx, fDose);
 	}
 	fclose(pFile);
 }
@@ -353,6 +362,7 @@ bool CTsPackage::mLoadTiltFile(void)
 	}
 	//-----------------
 	float fTilt = 0.0f;
+	float fDose = 0.0f;
 	int iAcqIdx = 0, iCount = 0;
 	//-----------------
 	char acBuf[256] = {'\0'};
@@ -361,11 +371,13 @@ bool CTsPackage::mLoadTiltFile(void)
 		char* pcRet = fgets(acBuf, 256, pFile);
 		if(pcRet == 0L) continue;
 		//----------------
-		int iItems = sscanf(acBuf, "%f %d", &fTilt, &iAcqIdx);
+		int iItems = sscanf(acBuf, "%f %d %f", 
+		   &fTilt, &iAcqIdx, &fDose);
 		if(iItems < 1) continue;
 		//----------------
 		this->SetTiltAngle(iCount, fTilt);
-		this->SetAcqIdx(iCount, iAcqIdx);
+		if(iItems >= 2) this->SetAcqIdx(iCount, iAcqIdx);
+		if(iItems >= 3) this->SetImgDose(iCount, fDose);
 		//----------------
 		iCount += 1;
 		if(iCount == m_ppTsStacks[0]->m_aiStkSize[2]) break;

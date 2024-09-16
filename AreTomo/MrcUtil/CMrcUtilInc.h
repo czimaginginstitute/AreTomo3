@@ -271,6 +271,8 @@ public:
 	static char m_acDarkFrameTag[32];
 	static char m_acAlphaOffsetTag[32];
 	static char m_acBetaOffsetTag[32];
+	static char m_acThicknessTag[32];
+	static char m_acOffsetZTag[32];
 	static char m_acLocalAlignTag[32];
 private:
 	void mSaveHeader(void);
@@ -303,6 +305,7 @@ private:
 	bool mParseNumPatches(char* pcLine);
 	bool mParseAlphaOffset(char* pcLine);
 	bool mParseBetaOffset(char* pcLine);
+	bool mParseThickness(char* pcLine);
 	//-----------------
 	void mLoadGlobal(void);
 	void mLoadLocal(void);
@@ -312,6 +315,7 @@ private:
 	int m_iNumPatches;
 	float m_fAlphaOffset;
 	float m_fBetaOffset;
+	int m_iThickness;
 	//-----------------
 	std::queue<char*> m_aHeaderQueue;
 	std::queue<char*> m_aDataQueue;

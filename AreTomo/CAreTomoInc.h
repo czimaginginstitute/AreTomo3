@@ -134,7 +134,6 @@ private:
 	//-----------------
 	MAC::CCorrTomoStack* m_pCorrTomoStack;
 	float m_fRotScore;
-	int m_iThickness;
 	int m_iNthGpu;
 };
 

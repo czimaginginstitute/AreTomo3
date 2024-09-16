@@ -87,6 +87,7 @@ bool CLoadAlignFile::mParseHeader(void)
 		else if(mParseNumPatches(pcLine)) delete[] pcLine;
 		else if(mParseAlphaOffset(pcLine)) delete[] pcLine;
 		else if(mParseBetaOffset(pcLine)) delete[] pcLine;
+		else if(mParseThickness(pcLine)) delete[] pcLine;
 		else delete[] pcLine;
 	}
 	//---------------------------------------------------------
@@ -183,6 +184,22 @@ bool CLoadAlignFile::mParseBetaOffset(char* pcLine)
         pcBetaOffset = strtok(0L, "=");
         //-----------------
         sscanf(pcBetaOffset, "%f", &m_fBetaOffset);
+        return true;
+}
+
+bool CLoadAlignFile::mParseThickness(char* pcLine)
+{
+	char* pcThickness = strstr(pcLine,
+	   CSaveAlignFile::m_acThicknessTag);
+        if(pcThickness == 0L) return false;
+        //-----------------
+        char* pcTok = strtok(pcLine, "=");
+        pcThickness = strtok(0L, "=");
+        //-----------------
+        sscanf(pcThickness, "%d", &m_iThickness);
+	CAlignParam* pAlnParam = CAlignParam::GetInstance(m_iNthGpu);
+	pAlnParam->m_iThickness = m_iThickness;
+	//-----------------
         return true;
 }
 

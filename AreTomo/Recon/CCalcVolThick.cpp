@@ -271,6 +271,13 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 			break;
 		}
 	}
+	//-----------------
+	int iThick = aiMaxLocs[1] - aiMaxLocs[0];
+	if(iThick > 0.2 * iSize)
+	{	m_aiSampleEdges[0] = aiMaxLocs[0];
+		m_aiSampleEdges[1] = aiMaxLocs[1];
+	}
+	//-----------------
 	m_aiSampleEdges[0] *= m_fBinning;
 	m_aiSampleEdges[1] *= m_fBinning;
 	//-----------------

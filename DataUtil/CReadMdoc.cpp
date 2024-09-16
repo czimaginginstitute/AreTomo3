@@ -44,10 +44,12 @@ CReadMdoc::CReadMdoc(void)
 	m_ppcFrmPath = new char*[m_iBufSize];
 	m_piAcqIdxs = new int[m_iBufSize];
 	m_pfTilts = new float[m_iBufSize];
+	m_pfDoses = new float[m_iBufSize];
 	//-----------------
 	memset(m_ppcFrmPath, 0, sizeof(char*) * m_iBufSize);
 	memset(m_piAcqIdxs, 0, sizeof(int) * m_iBufSize);
 	memset(m_pfTilts, 0, sizeof(float) * m_iBufSize);
+	memset(m_pfDoses, 0, sizeof(float) * m_iBufSize);
 }
 
 CReadMdoc::~CReadMdoc(void)
@@ -56,6 +58,7 @@ CReadMdoc::~CReadMdoc(void)
 	if(m_ppcFrmPath != 0L) delete[] m_ppcFrmPath;
 	if(m_piAcqIdxs != 0L) delete[] m_piAcqIdxs;
 	if(m_pfTilts != 0L) delete[] m_pfTilts;
+	if(m_pfDoses != 0L) delete[] m_pfDoses;
 }
 
 char* CReadMdoc::GetFramePath(int iTilt)
@@ -85,6 +88,11 @@ float CReadMdoc::GetTilt(int iTilt)
 	return m_pfTilts[iTilt];
 }
 
+float CReadMdoc::GetDose(int iTilt)
+{
+	return m_pfDoses[iTilt];
+}
+
 bool CReadMdoc::DoIt(const char* pcMdocFile)
 {
 	mClean();
@@ -96,7 +104,7 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 	//-----------------
 	m_iNumTilts = 0;
 	char acBuf[256] = {'\0'};
-	int iCount = 0;
+	bool bTiltLoaded, bDoseLoaded, bFmLoaded;
 	//-----------------
 	while(!feof(pFile))
 	{	memset(acBuf, 0, sizeof(char) * 256);
@@ -107,25 +115,32 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 		if(iValZ < 0) continue;
 		m_piAcqIdxs[m_iNumTilts] = iValZ;
 		//----------------
-		iCount = 0;
+		bTiltLoaded = false;
+		bDoseLoaded = false;
+		bFmLoaded = false;
+		//----------------
 		while(!feof(pFile))
 		{	memset(acBuf, 0, sizeof(char) * 256);
 			char* pcRet = fgets(acBuf, 256, pFile);
 			if(pcRet == 0L) continue;
 			//---------------
-			if(mExtractTilt(acBuf, &m_pfTilts[m_iNumTilts]))
-			{	iCount += 1;
-				if(iCount == 1) continue;
-				m_iNumTilts += 1;
-				break;
+			if(!bTiltLoaded)
+			{	bTiltLoaded = mExtractTilt(acBuf, 
+				   &m_pfTilts[m_iNumTilts]);
 			}
-			//---------------
-			char* pcFramePath = mExtractFramePath(acBuf);
-			if(pcFramePath != 0L)
-			{	m_ppcFrmPath[m_iNumTilts] = pcFramePath;
-				iCount += 1;
-				if(iCount == 1) continue;
-				m_iNumTilts += 1;
+			else if(!bDoseLoaded)
+			{	bDoseLoaded = mExtractDose(acBuf, 
+				   &m_pfDoses[m_iNumTilts]);
+                        }
+			else if(!bFmLoaded)
+			{	char* pcFramePath = mExtractFramePath(acBuf);
+				if(pcFramePath != 0L)
+				{	m_ppcFrmPath[m_iNumTilts] = pcFramePath;
+					bFmLoaded = true;
+				}
+			}
+			else
+			{	m_iNumTilts += 1;
 				break;
 			}
 		}
@@ -153,6 +168,19 @@ bool CReadMdoc::mExtractTilt(char* pcLine, float* pfTilt)
 	//-----------------
 	char* pcEqual = strrchr(pcLine, '=');
 	pfTilt[0] = (float)atof(&pcEqual[1]);
+	return true;
+}
+
+bool CReadMdoc::mExtractDose(char* pcLine, float* pfDose)
+{
+	pfDose[0] = 0.0f;
+	char* pcTiltAngle = strstr(pcLine, "ExposureDose");
+	if(pcTiltAngle == 0L) return false;
+	//-----------------
+	char* pcEqual = strrchr(pcLine, '=');
+	if(strlen(pcEqual) < 2) return false;
+	//-----------------
+	pfDose[0] = (float)atof(&pcEqual[1]);
 	return true;
 }
 

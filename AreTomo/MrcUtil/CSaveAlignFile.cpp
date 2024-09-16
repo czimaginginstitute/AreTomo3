@@ -12,6 +12,7 @@ char CSaveAlignFile::m_acDarkFrameTag[] = "DarkFrame";
 char CSaveAlignFile::m_acAlphaOffsetTag[] = "AlphaOffset";
 char CSaveAlignFile::m_acBetaOffsetTag[] = "BetaOffset";
 char CSaveAlignFile::m_acLocalAlignTag[] = "Local Alignment";
+char CSaveAlignFile::m_acThicknessTag[] = "Thickness";
 
 CSaveAlignFile::CSaveAlignFile(void)
 {
@@ -97,7 +98,10 @@ void CSaveAlignFile::mSaveHeader(void)
 	fprintf(m_pFile, "# %s = %8.2f\n", m_acAlphaOffsetTag,
 	   m_pAlignParam->m_fAlphaOffset);
 	fprintf(m_pFile, "# %s = %8.2f\n", m_acBetaOffsetTag,
-	   m_pAlignParam->m_fBetaOffset);	
+	   m_pAlignParam->m_fBetaOffset);
+	//-----------------------------------------------
+	fprintf(m_pFile, "# %s = %d\n", m_acThicknessTag,
+	   m_pAlignParam->m_iThickness);
 }
 
 void CSaveAlignFile::mSaveGlobal(void)

@@ -260,20 +260,12 @@ void CAreTomoMain::mAlign(void)
 	mFindCtf(true);
 	mCalcThickness();
 	//-----------------
-	Recon::CAlignMetric alignMetric;
-	//alignMetric.Calculate(m_iNthGpu, m_iThickness);
-	//printf("Coarse align: %e\n", alignMetric.m_fRms);
-	
-	
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->ResetShift();
 	//-----------------
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	pParam->m_fXcfSize = 2048.0f;
 	mProjAlign();
-
-	//alignMetric.Calculate(m_iNthGpu, m_iThickness);
-        //printf("Global align 1: %e\n", alignMetric.m_fRms);
 	//-----------------
 	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->m_afTiltAxis[1] >= 0)
@@ -285,18 +277,10 @@ void CAreTomoMain::mAlign(void)
 		}
 		mProjAlign();
 	}
-	
-	//alignMetric.Calculate(m_iNthGpu, m_iThickness);
-        //printf("Global align 2: %e\n", alignMetric.m_fRms);
-	
-
 	pAlignParam->FitRotCenterZ();
         pAlignParam->RemoveOffsetZ(1.0f);
 	//-----------------
 	mPatchAlign();
-
-	//alignMetric.Calculate(m_iNthGpu, m_iThickness);
-        //printf("Patch align: %e\n", alignMetric.m_fRms);
 	//-----------------
 	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance();
 	pTsMetrics->Save(m_iNthGpu);
@@ -433,14 +417,19 @@ void CAreTomoMain::mCalcThickness(void)
 	Recon::CCalcVolThick calcVolThick;
         calcVolThick.DoIt(m_iNthGpu);
 	float fThickness = calcVolThick.GetThickness(false);
-	m_iThickness = (int)fThickness / 2 * 2;
+	int iThickness = (int)fThickness / 2 * 2;
+	//-----------------
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	pAlnParam->m_iThickness = iThickness;
 	//-----------------
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
-	int iThickness = m_iThickness * 8 / 20 * 2;
+	iThickness = iThickness * 8 / 20 * 2;
 	if(iThickness < 100) iThickness = 100;
 	else if(iThickness > 2000) iThickness = 2000;
-	//-----------------
+	//-----------------------------------------------
+	// If users specify the AlignZ value, use it.
+	//-----------------------------------------------
 	if(pAtInput->m_iAlignZ <= 0) pParam->m_iAlignZ = iThickness;
 	else pParam->m_iAlignZ = pAtInput->m_iAlignZ;
 }
@@ -593,9 +582,13 @@ void CAreTomoMain::mRecon(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	int iVolZ = pAtInput->m_iVolZ;
-	if(iVolZ < 0) iVolZ = m_iThickness + 200;
+	//-----------------
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	int iThickness = pAlnParam->m_iThickness;
+	//-----------------
+	if(iVolZ < 0) iVolZ = iThickness + pAtInput->m_iExtZ;
 	iVolZ = (int)(iVolZ / pAtInput->m_afAtBin[0]) / 2 * 2;
-	if(iVolZ < 16) iVolZ = 16;
+	if(iVolZ < 100) iVolZ = 100;
 	//-----------------
 	bool bWbp = (pAtInput->m_iWbp == 1);
 	//-----------------
@@ -627,8 +620,12 @@ void CAreTomoMain::mRecon2nd(void)
 	//-----------------
 	m_pCorrTomoStack->DoIt(0, 0L);
 	//-----------------
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	int iThickness = pAlnParam->m_iThickness;
+	//-----------------
 	int iVolZ = pAtInput->m_iVolZ;
-	if(iVolZ < 0) iVolZ = m_iThickness + 200;
+	if(iVolZ <= 0) iVolZ = iThickness + pAtInput->m_iExtZ;
+	if(iVolZ <= 100) iVolZ = 100;
 	//-----------------
 	MD::CTiltSeries* pBinnedSeries = 0L;
 	if(fBin1 >= 1)
@@ -769,7 +766,6 @@ void CAreTomoMain::mLogGlobalShift(void)
 	MAM::CAlignParam* pAlnParam = sGetAlignParam(m_iNthGpu);
 	//-----------------
 	float fPixSize = pRawSeries->m_fPixSize;
-	float fImgDose = pRawSeries->m_fImgDose;
 	float afShift[2] = {0.0f}, fTiltAxis = 0.0f;
 	//-----------------
 	for(int i=0; i<pRawSeries->m_aiStkSize[2]; i++)
@@ -777,7 +773,7 @@ void CAreTomoMain::mLogGlobalShift(void)
 		fTiltAxis = pAlnParam->GetTiltAxis(i);
 		float fTilt = pRawSeries->m_pfTilts[i];
 		int iAcqIdx = pRawSeries->m_piAcqIndices[i];
-		float fDose = iAcqIdx * fImgDose;
+		float fDose = pRawSeries->m_pfDoses[i];
 		//----------------
 		fprintf(pFile, "%3d %3d %7.2f %6.2f "
 		   "%7.2f %7.2f %8.2f %8.2f\n",

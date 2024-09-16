@@ -44,6 +44,7 @@ public:
 	void SortByAcq(void);
 	//-----------------
 	void SetTilts(float* pfTilts);
+	void SetDoses(float* pfDoses);
 	void SetAcqs(int* piAcqIndices);
 	void SetSecs(int* piSecIndices);
 	//-----------------
@@ -56,16 +57,15 @@ public:
 	CTiltSeries* GetSubSeries(int* piStart, int* piSize);
 	void RemoveFrame(int iFrame);
 	void GetAlignedSize(float fTiltAxis, int* piAlnSize);
-	float* GetAccDose(void);
 	float** GetImages(void); // do not free;
 	//-----------------
 	void ResetSecIndices(void); // make sec indices ascending
 	CTiltSeries* FlipVol(bool bFlip);
 	//-----------------
 	float* m_pfTilts;
+	float* m_pfDoses;    // per-tilt dose
 	int* m_piAcqIndices; // acquistion index, same as mdoc z value.
 	int* m_piSecIndices; // section index in input MRC file.
-	float m_fImgDose;
 	bool m_bLoaded;
 private:
 	void mSwap(int iIdx1, int iIdx2);
@@ -330,6 +330,7 @@ public:
 	char* GetFrameFileName(int iTilt); // do not free
 	int GetAcqIdx(int iTilt);
 	float GetTilt(int iTilt);
+	float GetDose(int iTilt);
 	int m_iNumTilts;
 	int m_iNthGpu;
 	char m_acMdocFile[256];
@@ -337,12 +338,14 @@ private:
 	CReadMdoc(void);
 	void mClean(void);
 	int mExtractValZ(char* pcLine);
-	bool mExtractTilt(char* pcLinei, float* pfTilt);
+	bool mExtractTilt(char* pcLine, float* pfTilt);
+	bool mExtractDose(char* pcLine, float* pfDose);
 	char* mExtractFramePath(char* pcLine);
 	//-----------------
 	char** m_ppcFrmPath;
 	int* m_piAcqIdxs;
 	float* m_pfTilts;
+	float* m_pfDoses;
 	int m_iBufSize;
 	static CReadMdoc* m_pInstances;
 	static int m_iNumGpus;
@@ -366,7 +369,7 @@ public:
 	void SetAcqIdx(int iTilt, int iAcqIdx);
 	void SetSecIdx(int iTilt, int iSecIdx);
 	void SetSums(int iTilt, CAlnSums* pAlnSums);
-	void SetImgDose(float fImgDose);
+	void SetImgDose(int iTilt, float fImgDose);
 	//-----------------
 	CTiltSeries* GetSeries(int iSeries); // 0 - raw, 1 - evn, 2 - odd
 	//-----------------

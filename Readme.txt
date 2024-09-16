@@ -319,3 +319,15 @@ AreTomo3 1.0.24 [09-12-2024]
 ----------------------------
 1.  Renamed from 1.0.23 to 1.0.24.
 
+AreTomo3 2.0.0 [09-14-2024]
+---------------------------
+1. Renamed 1.0.24 to version 2.0.0.
+2. Change: AreTomo/Recon/CCalcVolThick.cpp: when the CC profile has two peaks
+   with the minimum in between, use the locations of the peaks as the sample
+   edges if their distance is significant.
+3. Changes: expanded TiltSeries_Metrics.csv to include tilt offsets, Cs, Kv,
+   etc.
+4. Changes: mkdir in CImodUtil.cpp uses now S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH.
+   The same change has been applied to DataUtil/CLogFile.cpp.
+5. Changes: CReadMdoc.cpp now extracts ExposureDose from the mdoc file.
+6. TLT.txt file now has the 3rd column for per-tilt image dose.

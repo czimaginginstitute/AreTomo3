@@ -69,7 +69,7 @@ void CLogFiles::Create(const char* pcMdocFile)
 	//-----------------
 	struct stat st = {0};
 	if(stat(m_acLogDir, &st) == -1)
-	{	mkdir(m_acLogDir, 0700);
+	{	mkdir(m_acLogDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	}
 	//-----------------
 	mCreateMcLogs(pcPrefix);

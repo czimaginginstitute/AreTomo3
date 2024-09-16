@@ -142,6 +142,7 @@ public:
 	float m_afTiltAxis[2];
 	int m_iAlignZ;
 	int m_iVolZ;
+	int m_iExtZ;
 	float m_afAtBin[3];
 	float m_afTiltCor[2];
 	float m_afReconRange[2];
@@ -159,12 +160,14 @@ public:
 	float m_fDarkTol;
 	bool m_bIntpCor;
 	int m_iCtfTileSize;
+	int m_iDfHand;
 	int m_aiCorrCTF[2];
 	//-----------------
 	char m_acTotalDoseTag[32];
 	char m_acTiltAxisTag[32];
 	char m_acAlignZTag[32];
 	char m_acVolZTag[32];
+	char m_acExtZTag[32];
 	char m_acAtBinTag[32];
 	char m_acTiltCorTag[32];
 	char m_acReconRangeTag[32];
@@ -183,6 +186,7 @@ public:
 	char m_acBFactorTag[32];
 	char m_acIntpCorTag[32];
 	char m_acCorrCTFTag[32];
+	char m_acDfHandTag[32];
 private:
         CAtInput(void);
         void mPrint(void);

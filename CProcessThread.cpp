@@ -275,7 +275,10 @@ void CProcessThread::mAssembleTiltSeries(int iTilt)
 	pTsPackage->SetSecIdx(iTilt, iAcqIdx);
 	//-----------------
 	pTsPackage->SetSums(iTilt, pMcPackage->m_pAlnSums);
-	pTsPackage->SetImgDose(pMcPackage->m_pRawStack->m_fStkDose);
+	//-----------------
+	float fImgDose = pReadMdoc->GetDose(iTilt);
+	if(fImgDose <= 0) fImgDose = pMcPackage->m_pRawStack->m_fStkDose;
+	pTsPackage->SetImgDose(iTilt, fImgDose);
 }
 
 void CProcessThread::mProcessTiltSeries(void)

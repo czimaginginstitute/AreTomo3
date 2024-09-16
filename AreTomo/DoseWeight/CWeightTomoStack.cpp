@@ -31,7 +31,7 @@ void CWeightTomoStack::Clean(void)
 }
 
 void CWeightTomoStack::DoIt(int iNthGpu)
-{
+{	/*
 	this->Clean();
 	//-----------------
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(iNthGpu);
@@ -64,6 +64,7 @@ void CWeightTomoStack::DoIt(int iNthGpu)
 	m_aInverseFFT.DestroyPlan();
 	//-----------------
 	this->Clean();
+	*/
 }
 
 void CWeightTomoStack::mCorrectProj(int iProj)
