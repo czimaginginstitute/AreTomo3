@@ -11,6 +11,7 @@ void CDuInstances::CreateInstances(int iNumGpus)
 	CCtfResults::CreateInstances(iNumGpus);
 	CMcPackage::CreateInstances(iNumGpus);
 	CReadMdoc::CreateInstances(iNumGpus);
+	CAsyncSaveVol::CreateInstances(iNumGpus);
 	CTsPackage::CreateInstances(iNumGpus);
 	CLogFiles::CreateInstances(iNumGpus);
 }
@@ -24,4 +25,5 @@ void CDuInstances::DeleteInstances(void)
 	CTsPackage::DeleteInstances();
 	CStackFolder::DeleteInstance();
 	CLogFiles::DeleteInstances();
+	CAsyncSaveVol::DeleteInstances();
 }

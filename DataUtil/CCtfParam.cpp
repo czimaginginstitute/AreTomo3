@@ -22,9 +22,12 @@ CCtfParam::~CCtfParam(void)
 {
 }
 
-void CCtfParam::Setup(int iKv, float fCs, float fAC, float fPixSize)
-{
-	m_fAmpContrast = fAC;
+void CCtfParam::Setup
+(	int iKv, float fCs, 
+	float fAC, 
+	float fPixSize
+)
+{	m_fAmpContrast = fAC;
 	m_fPixelSize = fPixSize;
 	//-----------------
 	double dWl = 12.26 / sqrt(iKv * 1000 + 0.9784 * iKv * iKv);

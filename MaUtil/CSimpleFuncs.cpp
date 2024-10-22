@@ -5,8 +5,11 @@
 #include <memory.h>
 #include <stdio.h>
 #include <assert.h>
+#include <unistd.h>
+#include <pwd.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/types.h>
 
 
 size_t MU::GetGpuMemory(int iGpuId)
@@ -65,3 +68,38 @@ void* MU::GetGpuBuf(size_t tBytes, bool bZero)
 	if(bZero) cudaMemset(gvBuf, 0, tBytes);
 	return gvBuf;
 }
+
+const char* MU::GetHomeDir(void)
+{
+	const char* pcHomeDir = getenv("HOME");
+	if(pcHomeDir != 0L) return pcHomeDir;
+	//-----------------
+	pcHomeDir = getpwuid(getuid())->pw_dir;
+	return pcHomeDir;
+}
+
+bool MU::GetCurrDir(char* pcRet, int iSize)
+{
+	if(getcwd(pcRet, iSize) != 0L) return true;
+	else return false;	
+}
+
+void MU::UseFullPath(char* pcPath)
+{
+        if(pcPath == 0L || strlen(pcPath) == 0) return;
+        if(pcPath[0] == '/') return;
+        //-----------------
+        char acDir[256] = {'\0'};
+        bool bExit = MU::GetCurrDir(acDir, 256);
+        if(!bExit) return;
+        //-----------------
+        if(pcPath[0] == '.')
+        {       strcat(acDir, &pcPath[1]);
+        }
+        else
+        {       strcat(acDir, "/");
+                strcat(acDir, pcPath);
+        }
+        strcpy(pcPath, acDir);
+}
+

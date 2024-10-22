@@ -60,11 +60,16 @@ bool CAreTomoMain::DoIt(int iNthGpu)
 	m_iNthGpu = iNthGpu;
 	//-----------------
 	CInput* pInput = CInput::GetInstance();
+	mGenCtfTiles();
 	if(pInput->m_iCmd == 0 || pInput->m_iCmd == 1) mDoFull();
 	else if(pInput->m_iCmd == 2) mSkipAlign();
 	else if(pInput->m_iCmd == 3) mEstimateCtf();
 	//-----------------
-	printf("Process thread exits.\n\n");
+	FindCtf::CTsTiles::DeleteInstance(m_iNthGpu);
+	//-----------------
+	MD::CAsyncSaveVol* pSaveVol = 
+	   MD::CAsyncSaveVol::GetInstance(m_iNthGpu);
+	pSaveVol->WaitForExit(10.0f);
 	return true;
 }
 
@@ -76,9 +81,8 @@ void CAreTomoMain::mDoFull(void)
 	// dark removed tilt series to determine alpha 
 	// and beta tilt offset.
 	//-----------------------------------------------
-	mFindCtf();
+	mFindCtf(false);
 	mRemoveDarkFrames();
-	mRemoveDarkCtfs();
 	//-----------------
 	mCreateAlnParams();
 	mRemoveSpikes();	
@@ -92,9 +96,11 @@ void CAreTomoMain::mDoFull(void)
 	// correction before saving files to Imod
 	// sub-directory.
 	//-----------------------------------------------
+	mRemoveDarkCtfs();
 	mSetupTsCorrection();
 	mSaveForImod();
-	//-----------------	
+	//-----------------
+	mRecon2nd();	
 	mCorrectCTF();
 	mRecon();
 	//-----------------------------------------------
@@ -136,8 +142,10 @@ void CAreTomoMain::mSkipAlign(void)
 	mRemoveSpikes();
 	mMassNorm();
 	//-----------------
-	mCorrectCTF();
 	mSetupTsCorrection();
+	mRecon2nd();
+	//-----------------
+	mCorrectCTF();
 	mRecon();
 }
 
@@ -156,7 +164,7 @@ void CAreTomoMain::mEstimateCtf(void)
         bool bLoaded = loadAlnFile.DoIt(m_iNthGpu);
         if(!bLoaded) return;
 	//-----------------
-	mFindCtf();
+	mFindCtf(false);
 	mRemoveDarkCtfs();
 	//-----------------
 	ImodUtil::CImodUtil* pImodUtil = 0L;
@@ -213,15 +221,30 @@ void CAreTomoMain::mRemoveSpikes(void)
 	remSpikes.DoIt(pRawSeries);	
 }
 
+void CAreTomoMain::mGenCtfTiles(void)
+{
+	if(!FindCtf::CFindCtfMain::bCheckInput()) return;
+	FindCtf::CTsTiles *pTsTiles = 
+	   FindCtf::CTsTiles::GetInstance(m_iNthGpu);
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	pTsTiles->Generate(pAtInput->m_iCtfTileSize);
+}
+
 //--------------------------------------------------------------------
 // 1. CFindCtfMain estimates CTFs and saves them into the output
 //    directory, but does not save in the Imod directory.
 //--------------------------------------------------------------------
-void CAreTomoMain::mFindCtf(void)
+void CAreTomoMain::mFindCtf(bool bRefine)
 {
 	if(!FindCtf::CFindCtfMain::bCheckInput()) return;
-	FindCtf::CFindCtfMain findCtfMain;
-	findCtfMain.DoIt(m_iNthGpu);
+	if(!bRefine)
+	{	FindCtf::CFindCtfMain findCtfMain;
+		findCtfMain.DoIt(m_iNthGpu);
+	}
+	else 
+	{	FindCtf::CRefineCtfMain refineCtfMain;
+		refineCtfMain.DoIt(m_iNthGpu);
+	}
 }
 
 void CAreTomoMain::mMassNorm(void)
@@ -234,6 +257,8 @@ void CAreTomoMain::mAlign(void)
 {
 	m_fRotScore = 0.0f;
 	mCoarseAlign();
+	mFindCtf(true);
+	mCalcThickness();
 	//-----------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->ResetShift();
@@ -252,17 +277,13 @@ void CAreTomoMain::mAlign(void)
 		}
 		mProjAlign();
 	}
+	pAlignParam->FitRotCenterZ();
+        pAlignParam->RemoveOffsetZ(1.0f);
 	//-----------------
 	mPatchAlign();
 	//-----------------
-	if(pInput->m_afTiltCor[0] == 0) 
-	{	pAlignParam->AddAlphaOffset(-m_fTiltOffset);
-	}
-	else
-	{	MAM::CDarkFrames* pDarkFrames = 
-		   MAM::CDarkFrames::GetInstance(m_iNthGpu);
-		pDarkFrames->AddTiltOffset(m_fTiltOffset);
-	}
+	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance();
+	pTsMetrics->Save(m_iNthGpu);
 	//-----------------
 	mLogGlobalShift();
 	mLogLocalShift();
@@ -303,7 +324,6 @@ void CAreTomoMain::mProjAlign(void)
 {
 	CAtInput* pInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
-	pParam->m_iVolZ = pInput->m_iAlignZ;
         pParam->m_afMaskSize[0] = 0.7f;
         pParam->m_afMaskSize[1] = 0.7f;
 	//-----------------
@@ -350,22 +370,31 @@ void CAreTomoMain::mRotAlign(void)
 
 void CAreTomoMain::mFindTiltOffset(void)
 {
+	//-----------------------------------------------
+	// 1) This function is deprecated and replaced
+	// by FindCtf/CRefineCtfMain.cpp to estimate
+	// the tilt angle offset. 2) Do not delete util
+	// CRefineCtfMain is tested with more cases.
+	//-----------------------------------------------
+	/*
+	float fTiltOffset = 0.0f;
 	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->m_afTiltCor[0] < 0) return;
 	//-----------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	if(fabs(pInput->m_afTiltCor[1]) > 0.1)
-        {       m_fTiltOffset = pInput->m_afTiltCor[1];
-                pAlignParam->AddAlphaOffset(m_fTiltOffset);
+        {       fTiltOffset = pInput->m_afTiltCor[1];
+                pAlignParam->AddAlphaOffset(fTiltOffset);
 		return;
         }
 	//-----------------
 	TiltOffset::CTiltOffsetMain aTiltOffsetMain;
 	aTiltOffsetMain.Setup(4, m_iNthGpu);
-	float fTiltOffset = aTiltOffsetMain.DoIt();
-	m_fTiltOffset += fTiltOffset;
-	//-----------------
+	fTiltOffset = aTiltOffsetMain.DoIt();
 	pAlignParam->AddAlphaOffset(fTiltOffset);
+	//-----------------
+	printf("Stretching based tilt offset: %f\n\n", fTiltOffset);
+	*/
 }
 
 void CAreTomoMain::mPatchAlign(void)
@@ -380,7 +409,29 @@ void CAreTomoMain::mPatchAlign(void)
 	//-----------------
 	MAP::CPatchAlignMain* pPatchAlignMain = 
 	   MAP::CPatchAlignMain::GetInstance(m_iNthGpu);
-	pPatchAlignMain->DoIt(m_fTiltOffset); 
+	pPatchAlignMain->DoIt(); 
+}
+
+void CAreTomoMain::mCalcThickness(void)
+{
+	Recon::CCalcVolThick calcVolThick;
+        calcVolThick.DoIt(m_iNthGpu);
+	float fThickness = calcVolThick.GetThickness(false);
+	int iThickness = (int)fThickness / 2 * 2;
+	//-----------------
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	pAlnParam->m_iThickness = iThickness;
+	//-----------------
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
+	iThickness = iThickness * 8 / 20 * 2;
+	if(iThickness < 100) iThickness = 100;
+	else if(iThickness > 2000) iThickness = 2000;
+	//-----------------------------------------------
+	// If users specify the AlignZ value, use it.
+	//-----------------------------------------------
+	if(pAtInput->m_iAlignZ <= 0) pParam->m_iAlignZ = iThickness;
+	else pParam->m_iAlignZ = pAtInput->m_iAlignZ;
 }
 
 void CAreTomoMain::mCorrectCTF(void)
@@ -392,7 +443,6 @@ void CAreTomoMain::mCorrectCTF(void)
 	   MD::CCtfResults::GetInstance(m_iNthGpu);
 	if(!pCtfResults->bHasCTF()) return;
 	//-----------------
-	printf("GPU %d: Tilt series CTF deconvolution\n\n", m_iNthGpu);
 	bool bPhaseFlip = false;
 	if(pAtInput->m_aiCorrCTF[0] == 2) bPhaseFlip = true;
 	//-----------------
@@ -503,36 +553,105 @@ void CAreTomoMain::mAlignCTF(void)
 	pImodUtil->SaveCtfFile();
 }
 
+MD::CTiltSeries* CAreTomoMain::mBinAlnSeries(float fBin)
+{
+	MD::CTiltSeries* pAlnSeries =
+           m_pCorrTomoStack->GetCorrectedStack(false);
+	if(pAlnSeries == 0L || pAlnSeries->bEmpty()) return 0L;
+	if(fBin < 0.01f) return 0L;
+        //-----------------
+        /*
+        if(iSeries == 0)
+        {       MU::CSaveTempMrc saveMrc;
+                saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestAlnCTF",
+                   ".mrc");
+                void** ppvImgs = pAlnSeries->GetFrames();
+                saveMrc.DoMany(ppvImgs, 2, pAlnSeries->m_aiStkSize);
+                printf("GPU %d: Save aln tilt series done.\n\n",
+                   m_iNthGpu);
+        }
+        */
+        //-----------------
+        MAC::CBinStack binStack;
+        MD::CTiltSeries* pBinSeries = 0L;
+        pBinSeries = binStack.DoFFT(pAlnSeries, fBin, m_iNthGpu);
+	return pBinSeries;
+}
+
 void CAreTomoMain::mRecon(void)
 {
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	int iVolZ = pAtInput->m_iVolZ;
+	//-----------------
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	int iThickness = pAlnParam->m_iThickness;
+	//-----------------
+	if(iVolZ < 0) iVolZ = iThickness + pAtInput->m_iExtZ;
+	iVolZ = (int)(iVolZ / pAtInput->m_afAtBin[0]) / 2 * 2;
+	if(iVolZ < 100) iVolZ = 100;
+	//-----------------
+	bool bWbp = (pAtInput->m_iWbp == 1);
+	//-----------------
+	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	int iNumSeries = MD::CAlnSums::m_iNumSums;
+	MD::CTiltSeries* pRawSeries = 0L;
+	MD::CTiltSeries* pBinnedSeries = 0L;
+	//-----------------
 	for(int i=0; i<iNumSeries; i++)
-	{	m_pCorrTomoStack->DoIt(i, 0L);
-		mReconSeries(i);
+	{	pRawSeries = pTsPackage->GetSeries(i);
+		if(!pRawSeries->m_bLoaded) continue;
+		//----------------
+		m_pCorrTomoStack->DoIt(i, 0L);
+		pBinnedSeries = mBinAlnSeries(pAtInput->m_afAtBin[0]);
+		mReconVol(pBinnedSeries, iVolZ, i, bWbp);
+		if(pBinnedSeries != 0L) delete pBinnedSeries;
 	}
 	//-----------------
 	if(m_pCorrTomoStack != 0L) delete m_pCorrTomoStack;
 	m_pCorrTomoStack = 0L;
 }
 
-void CAreTomoMain::mReconSeries(int iSeries)
+void CAreTomoMain::mRecon2nd(void)
 {
-	CAtInput* pInput = CAtInput::GetInstance();
-	int iVolZ = (int)(pInput->m_iVolZ / pInput->m_fAtBin) / 2 * 2;
-	if(iVolZ <= 16) return;
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	float fBin1 = pAtInput->m_afAtBin[1];
+	float fBin2 = pAtInput->m_afAtBin[2];
+	if(fBin1 < 1 && fBin2 < 1) return;
 	//-----------------
-	MD::CTiltSeries* pAlnSeries = 
-	   m_pCorrTomoStack->GetCorrectedStack(false);
-	if(pAlnSeries == 0L || pAlnSeries->bEmpty()) return;
+	m_pCorrTomoStack->DoIt(0, 0L);
 	//-----------------
-	MAC::CBinStack binStack;
-	MD::CTiltSeries* pBinSeries = binStack.DoFFT(pAlnSeries,
-	   pInput->m_fAtBin, m_iNthGpu);
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	int iThickness = pAlnParam->m_iThickness;
 	//-----------------
-	if(pInput->m_iWbp != 0) mWbpRecon(iVolZ, iSeries, pBinSeries);
-	else mSartRecon(iVolZ, iSeries, pBinSeries);
+	int iVolZ = pAtInput->m_iVolZ;
+	if(iVolZ <= 0) iVolZ = iThickness + pAtInput->m_iExtZ;
+	if(iVolZ <= 100) iVolZ = 100;
 	//-----------------
-	if(pBinSeries != 0L) delete pBinSeries;
+	MD::CTiltSeries* pBinnedSeries = 0L;
+	if(fBin1 >= 1)
+	{	int iVolZ1 = (int)(iVolZ / fBin1) / 2 * 2;
+		pBinnedSeries = mBinAlnSeries(fBin1);
+		mReconVol(pBinnedSeries, iVolZ1, 3, true);
+		if(pBinnedSeries != 0L) delete pBinnedSeries;
+	}
+	//-----------------
+	if(fBin2 < 1) return;
+	int iVolZ2 = (int)(iVolZ / fBin2) / 2 * 2;
+	pBinnedSeries = mBinAlnSeries(fBin2);
+        mReconVol(pBinnedSeries, iVolZ2, 4, false);
+        if(pBinnedSeries != 0L) delete pBinnedSeries;
+}
+
+void CAreTomoMain::mReconVol
+(	MD::CTiltSeries* pTiltSeries, 
+	int iVolZ,
+	int iSeries, 
+	bool bWbp
+)
+{	if(iVolZ <= 16) return;
+	if(pTiltSeries == 0L) return;
+	if(bWbp) mWbpRecon(iVolZ, iSeries, pTiltSeries);
+        else mSartRecon(iVolZ, iSeries, pTiltSeries);
 }
 
 //--------------------------------------------------------------------
@@ -568,12 +687,12 @@ void CAreTomoMain::mSartRecon
 	printf("GPU %d: SART Recon: %.2f sec\n\n", m_iNthGpu, 
 	   aTimer.GetElapsedSeconds());
 	//-----------------
-	pVolStack = mFlipVol(pVolStack);
+	MD::CTiltSeries* pNewVol = mFlipVol(pVolStack);
+        if(pNewVol != 0L) pVolStack = pNewVol;
 	//-----------------
-	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
-	pTsPackage->SaveVol(pVolStack, iSeries);
-	//-----------------
-	if(pVolStack != 0L) delete pVolStack;
+	bool bClean = true;
+	mSaveVol(pVolStack, iSeries, bClean);
+	if(!bClean && pVolStack != 0L) delete pVolStack;
 }
 
 
@@ -596,27 +715,38 @@ void CAreTomoMain::mWbpRecon
 	printf("GPU %d: WBP Recon: %.2f sec\n\n", m_iNthGpu,
 	   aTimer.GetElapsedSeconds());
 	//-----------------
-	pVolStack = mFlipVol(pVolStack);
+	MD::CTiltSeries* pNewVol = mFlipVol(pVolStack);
+	if(pNewVol != 0L) pVolStack = pNewVol;
 	//-----------------
-	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
-        pTsPackage->SaveVol(pVolStack, iSeries);
-	//-----------------
-	if(pVolStack != 0L) delete pVolStack;
+	bool bClean = true;
+	mSaveVol(pVolStack, iSeries, bClean);
+	if(!bClean && pVolStack != 0L) delete pVolStack;
+}
+
+void CAreTomoMain::mSaveVol
+(	MD::CTiltSeries* pVolSeries, 
+	int iNthVol,
+	bool bClean
+)
+{	bool bAsync = true;
+	MD::CAsyncSaveVol* pSaveVol = 
+	   MD::CAsyncSaveVol::GetInstance(m_iNthGpu);
+	pSaveVol->WaitForExit(-1.0f);
+	pSaveVol->DoIt(pVolSeries, iNthVol, bAsync, bClean);
 }
 
 MD::CTiltSeries* CAreTomoMain::mFlipVol(MD::CTiltSeries* pVolSeries)
 {
 	CAtInput* pInput = CAtInput::GetInstance();
-	if(pInput->m_iFlipVol == 0) return pVolSeries;
-	if(pVolSeries == 0L) return 0L;
+	if(pInput->m_iFlipVol == 0) return 0L;
 	//-----------------
 	printf("GPU %d: Flip volume from xzy view to xyz view.\n", m_iNthGpu);
 	bool bFlip = (pInput->m_iFlipVol == 1) ? true : false;
-	MD::CTiltSeries* pVolXZY = pVolSeries->FlipVol(bFlip);
+	MD::CTiltSeries* pVolXYZ = pVolSeries->FlipVol(bFlip);
 	printf("GPU %d: Flip volume completed.\n\n", m_iNthGpu);
 	//-----------------
 	delete pVolSeries;
-	return pVolXZY;
+	return pVolXYZ;
 }
 
 void CAreTomoMain::mSaveAlignment(void)
@@ -636,7 +766,6 @@ void CAreTomoMain::mLogGlobalShift(void)
 	MAM::CAlignParam* pAlnParam = sGetAlignParam(m_iNthGpu);
 	//-----------------
 	float fPixSize = pRawSeries->m_fPixSize;
-	float fImgDose = pRawSeries->m_fImgDose;
 	float afShift[2] = {0.0f}, fTiltAxis = 0.0f;
 	//-----------------
 	for(int i=0; i<pRawSeries->m_aiStkSize[2]; i++)
@@ -644,7 +773,7 @@ void CAreTomoMain::mLogGlobalShift(void)
 		fTiltAxis = pAlnParam->GetTiltAxis(i);
 		float fTilt = pRawSeries->m_pfTilts[i];
 		int iAcqIdx = pRawSeries->m_piAcqIndices[i];
-		float fDose = iAcqIdx * fImgDose;
+		float fDose = pRawSeries->m_pfDoses[i];
 		//----------------
 		fprintf(pFile, "%3d %3d %7.2f %6.2f "
 		   "%7.2f %7.2f %8.2f %8.2f\n",

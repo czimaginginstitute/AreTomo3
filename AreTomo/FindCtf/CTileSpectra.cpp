@@ -301,7 +301,9 @@ void CTileSpectra::mCalcTiltZs(int iTilt, float fTilt)
 	float fCosTx = (float)cos(m_fTiltAxis * s_fD2R);
 	float fSinTx = (float)sin(m_fTiltAxis * s_fD2R);
 	//-----------------
-	float fTanA = (float)tan((fTilt + m_fTiltOffset) * s_fD2R);
+	float fA = (fTilt + m_fTiltOffset) * s_fD2R;
+	float fCosA = (float)cos(fA);
+	float fTanA = (float)tan(fA);
 	float fTanB = (float)tan(m_fBetaOffset * s_fD2R);
 	//-----------------
 	float fXp = 0.0f, fYp = 0.0f;
@@ -311,6 +313,6 @@ void CTileSpectra::mCalcTiltZs(int iTilt, float fTilt)
 	{	int j = i + iOffset;
 		fXp = m_pfTileXs[j] * fCosTx + m_pfTileYs[j] * fSinTx;
 		fYp = -m_pfTileXs[j] * fSinTx + m_pfTileYs[j] * fCosTx;
-		m_pfTileZs[j] = -fXp * fTanA + fYp * fTanB;
+		m_pfTileZs[j] = -fXp * fTanA + fYp * fTanB * fCosA;
 	}
 }

@@ -7,6 +7,7 @@ PRJINC = $(PRJHOME)/LibSrc/Include
 PRJLIB = $(PRJHOME)/LibSrc/Lib
 #-----------------------------
 CUSRCS = ./MaUtil/GAddFrames.cu \
+	./MaUtil/GCalcFRC.cu \
 	./MaUtil/GCalcMoment2D.cu \
 	./MaUtil/GCorrLinearInterp.cu \
 	./MaUtil/GFFT1D.cu \
@@ -44,6 +45,8 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/Util/GBinImage2D.cu \
 	./AreTomo/Util/GCC1D.cu \
 	./AreTomo/Util/GCC2D.cu \
+	./AreTomo/Util/GLocalCC2D.cu \
+	./AreTomo/Util/GLocalRms2D.cu \
 	./AreTomo/Util/GMutualMask2D.cu \
 	./AreTomo/Util/GRealCC2D.cu \
 	./AreTomo/Util/GRemoveSpikes2D.cu \
@@ -72,7 +75,10 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/FindCtf/GRadialAvg.cu \
 	./AreTomo/FindCtf/GRemoveMean.cu \
 	./AreTomo/FindCtf/GRmBackground2D.cu \
+	./AreTomo/FindCtf/GRmSpikes.cu \
 	./AreTomo/FindCtf/GRoundEdge.cu \
+	./AreTomo/FindCtf/GExtractTile.cu \
+	./AreTomo/FindCtf/GScaleSpect2D.cu \
 	./AreTomo/PatchAlign/GCommonArea.cu \
 	./AreTomo/PatchAlign/GExtractPatch.cu \
 	./AreTomo/PatchAlign/GGenXcfImage.cu \
@@ -96,6 +102,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./MaUtil/CSaveTempMrc.cpp \
 	./MaUtil/CSimpleFuncs.cpp \
 	./DataUtil/CAlnSums.cpp \
+	./DataUtil/CAsyncSaveVol.cpp \
 	./DataUtil/CBufferPool.cpp \
 	./DataUtil/CCtfResults.cpp \
 	./DataUtil/CDuInstances.cpp \
@@ -193,9 +200,12 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/FindCtf/CFindCtfBase.cpp \
 	./AreTomo/FindCtf/CFindCtfHelp.cpp \
 	./AreTomo/FindCtf/CFindCtfMain.cpp \
+	./AreTomo/FindCtf/CRefineCtfMain.cpp \
 	./AreTomo/FindCtf/CFindDefocus1D.cpp\
 	./AreTomo/FindCtf/CFindDefocus2D.cpp \
 	./AreTomo/FindCtf/CTile.cpp \
+	./AreTomo/FindCtf/CCoreTile.cpp \
+	./AreTomo/FindCtf/CTsTiles.cpp \
 	./AreTomo/FindCtf/CExtractTiles.cpp \
 	./AreTomo/FindCtf/CCorrImgCtf.cpp \
 	./AreTomo/FindCtf/CGenAvgSpectrum.cpp \
@@ -228,12 +238,15 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/Recon/CTomoBase.cpp \
 	./AreTomo/Recon/CTomoSart.cpp \
 	./AreTomo/Recon/CTomoWbp.cpp \
+	./AreTomo/Recon/CCalcVolThick.cpp \
+	./AreTomo/Recon/CAlignMetric.cpp \
 	./AreTomo/StreAlign/CStretchAlign.cpp \
 	./AreTomo/StreAlign/CStretchCC2D.cpp \
 	./AreTomo/StreAlign/CStretchXcf.cpp \
 	./AreTomo/StreAlign/CStreAlignMain.cpp \
 	./AreTomo/TiltOffset/CTiltOffsetMain.cpp \
 	./AreTomo/CAtInstances.cpp \
+	./AreTomo/CTsMetrics.cpp \
 	./AreTomo/CAreTomoMain.cpp \
 	./CInput.cpp \
 	./CMcInput.cpp \
@@ -251,9 +264,6 @@ NVCC = $(CUDAHOME)/bin/nvcc -std=c++11
 CUFLAG = -Xptxas -dlcm=ca -O2 \
 	-gencode arch=compute_75,code=sm_75 \
 	-gencode arch=compute_70,code=sm_70 \
-	-gencode arch=compute_52,code=sm_52 \
-        -gencode arch=compute_53,code=sm_53 \
-        -gencode arch=compute_60,code=sm_60 \
         -gencode arch=compute_61,code=sm_61 
 #------------------------------------------
 cuda: $(CUCPPS)

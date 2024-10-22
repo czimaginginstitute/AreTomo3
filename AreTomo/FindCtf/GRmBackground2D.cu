@@ -34,7 +34,7 @@ static __global__ void mGRemove
 	if(iBoxSize < 7) iBoxSize = 7;
 	//-------------------------------------------------------
 	// (iX, iY): origin at lower left corner
-	// (xxm yy): origin at iX = 0, iY = iHalfY
+	// (xx, yy): origin at iX = 0, iY = iHalfY
 	// (xx = 0, yy=0) and (iX = 0, iY=iHalfY) is DC component
 	//-------------------------------------------------------
 	int iX = 0, iY = 0;

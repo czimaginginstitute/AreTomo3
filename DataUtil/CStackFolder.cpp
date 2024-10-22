@@ -45,11 +45,11 @@ CStackFolder::~CStackFolder(void)
 	this->mClean();
 }
 
-void CStackFolder::PushFile(char* pcMdocFile)
+void CStackFolder::PushFile(char* pcInFile)
 {
-	if(pcMdocFile == 0L) return;
+	if(pcInFile == 0L) return;
 	char* pcBuf = new char[m_iNumChars];
-	strcpy(pcBuf, pcMdocFile);
+	strcpy(pcBuf, pcInFile);
 	//-----------------
 	pthread_mutex_lock(&m_aMutex);
 	m_aFileQueue.push(pcBuf);
@@ -58,20 +58,20 @@ void CStackFolder::PushFile(char* pcMdocFile)
 
 char* CStackFolder::GetFile(bool bPop)
 {
-	char* pcMdocFile = 0L;
+	char* pcInFile = 0L;
 	pthread_mutex_lock(&m_aMutex);
 	if(!m_aFileQueue.empty())
-	{	pcMdocFile = m_aFileQueue.front();
+	{	pcInFile = m_aFileQueue.front();
 		if(bPop) m_aFileQueue.pop();
 	}
 	pthread_mutex_unlock(&m_aMutex);
-	return pcMdocFile;
+	return pcInFile;
 }
 
 void CStackFolder::DeleteFront(void)
 {
-	char* pcMdocFile = this->GetFile(true);
-	if(pcMdocFile != 0L) delete[] pcMdocFile;
+	char* pcInFile = this->GetFile(true);
+	if(pcInFile != 0L) delete[] pcInFile;
 }
 
 int CStackFolder::GetQueueSize(void)
@@ -124,7 +124,7 @@ bool CStackFolder::ReadFiles(void)
 bool CStackFolder::mReadSingle(void)
 {
 	CInput* pInput = CInput::GetInstance();
-	m_aFileQueue.push(pInput->m_acInMdoc);
+	m_aFileQueue.push(pInput->m_acInPrefix);
 	return true;
 }
 
@@ -171,6 +171,7 @@ int CStackFolder::mReadFolder(void)
 		{	pcSuffix = strcasestr(pDirent->d_name 
 			   + iPrefix, m_acSuffix);
 			if(pcSuffix == 0L) continue;
+			if(strlen(pcSuffix) > (iSuffix + 3)) continue;
 		}
 		//----------------
 		if(iSkips > 0)
@@ -198,28 +199,24 @@ int CStackFolder::mReadFolder(void)
 		iNumRead += 1;
 	}
 	closedir(pDir);
+	if(iNumRead <= 0) return 0;
 	//-----------------
-	if(iNumRead <= 0)
-	{	fprintf(stderr, "Error: no files are found.");
-		fprintf(stderr, "   in %s\n\n", m_acDirName);
-	}
-	else printf("\n");
-	//-----------------
+	printf("%d files have been found in %s\n\n", iNumRead, m_acDirName);
 	return iNumRead;
 }
 
 bool CStackFolder::mGetDirName(void)
 {
 	CInput* pInput = CInput::GetInstance();
-	char* pcSlash = strrchr(pInput->m_acInMdoc, '/');
+	char* pcSlash = strrchr(pInput->m_acInPrefix, '/');
 	if(pcSlash == 0L)
-	{	strcpy(m_acPrefix, pInput->m_acInMdoc);
+	{	strcpy(m_acPrefix, pInput->m_acInPrefix);
 		char* pcRet = getcwd(m_acDirName, sizeof(m_acDirName));
 		strcpy(m_acDirName, "./");
 		return true;
 	}
 	else
-	{	strcpy(m_acDirName, pInput->m_acInMdoc);
+	{	strcpy(m_acDirName, pInput->m_acInPrefix);
 		pcSlash = strrchr(m_acDirName, '/');
 		//----------------
 		strcpy(m_acPrefix, &pcSlash[1]);
@@ -251,24 +248,9 @@ void CStackFolder::mClean(void)
 	m_aReadFiles.clear();
 }
 
-void CStackFolder::mLogFiles(void)
-{
-	char acFile[256] = {'\0'};
-	CInput* pInput = CInput::GetInstance();
-	strcpy(acFile, pInput->m_acOutDir);
-	strcat(acFile, "MdocFound.txt");
-	FILE* pFile = fopen(acFile, "wt");
-	if(pFile == 0L) return;
-	//-----------------
-	for(auto x : m_aReadFiles)
-	{	fprintf(pFile, "%s  %d\n", x.first.c_str(), x.second);
-		printf("%s  %d\n", x.first.c_str(), x.second);
-	}
-	fclose(pFile);
-}
-
 bool CStackFolder::mAsyncReadFolder(void)
 {
+	mReadFolder();
 	this->Start();
 	return true;
 }
@@ -294,10 +276,11 @@ void CStackFolder::ThreadMain(void)
 		this->mWait(10.0f);
 		iCount += 10.0f;
 		int iLeftSec = pInput->m_iSerial - iCount;
-		printf("No mdoc files have been found, "
-		   "wait %d seconds.\n\n", iLeftSec);
+		if(iLeftSec > 0)
+		{	printf("No mdoc files have been found, "
+		   	   "wait %d seconds.\n\n", iLeftSec);
+		}
 		if(iLeftSec <= 0) break;
 		else continue;
 	}
-	mLogFiles();
 }

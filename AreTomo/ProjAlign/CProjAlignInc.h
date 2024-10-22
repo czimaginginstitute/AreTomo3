@@ -18,7 +18,7 @@ public:
 	float m_afMaskSize[2];
 	int m_iIterations;
 	float m_fTol;
-	int m_iVolZ;
+	int m_iAlignZ;
 	float m_fXcfSize;
 	int m_iNthGpu;
 private:

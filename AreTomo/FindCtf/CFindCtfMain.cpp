@@ -7,14 +7,11 @@
 using namespace McAreTomo::AreTomo;
 using namespace McAreTomo::AreTomo::FindCtf;
 
-int CFindCtfMain::m_aiSpectSize[] = {512, 512};
-
 CFindCtfMain::CFindCtfMain(void)
 {
 	m_ppfHalfSpects = 0L;
 	m_pFindCtf2D = 0L;
 	m_iNumTilts = 0;
-	m_iRefTilt = 0;
 }
 
 CFindCtfMain::~CFindCtfMain(void)
@@ -63,111 +60,78 @@ void CFindCtfMain::DoIt(int iNthGpu)
 {	
 	this->Clean();
 	m_iNthGpu = iNthGpu;
+	mInit(false);
 	//-----------------
-	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
-	m_pTiltSeries = pTsPkg->GetSeries(0);
-	m_iNumTilts = m_pTiltSeries->m_aiStkSize[2];
-	//---------------------------------------------------------
-	// 1) Check whether pixel size is given in CTiltSeries.
-	//---------------------------------------------------------
-	if(m_pTiltSeries->m_fPixSize < 0.001f) 
-	{	printf("(Warning (GPU %d): pixel size is not given, "
-		   "CTF estimation is skipped.\n\n", m_iNthGpu);
-		return;
-	}
+	mGenAvgSpects(0.0f, 0.0f, 100.0f);
+	printf("GPU %d: initial estimation of tilt series CTF, "
+	   "please wait ......\n\n", m_iNthGpu);
+	//-----------------
+	mDoLowTilts();
+	mDoHighTilts();
+	//-----------------
+	
+	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
+	pCtfRes->DisplayAll();
+	printf("GPU %d: initial estimation of tilt series CTF, "
+	   "done.\n\n", m_iNthGpu);
+	
+}
+
+void CFindCtfMain::mInit(bool bRefine)
+{
+	m_pFindCtf2D = new CFindCtf2D;
+	m_pFindCtf2D->SetGpu(m_iNthGpu);
+	//-----------------
+	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
+	m_iNumTilts = pTsTiles->GetNumTilts();
+	CTile* pTile = pTsTiles->GetTile(0);
 	//-----------------
 	CInput* pInput = CInput::GetInstance();
 	CAtInput* pAtInput = CAtInput::GetInstance();
-	//---------------------------------------------------------
-	// When pixel size is small, Fourier cropping to cut
-	// high-frequency components to reduce noise.
-	//---------------------------------------------------------
-	float fBinning = 1.0f / m_pTiltSeries->m_fPixSize;
-	if(fBinning <= 1.001f) fBinning = 1.0f;
-	else if(fBinning > 2) fBinning = 2.0f;
 	//-----------------
-	float fPixSize = m_pTiltSeries->m_fPixSize;
-	m_aiBinSize[0] = m_pTiltSeries->m_aiStkSize[0];
-	m_aiBinSize[1] = m_pTiltSeries->m_aiStkSize[1];
-	if(fBinning > 1.001)
-	{	m_aiBinSize[0] = (int)(m_aiBinSize[0] / fBinning) / 2 * 2;
-		m_aiBinSize[1] = (int)(m_aiBinSize[1] / fBinning) / 2 * 2;
-		fPixSize *= fBinning;
-	}
+	CCtfTheory aInitCTF;
+	aInitCTF.Setup(pInput->m_iKv, pInput->m_fCs,
+	   pAtInput->m_fAmpContrast, pTile->GetPixSize(),
+	   100.0f, 0.0f);
 	//-----------------
-	float fExtPhase = pAtInput->m_afExtPhase[0] * 0.017453f;
-	CCtfTheory aInputCTF;
-	aInputCTF.Setup(pInput->m_iKv, pInput->m_fCs,
-	   pAtInput->m_fAmpContrast, fPixSize,
-	   100.0f, fExtPhase);
+	m_pFindCtf2D->Setup1(&aInitCTF);
+	if(bRefine) return;
 	//-----------------
-	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
-        pCtfResults->Setup(m_iNumTilts, CFindCtfMain::m_aiSpectSize,
-	   aInputCTF.GetParam(false));
-	//-----------------
-	m_pFindCtf2D = new CFindCtf2D;
-	m_pFindCtf2D->Setup1(&aInputCTF, CFindCtfMain::m_aiSpectSize[0]);
-	m_pFindCtf2D->Setup2(m_aiBinSize);
-	m_pFindCtf2D->SetPhase(pAtInput->m_afExtPhase[0], 
+	m_pFindCtf2D->SetPhase(pAtInput->m_afExtPhase[0],
 	   pAtInput->m_afExtPhase[1]);
 	//-----------------
-	mGenSpectrums();
-	printf("GPU %d: estimate tilt series CTF, "
-	   "please wait ......\n", m_iNthGpu);
-	mDoZeroTilt();
-	mDo2D();
-	CSaveCtfResults saveCtfResults;
-	saveCtfResults.DoIt(m_iNthGpu);
-	printf("GPU %d: estimate tilt series CTF, done\n\n", m_iNthGpu);
+	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
+        int aiTileSize[] = {pAtInput->m_iCtfTileSize, pAtInput->m_iCtfTileSize};
+        pCtfResults->Setup(m_iNumTilts, aiTileSize,
+           aInitCTF.GetParam(false));
 }
 
-void CFindCtfMain::mGenSpectrums(void)
-{
-	MU::GFourierResize2D* gFtResize = 0L;
-	float* pfBinImg = 0L;
-	if(m_aiBinSize[0] < m_pTiltSeries->m_aiStkSize[0] &&
-	   m_aiBinSize[1] < m_pTiltSeries->m_aiStkSize[1])
-	{	gFtResize = new MU::GFourierResize2D;
-		gFtResize->Setup(m_pTiltSeries->m_aiStkSize, m_aiBinSize);
-		pfBinImg = new float[m_aiBinSize[0] * m_aiBinSize[1]];
-	}
-	//-----------------
-	bool bRaw = true, bToHost = true;
+void CFindCtfMain::mGenAvgSpects
+(	float fTiltOffset, 
+	float fBetaOffset,
+	float fMaxTilt
+)
+{	bool bRaw = true, bToHost = true;
 	if(m_ppfHalfSpects == 0L) m_ppfHalfSpects = new float*[m_iNumTilts];
+	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
 	//-----------------
-	int iSize = (m_iNumTilts + 16) * 64;
-	char* pcLog = new char[iSize];
-	memset(pcLog, 0, sizeof(char) * iSize);
-	strcpy(pcLog, "Generate tile spectrum\n");
-	//-----------------
-	char acBuf[64] = {'\0'};
 	for(int i=0; i<m_iNumTilts; i++)
-	{	sprintf(acBuf, "...... spectrum of tilt %4d created, "
-		   "%4d left\n", i+1, m_iNumTilts - 1 - i);
-		strcat(pcLog, acBuf);	
-		float* pfImage = (float*)m_pTiltSeries->GetFrame(i);
-		if(gFtResize == 0L) 
-		{	m_pFindCtf2D->GenHalfSpectrum(pfImage);
-		}
-		else
-		{	gFtResize->DoIt(pfImage, pfBinImg);
-			m_pFindCtf2D->GenHalfSpectrum(pfBinImg);
-		}
+	{	float fTilt = fabs(pCtfRes->GetTilt(i));
+		if(fTilt > fMaxTilt) continue;
+		//----------------	
+		m_pFindCtf2D->GenHalfSpectrum(i, fTiltOffset, fBetaOffset);
 		m_ppfHalfSpects[i] = m_pFindCtf2D->GetHalfSpect(!bRaw, bToHost);
 	}
-	printf("%s\n", pcLog);
-	if(pcLog != 0L) delete[] pcLog;
-	if(pfBinImg != 0L) delete[] pfBinImg;
-	if(gFtResize != 0L) delete gFtResize;
 }
 
-void CFindCtfMain::mDoZeroTilt(void)
+void CFindCtfMain::mDoLowTilts(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
         float fPhaseRange = fmaxf(pAtInput->m_afExtPhase[1], 0.0f);
 	m_pFindCtf2D->SetPhase(pAtInput->m_afExtPhase[0], fPhaseRange);
 	//-----------------
-	int iZeroTilt = m_pTiltSeries->GetTiltIdx(0.0f);
+	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
+	int iZeroTilt = pTsTiles->GetTiltIdx(0.0f);
 	m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[iZeroTilt]);
 	m_pFindCtf2D->Do2D();
 	mGetResults(iZeroTilt);
@@ -180,7 +144,8 @@ void CFindCtfMain::mDoZeroTilt(void)
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
 	//-----------------
 	for(int i=0; i<m_iNumTilts; i++)
-	{	if(fabs(m_pTiltSeries->m_pfTilts[i]) > m_fLowTilt) continue;
+	{	float fTilt = pTsTiles->GetTilt(i);
+		if(fabs(pTsTiles->GetTilt(i)) > m_fLowTilt) continue;
 		else if(i == iZeroTilt) continue;
 		//----------------
 		m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
@@ -191,7 +156,7 @@ void CFindCtfMain::mDoZeroTilt(void)
 	int iCount = 0.0f;
 	float fSum1 = 0.0f, fSum2 = 0.0f;
 	for(int i=0; i<m_iNumTilts; i++)
-	{	if(fabs(m_pTiltSeries->m_pfTilts[i]) > m_fLowTilt) continue;
+	{	if(fabs(pTsTiles->GetTilt(i)) > m_fLowTilt) continue;
 		else if(i == iZeroTilt) continue;
 		//----------------
 		float fDf = (pCtfResults->GetDfMin(i) + 
@@ -212,11 +177,10 @@ void CFindCtfMain::mDoZeroTilt(void)
 	}
 }
 	   
-void CFindCtfMain::mDo2D(void)
+void CFindCtfMain::mDoHighTilts(void)
 {
-	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
-	MD::CTiltSeries* m_pTiltSeries = pTsPkg->GetSeries(0);
-	int iZeroTilt = m_pTiltSeries->GetTiltIdx(0.0f);
+	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
+	int iZeroTilt = pTsTiles->GetTiltIdx(0.0f);
 	//-----------------	
 	float afDfRange[2], afAstRatio[2];
 	float afAstAngle[2], afExtPhase[2];
@@ -228,58 +192,39 @@ void CFindCtfMain::mDo2D(void)
 	MD::CCtfParam* pCtfParam = pCtfResults->GetCtfParam(iZeroTilt);
 	afAstRatio[0] = pCtfParam->GetDfSigma(false) / 
 	   (pCtfParam->GetDfMean(false) + 0.001f);
-	afAstRatio[1] = fmaxf(afAstRatio[0] * 0.10f, 0.01f);
+	afAstRatio[1] = 0.0f;
 	//-----------------
 	afAstAngle[0] = pCtfResults->GetAzimuth(iZeroTilt);
-	afAstAngle[1] = 0.0f;
+	afAstAngle[1] = 10.0f;
 	//-----------------
 	afExtPhase[0] = pCtfResults->GetExtPhase(iZeroTilt);
 	afExtPhase[1] = 0.0f;
+	int iNumTilts = pTsTiles->GetNumTilts();
 	//-----------------
-	for(int i=0; i<m_pTiltSeries->m_aiStkSize[2]; i++)
-	{	if(fabs(m_pTiltSeries->m_pfTilts[i]) <= m_fLowTilt) continue;
-		else if(i == iZeroTilt) continue;
-		//----------------
-		m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
+	for(int i=0; i<iNumTilts; i++)
+	{	m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
 		m_pFindCtf2D->Refine(afDfRange, afAstRatio, 
 		   afAstAngle, afExtPhase);
 		float fScore = mGetResults(i);
 	}
-	//-----------------
-	pCtfResults->DisplayAll();
 }
 
 float CFindCtfMain::mGetResults(int iTilt)
 {
-	float fTilt = m_pTiltSeries->m_pfTilts[iTilt];
+	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
+	float fTilt = pTsTiles->GetTilt(iTilt);
 	//-----------------
-	MD::CCtfResults* pCtfResults = 
-	   MD::CCtfResults::GetInstance(m_iNthGpu);
-	pCtfResults->SetTilt(iTilt, fTilt);
-	pCtfResults->SetDfMin(iTilt, m_pFindCtf2D->m_fDfMin);
-	pCtfResults->SetDfMax(iTilt, m_pFindCtf2D->m_fDfMax);
-	pCtfResults->SetAzimuth(iTilt, m_pFindCtf2D->m_fAstAng);
-	pCtfResults->SetExtPhase(iTilt, m_pFindCtf2D->m_fExtPhase);
-	pCtfResults->SetScore(iTilt, m_pFindCtf2D->m_fScore);
-	pCtfResults->SetCtfRes(iTilt, m_pFindCtf2D->m_fCtfRes);
+	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
+	pCtfRes->SetTilt(iTilt, fTilt);
+	pCtfRes->SetDfMin(iTilt, m_pFindCtf2D->m_fDfMin);
+	pCtfRes->SetDfMax(iTilt, m_pFindCtf2D->m_fDfMax);
+	pCtfRes->SetAzimuth(iTilt, m_pFindCtf2D->m_fAstAng);
+	pCtfRes->SetExtPhase(iTilt, m_pFindCtf2D->m_fExtPhase);
+	pCtfRes->SetScore(iTilt, m_pFindCtf2D->m_fScore);
+	pCtfRes->SetCtfRes(iTilt, m_pFindCtf2D->m_fCtfRes);
 	//-----------------
-	float* pfSpect = m_pFindCtf2D->GenFullSpectrum();
-	pCtfResults->SetSpect(iTilt, pfSpect);
+	float* pfSpect = pCtfRes->GetSpect(iTilt, false);
+	m_pFindCtf2D->GenFullSpectrum(pfSpect);
 	//-----------------
 	return m_pFindCtf2D->m_fScore;
 }
-
-char* CFindCtfMain::mGenSpectFileName(void)
-{
-	CInput* pInput = CInput::GetInstance();
-	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
-	//----------------
-	char* pcSpectName = new char[256];
-	memset(pcSpectName, 0, sizeof(char) * 256);
-	//-----------------
-	strcpy(pcSpectName, pInput->m_acOutDir);
-	strcat(pcSpectName, pTsPackage->m_acMrcMain);
-	strcat(pcSpectName, "_CTF.mrc");
-	return pcSpectName;
-}	
-

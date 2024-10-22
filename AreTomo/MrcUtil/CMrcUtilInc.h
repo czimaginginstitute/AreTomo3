@@ -39,8 +39,8 @@ public:
 	float GetTilt(int iFrame);
 	float GetTiltAxis(int iFrame);
 	void GetShift(int iFrame, float* pfShift);
-	float* GetShiftXs(void);  // do not free
-	float* GetShiftYs(void);  // do not free
+	float* GetShiftXs(void) { return m_pfShiftXs; }
+	float* GetShiftYs(void) { return m_pfShiftYs; }
 	int GetFrameIdxFromTilt(float fTilt);
 	float* GetTilts(bool bCopy);
 	float GetMinTilt(void);
@@ -81,6 +81,8 @@ public:
 	//-----------------
 	float m_fAlphaOffset;
 	float m_fBetaOffset;
+	int m_iThickness; // in raw tilt-series pixel
+	int m_iOffsetZ;   // between sample center and volume center
 	//-----------------
 	int m_iNumFrames;
 	int m_iNthGpu;
@@ -121,6 +123,7 @@ public:
 	void GetCoordXY(int iTilt, int iPatch, float* pfCoord);
 	void GetShift(int iTilt, int iPatch, float* pfShift);
 	float GetGood(int iTilt, int iPatch);
+	float GetBadPercentage(float fMaxTilt);
 	//-----------------
 	float* m_pfCoordXs;
 	float* m_pfCoordYs;
@@ -132,6 +135,9 @@ public:
 	int m_iNumParams; // x,y,sx,sy,bad per tilt
 private:
 	CLocalAlignParam(void);
+	int mGetNumBads(int iTilt);
+	//-----------------
+	int m_iNthGpu;
 	static CLocalAlignParam* m_pInstances;
 	static int m_iNumGpus;
 };
@@ -265,6 +271,8 @@ public:
 	static char m_acDarkFrameTag[32];
 	static char m_acAlphaOffsetTag[32];
 	static char m_acBetaOffsetTag[32];
+	static char m_acThicknessTag[32];
+	static char m_acOffsetZTag[32];
 	static char m_acLocalAlignTag[32];
 private:
 	void mSaveHeader(void);
@@ -297,6 +305,7 @@ private:
 	bool mParseNumPatches(char* pcLine);
 	bool mParseAlphaOffset(char* pcLine);
 	bool mParseBetaOffset(char* pcLine);
+	bool mParseThickness(char* pcLine);
 	//-----------------
 	void mLoadGlobal(void);
 	void mLoadLocal(void);
@@ -306,6 +315,7 @@ private:
 	int m_iNumPatches;
 	float m_fAlphaOffset;
 	float m_fBetaOffset;
+	int m_iThickness;
 	//-----------------
 	std::queue<char*> m_aHeaderQueue;
 	std::queue<char*> m_aDataQueue;

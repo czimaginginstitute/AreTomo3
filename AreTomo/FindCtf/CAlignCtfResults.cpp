@@ -57,7 +57,7 @@ void CAlignCtfResults::mAlignCtf(int iImage)
 	float fSinTx = (float)sin(fTiltAxis * s_fD2R);
 	float fX = afShift[0] * fCosTx + afShift[1] * fSinTx;
 	float fZ = fX * (float)tan(fTilt * s_fD2R);
-	float fDeltaF = (-fZ) * fPixSize;
+	float fDeltaF = fZ * fPixSize;
 	//-----------------
 	float fDfMin = pCtfResults->GetDfMin(iImage);
 	float fDfMax = pCtfResults->GetDfMax(iImage);

@@ -16,6 +16,8 @@ void CLocalAlignParam::CreateInstances(int iNumGpus)
 	if(iNumGpus == m_iNumGpus) return;
 	if(m_pInstances != 0L) delete[] m_pInstances;
 	m_pInstances = new CLocalAlignParam[iNumGpus];
+	//-----------------
+	for(int i=0; i<iNumGpus; i++) m_pInstances[i].m_iNthGpu = i;
 	m_iNumGpus = iNumGpus;
 }
 
@@ -37,6 +39,7 @@ CLocalAlignParam::CLocalAlignParam(void)
 	m_pfCoordXs = 0L;
 	m_iNumParams = 5;
 	m_iNumPatches = 0;
+	m_iNumTilts = 0;
 }
 
 CLocalAlignParam::~CLocalAlignParam(void)
@@ -131,5 +134,34 @@ float CLocalAlignParam::GetGood(int iTilt, int iPatch)
 {
 	int i = iTilt * m_iNumPatches + iPatch;
 	return m_pfGoodShifts[i];
+}
+
+float CLocalAlignParam::GetBadPercentage(float fMaxTilt)
+{
+	if(m_iNumPatches == 0) return 0.0f;
+	//-----------------
+	CAlignParam* pAlnParam = CAlignParam::GetInstance(m_iNthGpu);
+	float fTiltCount = 0.0f;
+	int iBadCount = 0;
+	for(int i=0; i<m_iNumTilts; i++)
+	{	if(fabs(pAlnParam->GetTilt(i)) > fMaxTilt) continue;
+		int iNumBads = mGetNumBads(i);
+		iBadCount += iNumBads;
+		fTiltCount += 1.0f;
+	}
+	float fPercentage = iBadCount / 
+	   (fTiltCount * m_iNumPatches + (float)1e-30);
+	return fPercentage;
+}
+
+int CLocalAlignParam::mGetNumBads(int iTilt)
+{
+	int iBadCount = 0;
+	float* pfGoodShifts = &m_pfGoodShifts[iTilt * m_iNumPatches];
+	for(int i=0; i<m_iNumPatches; i++)
+	{	if(pfGoodShifts[i] > 0.1f) continue;
+		else iBadCount += 1;
+	}
+	return iBadCount;
 }
 

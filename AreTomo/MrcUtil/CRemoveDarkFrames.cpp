@@ -86,16 +86,12 @@ void CRemoveDarkFrames::mDetect(void)
 	if(iCount > 0) fTol = (fTol / iCount) * m_fThreshold;
 	//-----------------
 	for(int i=0; i<m_iAllFrms; i++)
-	{	if(fabs(pTiltSeries->m_pfTilts[i]) < 30.5f) continue;	
+	{	if(fabs(pTiltSeries->m_pfTilts[i]) < 3.5f) continue;	
 		else if(pfRatio[i] > fTol) continue;
 		else pDarkFrames->AddDark(i);
 	}
 	if(pfRatio != 0L) delete[] pfRatio;
 	//-----------------
-	/*   Debugging Code
-	pDarkFrames->AddDark(0);
-	pDarkFrames->AddDark(1);
-	*/
 	if(pDarkFrames->m_iNumDarks <= 0) 
 	{	printf("GPU %d: no dark images detected.\n\n", m_iNthGpu);
 	}

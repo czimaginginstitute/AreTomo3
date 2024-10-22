@@ -36,7 +36,7 @@ CParam::CParam(void)
 {
 	m_iIterations = 5;
 	m_fTol = 0.5f;
-	m_iVolZ = 256;
+	m_iAlignZ = 600;
 	m_afMaskSize[0] = 1.0f;
 	m_afMaskSize[1] = 1.0f;
 	m_fXcfSize = 1024.0f;

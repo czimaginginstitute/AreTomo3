@@ -44,6 +44,7 @@ public:
 	void SortByAcq(void);
 	//-----------------
 	void SetTilts(float* pfTilts);
+	void SetDoses(float* pfDoses);
 	void SetAcqs(int* piAcqIndices);
 	void SetSecs(int* piSecIndices);
 	//-----------------
@@ -56,16 +57,16 @@ public:
 	CTiltSeries* GetSubSeries(int* piStart, int* piSize);
 	void RemoveFrame(int iFrame);
 	void GetAlignedSize(float fTiltAxis, int* piAlnSize);
-	float* GetAccDose(void);
 	float** GetImages(void); // do not free;
 	//-----------------
 	void ResetSecIndices(void); // make sec indices ascending
 	CTiltSeries* FlipVol(bool bFlip);
 	//-----------------
 	float* m_pfTilts;
+	float* m_pfDoses;    // per-tilt dose
 	int* m_piAcqIndices; // acquistion index, same as mdoc z value.
 	int* m_piSecIndices; // section index in input MRC file.
-	float m_fImgDose;
+	bool m_bLoaded;
 private:
 	void mSwap(int iIdx1, int iIdx2);
 	CTiltSeries* mGenVolXZY(void);
@@ -232,10 +233,13 @@ public:
 	static void CreateInstances(int iNumGpus);
 	static void DeleteInstances(void);
 	static CCtfResults* GetInstance(int iNthGpu);
+	static void Replace(int iNthGpu, CCtfResults* pInstance);
+	//-----------------
 	~CCtfResults(void);
 	void Clean(void);
 	void Setup(int iNumImgs, int* piSpectSize, CCtfParam* pCtfParam);
 	bool bHasCTF(void);
+	CCtfResults* GetCopy(void);
 	//----------------
 	void SetTilt(int iImage, float fTilt);
 	void SetDfMin(int iImage, float fDfMin);
@@ -244,17 +248,23 @@ public:
 	void SetExtPhase(int iImage, float fExtPhase);
 	void SetScore(int iImage, float fScore);
 	void SetCtfRes(int iImage, float fRes);
+	void SetCtfParam(int iImage, CCtfParam* pCtfParam);
 	void SetSpect(int iImage, float* pfSpect);
 	//-----------------
 	float GetTilt(int iImage);
 	float GetDfMin(int iImage);
 	float GetDfMax(int iImage);
+	float GetDfMean(int iImage);
+	float GetAstMag(int iImage);
 	float GetAzimuth(int iImage);
 	float GetExtPhase(int iImage);
 	float GetScore(int iImage);
+	float GetTsScore(void);
+	float GetLowTiltScore(float fLowTilt);
 	float GetPixSize(int iImage);
 	float GetCtfRes(int iImage);
 	float* GetSpect(int iImage, bool bClean);
+	//-----------------
 	void SaveImod(const char* pcCtfTxtFile);
 	void Display(int iNthCtf, char* pcLog);
 	void DisplayAll(void);
@@ -267,6 +277,9 @@ public:
 	//-----------------
 	int m_aiSpectSize[2];
 	int m_iNumImgs;
+	int m_iDfHand; // 1 or -1
+	float m_fAlphaOffset;
+	float m_fBetaOffset;
 	int m_iNthGpu;
 private:
 	CCtfResults(void);
@@ -274,7 +287,7 @@ private:
 	//-----------------
 	CCtfParam** m_ppCtfParams;
 	float** m_ppfSpects;
-	static CCtfResults* m_pInstances;
+	static CCtfResults** m_ppInstances;
 	static int m_iNumGpus;
 };
 
@@ -319,6 +332,7 @@ public:
 	char* GetFrameFileName(int iTilt); // do not free
 	int GetAcqIdx(int iTilt);
 	float GetTilt(int iTilt);
+	float GetDose(int iTilt);
 	int m_iNumTilts;
 	int m_iNthGpu;
 	char m_acMdocFile[256];
@@ -326,12 +340,14 @@ private:
 	CReadMdoc(void);
 	void mClean(void);
 	int mExtractValZ(char* pcLine);
-	bool mExtractTilt(char* pcLinei, float* pfTilt);
+	bool mExtractTilt(char* pcLine, float* pfTilt);
+	bool mExtractDose(char* pcLine, float* pfDose);
 	char* mExtractFramePath(char* pcLine);
 	//-----------------
 	char** m_ppcFrmPath;
 	int* m_piAcqIdxs;
 	float* m_pfTilts;
+	float* m_pfDoses;
 	int m_iBufSize;
 	static CReadMdoc* m_pInstances;
 	static int m_iNumGpus;
@@ -345,16 +361,17 @@ public:
 	static CTsPackage* GetInstance(int iNthGpu);
 	//-----------------
 	~CTsPackage(void);
-	void SetMdoc(char* pcMdocFile);
+	void SetInFile(char* pcInFile);
 	//-----------------
 	void CreateTiltSeries(void);
 	bool LoadTiltSeries(void);
+	void SetLoaded(bool bLoaded);
 	//-----------------
 	void SetTiltAngle(int iTilt, float fTiltAngle);
 	void SetAcqIdx(int iTilt, int iAcqIdx);
 	void SetSecIdx(int iTilt, int iSecIdx);
 	void SetSums(int iTilt, CAlnSums* pAlnSums);
-	void SetImgDose(float fImgDose);
+	void SetImgDose(int iTilt, float fImgDose);
 	//-----------------
 	CTiltSeries* GetSeries(int iSeries); // 0 - raw, 1 - evn, 2 - odd
 	//-----------------
@@ -364,8 +381,11 @@ public:
 	//-----------------
 	void SaveVol(CTiltSeries* pVol, int iVol);
 	//-----------------
-	char* m_pcMdocFile;
+	char m_acInFile[256];
+	char m_acInDir[256];
 	char m_acMrcMain[256];
+	char m_acMrcExt[16];
+	int m_iNumSeries;
 	int m_iNthGpu;
 private:
 	void mCreateTiltSeries(int* piImgSize, 
@@ -377,7 +397,8 @@ private:
 	bool mLoadMrc(const char* pcExt, CTiltSeries* pTiltSeries);
 	bool mLoadTiltFile(void);
 	//-----------------
-	void mGenFullPath(const char* pcSuffix, char* pcFullPath);
+	void mGenInPath(const char* pcSuffix, char* pcInPath);
+	void mGenOutPath(const char* pcSuffix, char* pcOutPath);
 	//-----------------
 	CTsPackage(void);
 	CTiltSeries** m_ppTsStacks;
@@ -392,7 +413,7 @@ public:
 	static CStackFolder* GetInstance(void);
 	static void DeleteInstance(void);
 	~CStackFolder(void);
-	void PushFile(char* pcMdocFile);
+	void PushFile(char* pcInFile);
 	char* GetFile(bool bPop);
 	void DeleteFront(void);
 	int GetQueueSize(void);
@@ -409,7 +430,6 @@ private:
 	//-----------------
 	bool mCheckSkips(const char* pcString);
 	//-----------------
-	void mLogFiles(void);
         void mClean(void);
 	//-----------------
         char m_acDirName[256];
@@ -455,6 +475,35 @@ private:
 	CSaveMdocDone(void);
 	FILE* m_pLogFile;
 	static CSaveMdocDone* m_pInstance;
+};
+
+class CAsyncSaveVol : public Util_Thread
+{
+public:
+	static void CreateInstances(int iNumGpus);
+	static void DeleteInstances(void);
+	static CAsyncSaveVol* GetInstance(int iNthGpu);
+	//-----------------
+	~CAsyncSaveVol(void);
+	bool DoIt
+	( CTiltSeries* pVolSeries,
+	  int iNthVol,
+	  bool bAsync,
+	  bool bClean
+	);
+	void ThreadMain(void);
+private:
+	CAsyncSaveVol(void);
+	void mSaveVol(void);
+	void mGenFullPath(const char* pcExt, char* pcMrcFile);
+	//-----------------
+	CTiltSeries* m_pVolSeries;
+	int m_iNthVol;
+	bool m_bClean;
+	int m_iNthGpu;
+	//-----------------
+	static CAsyncSaveVol* m_pInstances;
+	static int m_iNumGpus;
 };
 	
 class CLogFiles

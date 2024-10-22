@@ -27,10 +27,10 @@ void CFindCtf2D::Clean(void)
 	CFindCtf1D::Clean();
 }
 
-void CFindCtf2D::Setup1(CCtfTheory* pCtfTheory, int iTileSize)
+void CFindCtf2D::Setup1(CCtfTheory* pCtfTheory)
 {
 	this->Clean();
-	CFindCtf1D::Setup1(pCtfTheory, iTileSize);
+	CFindCtf1D::Setup1(pCtfTheory);
 	//-----------------
 	m_pFindDefocus2D = new CFindDefocus2D;
 	MD::CCtfParam* pCtfParam = m_pCtfTheory->GetParam(false);
@@ -41,9 +41,15 @@ void CFindCtf2D::Setup1(CCtfTheory* pCtfTheory, int iTileSize)
 void CFindCtf2D::Do2D(void)
 {	
 	CFindCtf1D::Do1D();
+	//-----------------
 	float fDfMean = (m_fDfMin + m_fDfMax) * 0.5f;
+	float fPsRange = (m_afPhaseRange[1] - m_afPhaseRange[0]) * 0.25f;
+	float afPsRange[2] = {0.0f};
+	afPsRange[0] = m_fExtPhase - fPsRange * 0.5f;
+	afPsRange[1] = m_fExtPhase + fPsRange * 0.5f;
+	//-----------------
 	m_pFindDefocus2D->Setup3(fDfMean, 0.0f, 0.0f, m_fExtPhase);
-	m_pFindDefocus2D->DoIt(m_gfCtfSpect, m_afPhaseRange);
+	m_pFindDefocus2D->DoIt(m_gfCtfSpect, afPsRange);
 	mGetResults();
 }
 

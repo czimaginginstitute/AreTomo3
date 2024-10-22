@@ -205,6 +205,14 @@ public:
 	);
 };
 
+class GRmSpikes
+{
+public:
+	GRmSpikes(void);
+	~GRmSpikes(void);
+	void DoIt(float* gfSpect, int* piSpectSize, int iBoxSize);
+};
+
 class GRadialAvg
 {
 public:
@@ -213,23 +221,61 @@ public:
 	void DoIt(float* gfSpect, float* gfAverage, int* piCmpSize);
 };
 
+class GExtractTile
+{
+public:
+	GExtractTile(void);
+	~GExtractTile(void);
+	void SetImg(float* gfImg, int* piImgSize, bool bPadded);
+	void SetTileSize(int* piTileSize, bool bPadded);
+	void DoIt(float* gfTile, int* piStart, cudaStream_t stream = 0);
+private:
+	float* m_gfImg;
+	int m_aiImgSize[2];
+	int m_aiTileSize[2];
+	int m_iImgPadX;
+	int m_iTilePadX;
+};
+
 class GRoundEdge
 {
 public:
 	GRoundEdge(void);
 	~GRoundEdge(void);
-	void SetMask
-	(  float* pfCent,
-	   float* pfSize
-	);
+	void SetMask(float* pfCent, float* pfSize);
 	void DoIt
-	(  float* gfImg,
-	   int* piImgSize
+	( float* gfImg,
+	  int* piImgSize,
+	  bool bKeepCenter
 	);
 
 private:
 	float m_afMaskCent[2];
 	float m_afMaskSize[2];
+};
+
+class GScaleSpect2D
+{
+public:
+	GScaleSpect2D(void);
+	~GScaleSpect2D(void);
+	void Clean(void);
+	//-----------------
+	void DoIt
+	( float* gfInSpect, float* gfOutSpect,
+	  float fScale, int* piSpectSize,
+	  cudaStream_t stream = 0
+	);
+	//-----------------
+	void Setup(int* piSpectSize);
+	void DoIt
+	( float* pfInSpect, 
+	  float* gfOutSpect,
+	  float fScale
+	);
+private:
+	float* m_gfInSpect;
+	int m_aiSpectSize[2];
 };
 
 class GCC2D
@@ -331,33 +377,121 @@ class CTile
 {
 public:
 	CTile(void);
-	~CTile(void);
+	virtual ~CTile(void);
 	void Clean(void);
-	void SetTileSize(int iTileSize);
-	void SetCoreSize(int iCoreSize);
-	void SetTileStart(int iTileStartX, int iTileStartY);
+	void SetSize(int* piTileSize);
+	void SetCentX(float fCentX) { m_afCenter[0] = fCentX; }
+	void SetCentY(float fCentY) { m_afCenter[1] = fCentY; }
+	void SetCentZ(float fCentZ) { m_afCenter[2] = fCentZ; }
+	void SetTilt(float fTilt) { m_fTilt = fTilt; }
+	void SetPixSize(float fPixSize) { m_fPixSize = fPixSize; }
+	void SetGood(bool bGood) { m_bGood = bGood; }
+	//-----------------
+	int* GetSize(void) { return m_aiTileSize; }
+	int GetSizeX(void) { return m_aiTileSize[0]; }
+	int GetSizeY(void) { return m_aiTileSize[1]; }
+	int GetPixels(void) { return m_aiTileSize[0] * m_aiTileSize[1]; };
+	//-----------------
+	float* GetCenter(void) { return m_afCenter; }
+	float GetCentX(void) { return m_afCenter[0]; }
+	float GetCentY(void) { return m_afCenter[1]; }
+	float GetCentZ(void) { return m_afCenter[2]; }
+	//-----------------
+	float* GetTile(void)   { return m_qfTile; }
+	//-----------------
+	float GetTilt(void) { return m_fTilt; }
+	float GetPixSize(void) { return m_fPixSize; }
+	bool IsGood(void) { return m_bGood; }
+protected:
+	float* m_qfTile;
+	int m_aiTileSize[2];
+	float m_afCenter[3];
+	float m_fTilt;
+	float m_fPixSize;
+	bool m_bGood;
+};
+
+class CCoreTile : public CTile
+{
+public:
+	CCoreTile(void);
+	virtual ~CCoreTile(void);
+	void SetSize(int iTileSize, int iCoreSize);
 	void SetCoreStart(int iCoreStartX, int iCoreStartY);
-	void SetImgSize(int* piImgSize);
 	//-----------------
-	void Extract(float* pfImage);
-	void PasteCore(float* pfImage);
-	void PasteCore(float* gfTile, float* pfImage);
+	void PasteCore(float* pfImage, int* piImgSize);
 	//-----------------
-	void GetTileCenter(float* pfCent);
 	void GetCoreCenter(float* pfCent);
+	void GetCoreCenterInTile(float* pfCent);
+	//-----------------
 	void GetTileStart(int* piStart);
 	void GetCoreStart(int* piStart);
-	int GetTileSize(void);
-	int GetTileBytes(void);
 	//-----------------
-	float* m_pfTile;  // [m_iPadSize, m_iTileSize], do not free
-	int m_iTileSize;
-	int m_iPadSize;
+	int GetCoreSize(void) { return m_iCoreSize; }
+	//-----------------
+	int GetTileBytes(void);
 private:
 	int m_aiTileStart[2];
 	int m_aiCoreStart[2];
-	int m_iCoreSize;
+	int m_iCoreSize; // unpadded size
+};
+
+class CTsTiles
+{
+public:
+	static CTsTiles* GetInstance(int iNthGpu);
+	static void DeleteInstance(int iNthGpu);
+	static void DeleteAll(void);
+	//-----------------
+	~CTsTiles(void);
+	void Clean(void);
+	void Generate(int iTileSize);
+	//-----------------
+	CTile* GetTile(int iTile);
+	CTile* GetTile(int iTilt, int iImgTile);
+	int GetTileSize(void) { return m_iTileSize; }
+	//-----------------
+	int GetAllTiles(void);
+	int GetImgTiles(void);
+	//-----------------
+	int GetCentX(int iTilt, int iImgTile);
+	int GetCentY(int iTilt, int iImgTile);
+	int GetCentZ(int iTilt, int iImgTile);
+	void GetCent(int iTilt, int iImgTile, int* piCentXYZ);
+	void SetCent(int iTilt, int iImgTile, int* piCentXYZ);
+	//-----------------
+	void GetImgCent(int* piImgCent);
+	int GetNumTilts(void) { return m_iNumTilts; }
+	float GetTilt(int iTilt);
+	int GetTiltIdx(float fTilt);
+private:
+	CTsTiles(void);
+	void mSetSize(void);
+	void mCalcBinning(void);
+	void mDoTilt(int iTilt);
+	void mDoBinning(int iTilt, float* pfBinnedImg);
+	float mGenTileSpect(int iTilt, int iTile);
+	void mExtractPadTile(int iTilt, int iTile, float* pfImg);
+	//-----------------
+	int m_iNthGpu;
+	CTile* m_pTiles;
+	float* m_gfTileSpect;
+	float* m_gfPadTile;
+	MU::GCalcMoment2D* m_pGCalcMoment2D;
+	GCalcSpectrum* m_pGCalcSpectrum;	
+	//-----------------
 	int m_aiImgSize[2];
+	int m_iNumTilts;
+	int m_aiImgTiles[2];
+	//-----------------
+	int m_iTileSize;
+	int m_iOverlap;
+	float m_fOverlap;
+	int m_aiOffset[2];
+	float m_fPixSize;
+	float m_fBinning;
+	//-----------------
+	static CTsTiles* m_pInstances[64];
 };
 
 class CExtractTiles
@@ -367,19 +501,18 @@ public:
 	~CExtractTiles(void);
 	void Setup(int iTileSize, int iCoreSize, int* piImgSize);
 	void DoIt(float* pfImage);
-	CTile* GetTile(int iNthTile);
-	bool bEdgeTile(int iNthTile);
+	CCoreTile* GetTile(int iNthTile);
 	int m_iNumTiles;
 private:
+	void mDoIt(float* gfImg, int iTile);
 	void mCalcTileLocations(void);
-	void mCheckTileBound(int* piVal, int iImgSize);
 	void mClean(void);
 	//-----------------
 	int m_aiNumTiles[2];
 	int m_aiImgSize[2];
 	int m_iTileSize;
 	int m_iCoreSize;
-	CTile* m_pTiles;
+	CCoreTile* m_pTiles;
 };
 
 class CCorrImgCtf
@@ -398,6 +531,8 @@ public:
 private:
 	void mTileToGpu(int iTile);
 	void mGpuToTile(int iTile);
+	//-----------------
+	void mRoundEdge(int iTile);
 	float mCalcDeltaZ(int iTile);
 	void mCorrectCTF(int iTile);
 	//-----------------
@@ -417,6 +552,7 @@ private:
 	int m_aiImgSize[2];
 	float m_fTilt;
 	float m_fTiltAxis;
+	int m_iDfHand;
 	int m_iBFactor;
 	//-----------------
 	int m_iNthGpu;
@@ -429,13 +565,10 @@ public:
 	static void CreateInstances(int iNumGpus);
 	static void DeleteInstances(void);
         //-----------------
-        ~CTileSpectra(void);
-        void Clean(void);
-        void Create(int iTilesPerTilt, int iNumTilts, int iTileSize);
-        void Adjust(int iTilesPerTilt, int iNumTilts);
-        //-----------------
-        void SetSpect(int iTile, int iTilt, float* gfSpect);
-        void SetAvgSpect(int iTilt, float* gfSpect);
+	~CTileSpectra(void);
+	void Clean(void);
+	void Create(int* piStkSize, int iTileSize);
+	void Extract(void);
         //-----------------
         void SetStat(int iTile, int iTilt, float* pfStat);
         void SetXY(int iTile, int iTilt, float* pfXY);
@@ -492,27 +625,29 @@ public:
 	CGenAvgSpectrum(void);
 	~CGenAvgSpectrum(void);
 	void Clean(void);
-	void SetSizes(int* piImgSize,int iTileSize);
-	void DoIt(float* pfImage, float* gfAvgSpect);
-	int m_aiCmpSize[2];
+	void SetTiltOffsets(float fTiltOffset, float fBetaOffset);
+	void DoIt
+	( int iTilt,
+	  float fTiltAxis,
+	  float fCentDF,
+	  int iHandedness, // 1 or -1
+	  float* gfAvgSpect,
+	  int iNthGpu
+	);
 private:
-	void mGenAvgSpectrum(void);
-	void mCalcTileSpectrum(int iTile);
-	void mExtractPadTile(int iTile);
+	void mDoNoScaling(void);
+	void mDoScaling(void);
+	void mScaleTile(int iTile, float* gfScaled);
+	void mCalcTileCentZs(void);
 	//-----------------
-	MU::GCalcMoment2D* m_pGCalcMoment2D;
-	GCalcSpectrum* m_pGCalcSpectrum;
-	float* m_pfImage;
-	int m_aiImgSize[2];
-	int m_iTileSize;
-	int m_aiPadSize[2];
-	int m_aiNumTiles[2];
-	int m_aiOffset[2];
-	int m_iOverlap;
-	float m_fOverlap;
+	int m_iTilt;
+	float m_fTiltOffset;
+	float m_fBetaOffset;
+	float m_fTiltAxis;
+	float m_fCentDF;
+	int m_iHandedness;
 	float* m_gfAvgSpect;
-	float* m_gfTileSpect;
-	float* m_gfPadTile;
+	int m_iNthGpu;
 };
 
 class CSpectrumImage
@@ -606,18 +741,14 @@ public:
 	float GetCtfRes(void); // angstrom
 private:
 	void mIterate(void);
-	void mDoIt
-	( float* pfDfRange,
-	  float* pfAstRange,
-	  float* pfAngRange,
-	  float* pfPhaseRange
-	);
-	float mGridSearch
+	float mFindAstig
 	( float* pfAstRange,
 	  float* pfAngRange
 	);
-	float mRefineDfMean(float* pfDfRange);
-	float mRefinePhase(float* pfPhaseRange);
+	float mRefineAstMag(float fAstRange);
+	float mRefineAstAng(float fAngRange);
+	float mRefineDfMean(float fDfRange);
+	float mRefinePhase(float fPhaseRange);
         //-----------------
         float mCorrelate
 	( float fAzimu, float fAstig, 
@@ -656,14 +787,18 @@ public:
 	CFindCtfBase(void);
 	virtual ~CFindCtfBase(void);
 	void Clean(void);
-	void Setup1(CCtfTheory* pCtfTheory, int iTileSize);
-	void Setup2(int* piImgSize);
+	void SetGpu(int iNthGpu) { m_iNthGpu = iNthGpu; }
+	void Setup1(CCtfTheory* pCtfTheory);
 	void SetPhase(float fInitPhase, float fPhaseRange); // degree
+	void SetDefocus(float fInitDF, float fDfRange);     // angstrom
 	void SetHalfSpect(float* pfCtfSpect);
+	//-----------------
 	float* GetHalfSpect(bool bRaw, bool bToHost);
 	void GetSpectSize(int* piSize, bool bHalf);
-	void GenHalfSpectrum(float* pfImage);
-	float* GenFullSpectrum(void); // clean by caller
+	//-----------------
+	void GenHalfSpectrum(int iTilt, float fTiltOffset, 
+	   float fBetaOffset);
+	void GenFullSpectrum(float* pfFullSpect);
 	void ShowResult(void);
 	//-----------------
 	float m_fDfMin;
@@ -674,19 +809,18 @@ public:
 	float m_fCtfRes;
 protected:
 	void mRemoveBackground(void);
-	void mInitPointers(void);
 	void mLowpass(void);
 	void mHighpass(void);
 	//-----------------
 	CCtfTheory* m_pCtfTheory;
-	CGenAvgSpectrum* m_pGenAvgSpect;
 	float* m_gfFullSpect;
 	float* m_gfRawSpect;
 	float* m_gfCtfSpect;
 	int m_aiCmpSize[2];
-	int m_aiImgSize[2];
 	float m_afResRange[2];
 	float m_afPhaseRange[2]; // for searching extra phase in degree
+	float m_afDfRange[2];    // min and max defocus in angstrom 
+	int m_iNthGpu;
 };
 
 class CFindCtf1D : public CFindCtfBase
@@ -695,12 +829,13 @@ public:
 	CFindCtf1D(void);
 	virtual ~CFindCtf1D(void);
 	void Clean(void);
-	void Setup1(CCtfTheory* pCtfTheory, int iTileSize);
+	void Setup1(CCtfTheory* pCtfTheory);
 	void Do1D(void);
 	void Refine1D(float fInitDf, float fDfRange);
 protected:
 	void mFindDefocus(void);
 	void mRefineDefocus(float fDfRange);
+	void mRefinePhase(float fPhaseRange);
 	void mCalcRadialAverage(void);
 	CFindDefocus1D* m_pFindDefocus1D;
 	float* m_gfRadialAvg;
@@ -712,7 +847,7 @@ public:
 	CFindCtf2D(void);
 	virtual ~CFindCtf2D(void);
 	void Clean(void);
-	void Setup1(CCtfTheory* pCtfTheory, int iTileSize);
+	void Setup1(CCtfTheory* pCtfTheory);
 	void Do2D(void);
 	void Refine
 	( float afDfMean[2], 
@@ -776,30 +911,55 @@ class CFindCtfMain
 public:
 	CFindCtfMain(void);
 	~CFindCtfMain(void);
+	//-----------------
 	static bool bCheckInput(void);
 	void Clean(void);
 	void DoIt(int iNthGpu);
+protected:
+	void mInit(bool bRefine);
+	void mGenAvgSpects
+	( float fTiltOffset, 
+	  float fBetaOffset, 
+	  float fMaxTilt
+	);
 	//-----------------
-	static int m_aiSpectSize[2];
-private:
-	void mGenSpectrums(void);
-	void mDoZeroTilt(void);
-	void mDo2D(void);
 	void mSaveSpectFile(void);
 	float mGetResults(int iTilt);
-	char* mGenSpectFileName(void);
 	//-----------------
 	float** m_ppfHalfSpects;
 	CFindCtf2D* m_pFindCtf2D;
 	int m_iNumTilts;
-	int m_iRefTilt;
+	MD::CCtfResults* m_pBestCtfRes;
+        //-----------------
+        int m_iNthGpu;
+private:
+	void mDoLowTilts(void);
+	void mDoHighTilts(void);
+	//-----------------
 	float m_fLowTilt;
 	float m_fDfMean;
 	float m_fDfStd;
+};
+
+class CRefineCtfMain : public CFindCtfMain
+{
+public:
+	CRefineCtfMain(void);
+	virtual ~CRefineCtfMain(void);
 	//-----------------
-	MD::CTiltSeries* m_pTiltSeries;
-	int m_aiBinSize[2];
-	int m_iNthGpu;
+	void Clean(void);
+	void DoIt(int iNthGpu);
+private:
+	void mFindHandedness(void);
+	void mRefineOffset(float fStep, bool bBeta);
+	float mRefineCTF(int iKind);
+	//-----------------
+	float m_fTiltOffset;
+	float m_fBetaOffset;
+	//-----------------
+	float m_fBestScore;
+	MD::CCtfResults* m_pBestCtfRes;
+	float m_fLowTilt;
 };
 
 class CCorrCtfMain

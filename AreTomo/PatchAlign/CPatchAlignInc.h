@@ -267,14 +267,13 @@ public:
 	static CPatchAlignMain* GetInstance(int iNthGpu);
 	//-----------------
 	~CPatchAlignMain(void);
-	void DoIt(float fTiltOffset);
+	void DoIt(void);
 private:
 	CPatchAlignMain(void);
 	void mAlignStack(int iPatch);
 	//-----------------
 	MD::CTiltSeries* m_pTiltSeries;
 	MAM::CAlignParam* m_pFullParam;
-	float m_fTiltOffset;
 	//-----------------
 	MAM::CPatchShifts* m_pPatchShifts;
 	MAM::CLocalAlignParam* m_pLocalParam;

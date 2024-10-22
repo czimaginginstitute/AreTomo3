@@ -35,8 +35,7 @@ int CFindTiltAxis::mDoIt(void)
 	int iLineMax = 0;
 	m_fScore = 0.0f;
 	float* pfScores = new float[m_iNumLines];
-	//---------------------------------------
-	printf("Scores of potential tilt axes.\n");
+	//-----------------
 	for(int i=0; i<m_iNumLines; i++)
 	{	mFillLineSet(i);
 		pfScores[i] = mCalcScore();
@@ -44,10 +43,9 @@ int CFindTiltAxis::mDoIt(void)
 		{	m_fScore = pfScores[i];
 			iLineMax = i;
 		}
-		printf("...... Score: %4d  %9.5f\n", i, pfScores[i]);
 	}
-	//-------------------------------------------------------------
 	printf("Best tilt axis: %4d, Score: %9.5f\n\n", iLineMax, m_fScore);
+	//-----------------
 	if(pfScores != 0L) delete[] pfScores;
 	return iLineMax;
 }

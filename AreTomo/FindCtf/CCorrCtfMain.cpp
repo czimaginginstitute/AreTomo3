@@ -60,20 +60,23 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 	MAM::CAlignParam* pAlignParam = 
 	   MAM::CAlignParam::GetInstance(m_iNthGpu);
 	float fTiltAxis = pAlignParam->GetTiltAxis(0);
+	float fAlpha0 = pAlignParam->m_fAlphaOffset;
 	//-----------------
 	for(int i=0; i<pTiltSeries->m_aiStkSize[2]; i++)
 	{	float* pfImage = (float*)pTiltSeries->GetFrame(i);
-		float fTilt = pTiltSeries->m_pfTilts[i];
+		float fTilt = pTiltSeries->m_pfTilts[i] + fAlpha0;
 		m_pCorrImgCtf->DoIt(pfImage, fTilt, fTiltAxis, m_bPhaseFlip);
 	}
-	/*					
+	//-----------------
+	/* Debugging code here	
 	if(iSeries == 0)
 	{	MU::CSaveTempMrc saveMrc;
 		saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestYesCTF", 
 		   ".mrc");
 		void** ppvImgs = pTiltSeries->GetFrames();
 		saveMrc.DoMany(ppvImgs, 2, pTiltSeries->m_aiStkSize);
-		printf("Save CTF corrected tilt series done.\n");
+		printf("GPU %d: Save CTF corrected tilt series done.\n\n",
+		   m_iNthGpu);
 	}
 	*/
 }

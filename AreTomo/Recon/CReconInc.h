@@ -1,6 +1,7 @@
 #pragma once
 #include "../CAreTomoInc.h"
 #include "../MrcUtil/CMrcUtilFwd.h"
+#include "../Util/CUtilInc.h"
 
 namespace McAreTomo::AreTomo::Recon
 {
@@ -281,6 +282,59 @@ private:
 	CTomoSart m_aTomoSart;
 	cudaStream_t m_stream;
 	cudaEvent_t m_eventSino;
+};
+
+class CCalcVolThick
+{
+public:
+	CCalcVolThick(void);
+	~CCalcVolThick(void);
+	void DoIt(int iNthGpu);
+	float GetThickness(bool bAngstrom);
+	float GetLowEdge(bool bAngstrom);
+	float GetHighEdge(bool bAngstrom);
+private:
+	float mMeasure(int iZ, int* piStart);
+	void mSetup(void);
+	void mClean(void);
+	void mDetectEdges(float* pfCCs, int iSize);
+	//-----------------
+	void mSaveTmpVol(void);
+	void mSaveTmpCCs(float* pfCCs, int iSize);
+	char* mGenTmpName(void);
+	//-----------------
+	MD::CTiltSeries* m_pVolSeries;
+	MAU::GLocalCC2D* m_gLocalCC2D;
+	float* m_gfImg1;
+	float* m_gfImg2;
+	int m_aiTileSize[2];
+	//-----------------
+	int m_aiSampleEdges[2];
+	float m_fBinning;
+	float m_fPixSize;
+	int m_iNthGpu;
+};
+
+class CAlignMetric
+{
+public:
+	CAlignMetric(void);
+	~CAlignMetric(void);
+	void Calculate(int iNthGpu, int iThickness);
+	float m_fRms;
+private:
+	void mReproj(void);
+	void mSetup(int* piImgSize);
+	void mClean(void);
+	//-----------------
+	MD::CTiltSeries* m_pVolSeries;
+	float* m_gfImg1;
+	float* m_gfImg2;
+	float* m_gfImg3;
+	int m_aiTileSize[2];
+	//-----------------
+	float m_fBinning;
+	float m_fPixSize;
 };
 
 }

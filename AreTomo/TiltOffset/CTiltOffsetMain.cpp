@@ -48,7 +48,6 @@ float CTiltOffsetMain::DoIt(void)
 	bool bClean = true;
 	m_pCorrTomoStack->DoIt(0, m_pAlignParam);
 	//-----------------
-	printf("Determine tilt angle offset.\n");
 	float fBestOffset = mSearch(31, 1.0f, 0.0f);
 	//-----------------
 	m_pStretchCC2D->Clean();
@@ -69,7 +68,6 @@ float CTiltOffsetMain::mSearch
                 {       fMaxCC = fCC;
                         fBestOffset = fOffset;
                 }
-                printf("...... %8.2f  %.4e\n", fOffset, fCC);
         }
 	printf("Tilt offset: %8.2f,  CC: %.4f\n\n", fBestOffset, fMaxCC);
 	return fBestOffset;
@@ -84,6 +82,9 @@ float CTiltOffsetMain::mCalcAveragedCC(float fTiltOffset)
 	int iZeroTilt = m_pAlignParam->GetFrameIdxFromTilt(0.0f);
 	for(int i=0; i<m_pAlignParam->m_iNumFrames; i++)
 	{	if(i == iZeroTilt) continue;
+		float fTilt = m_pAlignParam->GetTilt(i);
+		if(fabs(fTilt) > 40.0f) continue;
+		//----------------
 		int iRefTilt = (i < iZeroTilt) ? i+1 : i-1;
 		float fCC = mCorrelate(iRefTilt, i);
 		fCCSum += fCC;

@@ -42,7 +42,7 @@ void CAlignParam::RotShift(float* pfInShift,
         float fSin = (float)sin(dAngle);
         float fSx = pfInShift[0] * fCos - pfInShift[1] * fSin;
         float fSy = pfInShift[0] * fSin + pfInShift[1] * fCos;
-	//----------------------------------------------------
+	//------------------
 	pfOutShift[0] = fSx;
 	pfOutShift[1] = fSy;
 }
@@ -57,6 +57,7 @@ CAlignParam::CAlignParam(void)
 	//-----------------
 	m_fAlphaOffset = 0.0f;
 	m_fBetaOffset = 0.0f;
+	m_iThickness = 0;
 	//-----------------
 	m_iNumFrames = 0;
 	m_fZ0 = 0.0f;
@@ -167,16 +168,6 @@ void CAlignParam::GetShift(int iFrame, float* pfShift)
 {
 	pfShift[0] = m_pfShiftXs[iFrame];
 	pfShift[1] = m_pfShiftYs[iFrame];
-}
-
-float* CAlignParam::GetShiftXs(void)
-{	
-	return m_pfShiftXs;
-}
-
-float* CAlignParam::GetShiftYs(void)
-{
-	return m_pfShiftYs;
 }
 
 int CAlignParam::GetFrameIdxFromTilt(float fTilt)

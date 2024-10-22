@@ -203,4 +203,139 @@ AreTomo3 1.0.15: [05-23-2024]
    higher than 2um. The fix is to use Fourier cropping to increase the pixel 
    size to 1A and correspondingly the Thon ring spacing. CFindCtfMain.cpp 
 5. Implemented GCalcFRC.cu that calculates the FRC between a pair of 2D
-   images. (05-31-2024) 
+   images. (05-31-2024)
+
+AreTomo3 1.0.16: [06-17-2024]
+-----------------------------
+1. Bug fix: CAreTomoMain::m_fTiltOffset was not initialized, Added
+   m_fTiltOffset = 0.0f in CAreTomoMain::mFindTiltOffset
+2. Changes in FindCtf: Generate tiles of an entire tilt series. CTF estimation
+   will be done twice, one without taking into account of focus gradient, and
+   one with after tilt axis is determined. 
+3. Implemented spectrum scaling based on local defocus in generating averaged
+   power spectrum per tilt. [06-27-2024]
+4. Implemented tile screening that excludes tiles with low standard deviation.
+   This is per tilt base screening. [06-27-2024].
+5. Implemented CTF based tilt angle refinement in CFindCtfMain. [07-01-2024] 
+6. Bug fix: FindCtf/CFindDefocus1D::mBrutalForceSearch: incorrect calculation
+   of search steps for defocus and phase. fixed on 07-09-2024 
+7. Bug fix: AreTomo/Recon/CDoWbpRecon.cpp: lines 64 & 65 are debugging code.
+   They should be removed. Fixed. [07-11-2024]
+8. Local CTF estimation has been implemented in FindCtf/CRefineCtfMain.
+8. Correct alpha offset based on local CTF estimation.
+
+AreTomo3 1.0.17: [07-11-2024]
+-----------------------------
+1. Local CTF correction: CTF correction is carried out on a tile of
+   which the core, the central square, is assembled into a CTF corrected
+   image.
+2. Local CTF correction: Rounding the edge outside the core area is done
+   before CTF correction of each tile. 
+3. Revised CAreTomo3Json.cpp to generate nested json file for internal
+   need.
+4. Revised Correct/GCorrPatchShift.cu for better randomization.
+Bug fix:
+1. AreTomo/Recon/CTomoBase::Setup: m_gbNoProjs is not initialized.
+   Fixed on [07-15-2024].
+
+AreTomo3 1.0.18: [07-22-2024]
+-----------------------------
+1. Implemented multi-res reconstruction based on user input -AtBin,
+   which will take two floating numbers. The volume reconstructed
+   with the second binning has _2ND_Vol" in its file name.
+2. Added CAsyncSaveVol in DataUtil to overlap saving volumes with
+   reconstruction.
+3. Added tools/Remap3D folder and copied alnFile.py and remap3D.py into it.
+
+AreTomo3 1.0.19 [07-30-2024]
+----------------------------
+1. Goal: implement sample thickness detection scheme (07-30-2024)
+2. Added GLocalCC2D.cu in AreTomo/Util for measuring sample thickness.
+3. Added 3rd AreTomo binning to reconstruction 3rd volume. This volume is
+   reconstrcuted with SART. [08-01-2024]
+
+AreTomo3 1.0.20 [08-06-2024]
+----------------------------
+1. Finished implementation of sample-thickness estimation.
+2. Adjust the tilt range in which angular offsets are estimated in
+   FindCtf/CRefineCtfMain.cpp.
+3. -AlignZ is optional now. When not given, the measured thickness is
+   used in projection matching. (08-07-2024).
+4. Added CTsMetrics.cpp in AreTomo to generate TiltSeries_Metrics.csv file 
+   containing metrics for each tilt series including sample thickness, 
+   tilt axis, bad local alignments, etc. (08-08-2024).
+
+AreTomo3 1.0.21 [08-14-2024]
+----------------------------
+1. Goal: implement r-factor to quantify tomo alignment accuracy.
+2. Bug fix: when -AtBin is followed by zeroes, AreTomo3 crashes. The fix
+   is to skip the tomogram reconstruction if the binning is less than 1.
+3. Bug fix: when a tilt series contains only 1 tilt image, AreTomo3 crashes
+   at calculation of sample thickness using SART reconstruction. The fix is
+   to set the minimum subset to 1.
+4. Added a check to number of tilt images in a tilt series. The minimum 
+   number is now 7.
+5. Added: when -AtBin's 2nd and 3rd binnings are zeros, the corresponding 
+   volumes are not reconstructed.
+6. Added: when -VolZ is not shown in the command line, the measured 
+   thickness is set as VolZ.
+
+AreTomo3 1.0.22 [08-28-2024]
+----------------------------
+1. Bug fix: when AreTomo3 is restarted with -resume 1, the content of
+   TiltSeries_Metrics.csv is erased when it is opened.
+   The fix is to open with appending if -resume is enabled.
+2. Bug fix: memory leak at AreTomo/PatchAlign/CDetectFeatures.cpp::136,
+   pfBinnedImg is not freed.
+3. Support sm_86, sm_89, sm_90 for H100 and H200.
+
+AreTomo3 1.0.23 [09-02-2024]
+----------------------------
+1.  Goal: Add -InMrc for skipping mdoc files, which starts sequential tilt
+    series alignment followed by reconstruction. This behaves the same as 
+    -Cmd 1.
+2.  Change: Load gain reference only when -Cmd 0 is present.
+3.  Change: Replaced -InMdoc with -InPrefix.
+4.  Change: With -InSuffix .mrc, AreTomo3 takes tilt series as input
+    rather than mdoc files. In this case, motion correction is skipped.
+5.  Added: -TmpDir followed by a path enables writting sample thickness
+    temporary files in that folder. Updated json file.
+6.  Change: FindCtf/CRefineCtfMain: low tilt threshold changed from 30
+    to 20 degree.
+7.  Change: CImodUtil::CreateFolder: change the mode to 2775
+8.  Added new feature for determining defocus handedness. This is done in
+    AreTomo/FindCtf/CRefineCtfMain.cpp. Added m_iDfHand in CCtfResults in
+    DataUtil, which is used in FindCtf/CCorrImgCtf.cpp. [09-12-2024]
+9.  Added DfHand, Cs, Kv in AreTomo/CTsMetrics.cpp. [09-12-2024]
+10. Implemented the goal by replacing -InMdoc with -InPrefix, which is
+    used with -InSuffix to select either mdoc or mrc as input.
+    -InPrefix mydir/position_ -InSuffix .mrc together will process all
+    position_*.mrc files in mydir directory.
+    -InPrefix mydir/position_ -InSuffix .mdoc together will process all
+    position_*.mdoc files in mydir directory.
+11. Renamed to 1.0.24, not pushed to Github.
+
+AreTomo3 1.0.24 [09-12-2024]
+----------------------------
+1.  Renamed from 1.0.23 to 1.0.24.
+
+AreTomo3 2.0.0 [09-14-2024]
+---------------------------
+1. Renamed 1.0.24 to version 2.0.0.
+2. Change: AreTomo/Recon/CCalcVolThick.cpp: when the CC profile has two peaks
+   with the minimum in between, use the locations of the peaks as the sample
+   edges if their distance is significant.
+3. Changes: expanded TiltSeries_Metrics.csv to include tilt offsets, Cs, Kv,
+   etc.
+4. Changes: mkdir in CImodUtil.cpp uses now S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH.
+   The same change has been applied to DataUtil/CLogFile.cpp.
+5. Changes: CReadMdoc.cpp now extracts ExposureDose from the mdoc file.
+6. TLT.txt file now has the 3rd column for per-tilt image dose.
+
+AreTomo3 2.0.1 [10-22-2024]
+---------------------------
+1. Added -ExtZ entry into Json in CAreTomo3Json.cpp. [09-17-2024)
+2. Bug: when -TiltCor 0 is set, alpha and beta offsets were not saved in the
+   metrics CSV file. Fix: buffer them in CCtfResult.cpp, which can pass them
+   to CTsMetrics.cpp. (09-18-2024)
+3. The same as AreTomo3 2.0.0_09-18-2024.

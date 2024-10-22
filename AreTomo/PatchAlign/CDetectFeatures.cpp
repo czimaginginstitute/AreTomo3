@@ -172,31 +172,9 @@ void CDetectFeatures::DoIt(float* pfImg)
 		{	m_pbFeatures[i] = true;
 		}
 	}
-	/*
-	Util::CSaveTempMrc saveTempMrc;
-        saveTempMrc.SetFile("/home/szheng/Temp/Test_Norm", ".mrc");
-        saveTempMrc.DoIt(pfBinnedImg, 2, m_aiBinnedSize);
-	delete[] pfBinnedImg;
-	*/
 	//-------------------
 	mFindCenters();
-	/*
-	printf("# Feature map\n");
-	float fBinX = (pXcfBuffer->m_aiCmpSize[0] - 1) * 2.0f
-	   / m_aiBinnedSize[0];
-	float fBinY = pXcfBuffer->m_aiCmpSize[1] * 1.0f
-	   / m_aiBinnedSize[1];
-	for(int y=0; y<m_aiBinnedSize[1]; y+=5)
-	{	int i = y * m_aiBinnedSize[0];
-		float fY = (y + 0.5f) * fBinY;
-		for(int x=0; x<m_aiBinnedSize[0]; x+=5)
-		{	if(!m_pbFeatures[i+x]) continue;
-			float fX = (x + 0.5f) * fBinX;
-			printf("%6d  %9.2f  %9.2f\n", i+x, fX, fY);
-		}
-	}
-	printf("\n");
-	*/
+	if(pfBinnedImg != 0L) delete[] pfBinnedImg;
 }
 
 void CDetectFeatures::GetCenter(int iPatch, int* piCent)

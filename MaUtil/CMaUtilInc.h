@@ -9,6 +9,11 @@ float GetGpuMemoryUsage(void);
 void CheckCudaError(const char* pcLocation);
 void CheckRUsage(const char* pcLocaltion);
 void* GetGpuBuf(size_t tBytes, bool bZero);
+//------------------
+const char* GetHomeDir(void); // do not free
+bool GetCurrDir(char* pcRet, int iSize);
+void UseFullPath(char* pcPath);
+
 
 class CParseArgs
 {
