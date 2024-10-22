@@ -278,6 +278,8 @@ public:
 	int m_aiSpectSize[2];
 	int m_iNumImgs;
 	int m_iDfHand; // 1 or -1
+	float m_fAlphaOffset;
+	float m_fBetaOffset;
 	int m_iNthGpu;
 private:
 	CCtfResults(void);

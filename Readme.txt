@@ -331,3 +331,11 @@ AreTomo3 2.0.0 [09-14-2024]
    The same change has been applied to DataUtil/CLogFile.cpp.
 5. Changes: CReadMdoc.cpp now extracts ExposureDose from the mdoc file.
 6. TLT.txt file now has the 3rd column for per-tilt image dose.
+
+AreTomo3 2.0.1 [10-22-2024]
+---------------------------
+1. Added -ExtZ entry into Json in CAreTomo3Json.cpp. [09-17-2024)
+2. Bug: when -TiltCor 0 is set, alpha and beta offsets were not saved in the
+   metrics CSV file. Fix: buffer them in CCtfResult.cpp, which can pass them
+   to CTsMetrics.cpp. (09-18-2024)
+3. The same as AreTomo3 2.0.0_09-18-2024.

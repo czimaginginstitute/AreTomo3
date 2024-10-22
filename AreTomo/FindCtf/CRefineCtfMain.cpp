@@ -70,6 +70,9 @@ void CRefineCtfMain::DoIt(int iNthGpu)
 	   m_iNthGpu, m_fTiltOffset, m_fBetaOffset,
 	   pAlnParam->m_fAlphaOffset, pAlnParam->m_fBetaOffset);
 	//-----------------
+	pCtfRes->m_fAlphaOffset = m_fTiltOffset;
+	pCtfRes->m_fBetaOffset = m_fBetaOffset;
+	//-----------------
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	if(pAtInput->m_afTiltCor[0] == 0) return;
 	pAlnParam->AddAlphaOffset(m_fTiltOffset);

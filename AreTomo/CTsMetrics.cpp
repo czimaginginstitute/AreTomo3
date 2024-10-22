@@ -83,8 +83,6 @@ void CTsMetrics::mGetThickness(void)
 {
 	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
 	m_iThickness = pAlnParam->m_iThickness;
-	m_fAlphaOffset = pAlnParam->m_fAlphaOffset;
-	m_fBetaOffset = pAlnParam->m_fBetaOffset;
 }
 
 void CTsMetrics::mGetGlobalShift(void)
@@ -124,6 +122,8 @@ void CTsMetrics::mGetCTF(void)
 	m_fCtfScore = pCtfRes->GetScore(iZeroTilt);
 	m_fCtfRes = pCtfRes->GetCtfRes(iZeroTilt);
 	m_iDfHand = pCtfRes->m_iDfHand;
+	m_fAlphaOffset = pCtfRes->m_fAlphaOffset;
+	m_fBetaOffset = pCtfRes->m_fBetaOffset;
 }
 
 void CTsMetrics::mOpenFile(void)
