@@ -339,3 +339,9 @@ AreTomo3 2.0.1 [10-22-2024]
    metrics CSV file. Fix: buffer them in CCtfResult.cpp, which can pass them
    to CTsMetrics.cpp. (09-18-2024)
 3. The same as AreTomo3 2.0.0_09-18-2024.
+
+AreTomo3 2.0.2 [10-23-2024]
+---------------------------
+1. Added -SplitSum, giving users an option to suppress the generation of 
+   odd/even tilt series and volumes.
+2. CInput.cpp: pixel size is set to zero by default.

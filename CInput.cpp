@@ -39,6 +39,8 @@ CInput::CInput(void)
 	strcpy(m_acPixSizeTag, "-PixSize");
 	strcpy(m_acFmDoseTag, "-FmDose");
 	//-----------------
+	strcpy(m_acSplitSumTag, "-SplitSum");
+	//-----------------
 	strcpy(m_acCmdTag, "-Cmd");
 	strcpy(m_acResumeTag, "-Resume");
 	strcpy(m_acSerialTag, "-Serial");
@@ -48,7 +50,9 @@ CInput::CInput(void)
 	//-----------------
 	m_iKv = 300;
 	m_fCs = 2.7f;
-	m_fPixSize = 0.0f;
+	m_fPixSize = 1.0f;
+	//-----------------
+	m_iSplitSum = 1;
 	//-----------------
 	m_iCmd = 0;
 	m_iResume = 0;
@@ -106,6 +110,18 @@ void CInput::ShowTags(void)
 	//-----------------
 	printf("%-15s\n"
 	   "  1. Per frame dose in e/A2.\n\n", m_acFmDoseTag);
+	//-----------------
+	printf("%-15s\n"
+	  "   1. Generate odd and even sums using odd and even frames.\n"
+	  "   2. The default value is 1, which enables the split, 0\n"
+	  "      disables this function.\n"
+	  "   3. When enabled, 3 tilt series and 3 tomograms will be\n"
+	  "      generated. Tilt series and tomograms generated from\n"
+	  "      odd and even sums are appended _ODD and _EVN in\n"
+	  "      their file names, respectively.\n"
+	  "   4. When disabled, odd and even tilt series and tomograms\n"
+	  "      will not be generated. Tilt series and tomogram from\n"
+	  "      full sums are generated only.\n\n", m_acSplitSumTag);
 	//-----------------
 	printf("%-15s\n"
 	   "  1. Default 0 starts processing from motion correction.\n"
@@ -179,6 +195,10 @@ void CInput::Parse(int argc, char* argv[])
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_fFmDose);
 	//-----------------
+	aParseArgs.FindVals(m_acSplitSumTag, aiRange);
+	if(aiRange[1] > 1) aiRange[1] = 1;
+	aParseArgs.GetVals(aiRange, &m_iSplitSum);
+	//-----------------
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_iSerial);
 	//-----------------
@@ -233,6 +253,8 @@ void CInput::mPrint(void)
 	printf("%-15s  %d\n", m_acSerialTag, m_iSerial);
 	printf("%-15s  %d\n", m_acCmdTag, m_iCmd);
 	printf("%-15s  %d\n", m_acResumeTag, m_iResume);
+	//-----------------
+	printf("%-15s  %d\n", m_acSplitSumTag, m_iSplitSum);
 	//-----------------
 	printf("%-15s", m_acGpuIDTag);
 	for(int i=0; i<m_iNumGpus; i++)

@@ -36,6 +36,7 @@ public:
 	float m_fPixSize;
 	float m_fFmDose;
 	//-----------------
+	int m_iSplitSum;
 	int m_iCmd;
 	int m_iResume;
 	int m_iSerial;
@@ -54,6 +55,7 @@ public:
 	char m_acPixSizeTag[32];
 	char m_acFmDoseTag[32];
 	//-----------------
+	char m_acSplitSumTag[32];
 	char m_acCmdTag[32];
 	char m_acResumeTag[32];
 	char m_acSerialTag[32];
