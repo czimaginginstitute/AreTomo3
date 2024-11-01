@@ -99,12 +99,32 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	for(int z=0; z<iEndZ; z++)
 	{	pfCCs[z] = mMeasure(z, aiStart);
 	}
+	mSmooth(pfCCs, iEndZ);
 	//-----------------
 	mDetectEdges(pfCCs, iEndZ);
 	mSaveTmpCCs(pfCCs, iEndZ); // for debugging
 	if(pfCCs != 0L) delete[] pfCCs;
 	//-----------------
 	mClean();
+}
+
+void CCalcVolThick::mSmooth(float* pfCCs, int iSize)
+{
+	int iWin = 11;
+	float* pfBuf = new float[iSize];
+	for(int i=0; i<iSize; i++)
+	{	int iStart = i - iWin / 2;
+		double dSum = 0;
+		for(int j=0; j<iWin; j++)
+		{	int k = j + iStart;
+			if(k < 0) k += iSize;
+			else if(k >= iSize) k -= iSize;
+			dSum += pfCCs[k];
+		}
+		pfBuf[i] = (float)dSum / iWin;
+	}
+	memcpy(pfCCs, pfBuf, sizeof(float) * iSize);
+	delete[] pfBuf;
 }
 
 float CCalcVolThick::mMeasure(int iZ, int* piStart)
@@ -250,8 +270,6 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	float fEdgeCC1 = pfCCs[aiMaxLocs[0]] * (1 - fW) + fMeanCC1 * fW;
 	float fEdgeCC2 = pfCCs[aiMaxLocs[1]] * (1 - fW) + fMeanCC2 * fW;
 	float fEdgeCC = (fEdgeCC1 + fEdgeCC2) * 0.5f;
-	//if(fEdgeCC1 < fEdgeCC) fEdgeCC1 = fEdgeCC;
-	//if(fEdgeCC2 < fEdgeCC) fEdgeCC2 = fEdgeCC;
 	//-----------------------------------------------
 	// 1) This is initialization just in case
 	//-----------------------------------------------
@@ -271,9 +289,31 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 			break;
 		}
 	}
+	//-------------------------------------------------
+	// This is the two-peak case where they are well
+	// separated and have comparable peak CCs.
+	//-------------------------------------------------
+	float fCCmean = 0.0f, fCCstd = 0.0f;
+	for(int i=aiMinLocs[0]; i<aiMinLocs[1]; i++)
+	{	fCCmean += pfCCs[i];
+	}
+	iPoints = aiMinLocs[1] - aiMinLocs[0] - 1;
+	if(iPoints <= 0) iPoints = 1;
+	fCCmean = fCCmean / iPoints;
+	//-----------------
+	for(int i=aiMinLocs[0]; i<aiMinLocs[1]; i++)
+        {       float fVal = pfCCs[i] - fCCmean;
+		fCCstd += (fVal * fVal);
+        }
+	fCCstd = (float)sqrt(fCCstd / iPoints);
 	//-----------------
 	int iThick = aiMaxLocs[1] - aiMaxLocs[0];
-	if(iThick > 0.2 * iSize)
+	float fMaxCC0 = pfCCs[aiMaxLocs[0]];
+	float fMaxCC1 = pfCCs[aiMaxLocs[1]];
+	float fDeltaCC = (float)fabs(fMaxCC1 - fMaxCC0);
+	printf("CcMean CcStd  DeltaCC MeanCC: %.5f  %.5f  %.5f\n",
+	   iPoints, fCCmean, fCCstd, fDeltaCC);
+	if(iThick > 0.2 * iSize && fDeltaCC < fCCstd)
 	{	m_aiSampleEdges[0] = aiMaxLocs[0];
 		m_aiSampleEdges[1] = aiMaxLocs[1];
 	}
@@ -288,7 +328,8 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	int iVolCent = (int)(iHalfZ * m_fBinning);
 	pAlnParam->m_iOffsetZ = iSampleCent - iVolCent;
 	//-----------------
-	printf("Sample edges: %6d  %6d\n", m_aiSampleEdges[0], m_aiSampleEdges[1]);
+	printf("Sample edges: %6d  %6d\n\n", 
+	   m_aiSampleEdges[0], m_aiSampleEdges[1]);
 }
 
 void CCalcVolThick::mSaveTmpVol(void)

@@ -72,6 +72,12 @@ void CAsyncSaveVol::ThreadMain(void)
 
 void CAsyncSaveVol::mSaveVol(void)
 {
+	CInput* pInput = CInput::GetInstance();
+	if(pInput->m_iSplitSum == 0)
+	{	if(m_iNthVol == 1) return;
+		if(m_iNthVol == 2) return;
+	}
+	//-----------------
 	char acExt[32] = {'\0'}, acMrcFile[256] = {'\0'};
 	if(m_iNthVol == 0) strcpy(acExt, "_Vol.mrc");
 	else if(m_iNthVol == 1) strcpy(acExt, "_EVN_Vol.mrc");

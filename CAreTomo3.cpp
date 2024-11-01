@@ -31,10 +31,12 @@ int main(int argc, char* argv[])
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	//-----------------
 	char acVersion[64] = {'\0'};
-	strcpy(acVersion, "version 2.0.1, built on Oct. 22, 2024");
+	strcpy(acVersion, "version 2.0.3, built on Nov. 01, 2024");
 	if(argc == 1)
-	{	printf("\nAreTomo3: live automated cryoET pipeline from"
-		   " tilt movies to tomograms.\n");
+	{	printf("\nAreTomo3: fully integrated and automated cryoET "
+		   "pipeline for both real-time and offline tomographic "
+		   "reconstruction starting from the correction of beam "
+		   "induced motion on tilt movies.\n");
 		printf("AreTomo3 --version: get version information\n");
 		printf("AreTomo3 --help: get command line information.\n\n");
 		return 0;	

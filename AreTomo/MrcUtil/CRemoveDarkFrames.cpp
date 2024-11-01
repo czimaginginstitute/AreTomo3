@@ -105,7 +105,6 @@ void CRemoveDarkFrames::mRemoveSeries(int iSeries)
 	//-----------------
 	int iSize = (pDarkFrames->m_iNumDarks + 16) * 64;
 	char* pcLog = new char[iSize];
-	memset(pcLog, 0, sizeof(char) * iSize);
 	sprintf(pcLog, "GPU %d: removed dark frames of series %d\n", 
 	   m_iNthGpu, iSeries);
 	//-----------------

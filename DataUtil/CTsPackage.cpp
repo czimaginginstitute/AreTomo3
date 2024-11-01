@@ -218,6 +218,12 @@ void CTsPackage::ResetSectionIndices(void)
 
 void CTsPackage::SaveVol(CTiltSeries* pVol, int iVol)
 {
+	CInput* pInput = CInput::GetInstance();
+	if(pInput->m_iSplitSum == 0)
+	{	if(iVol == 1) return;
+		if(iVol == 2) return;
+	}
+	//-----------------
 	char acExt[32] = {'\0'};
 	if(iVol == 0) strcpy(acExt, "_Vol.mrc");
 	else if(iVol == 1) strcpy(acExt, "_EVN_Vol.mrc");
@@ -229,8 +235,11 @@ void CTsPackage::SaveVol(CTiltSeries* pVol, int iVol)
 
 void CTsPackage::SaveTiltSeries(void)
 {
+	CInput* pInput = CInput::GetInstance();
 	mSaveTiltFile(m_ppTsStacks[0]);
 	mSaveMrc(".mrc", m_ppTsStacks[0]);
+	if(pInput->m_iSplitSum == 0) return;
+	//-----------------
 	mSaveMrc("_EVN.mrc", m_ppTsStacks[1]);
 	mSaveMrc("_ODD.mrc", m_ppTsStacks[2]);
 }

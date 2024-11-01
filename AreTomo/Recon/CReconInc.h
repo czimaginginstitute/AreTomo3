@@ -294,6 +294,7 @@ public:
 	float GetLowEdge(bool bAngstrom);
 	float GetHighEdge(bool bAngstrom);
 private:
+	void mSmooth(float* pfCCs, int iSize);
 	float mMeasure(int iZ, int* piStart);
 	void mSetup(void);
 	void mClean(void);

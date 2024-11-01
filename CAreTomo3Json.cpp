@@ -170,6 +170,9 @@ void CAreTomo3Json::mAddMainInput(void)
 	mAddKeyFloatPair(pInput->m_acFmDoseTag + 1,
 	   &(pInput->m_fFmDose), 1, 10, !bList, !bEnd);
 	//-----------------
+	mAddKeyIntPair(pInput->m_acSplitSumTag + 1,
+	   &(pInput->m_iSplitSum), 1, 10, !bList, !bEnd);
+	//-----------------
 	mAddKeyIntPair(pInput->m_acSerialTag + 1,
 	   &(pInput->m_iSerial), 1, 10, !bList, !bEnd);
 	//-----------------

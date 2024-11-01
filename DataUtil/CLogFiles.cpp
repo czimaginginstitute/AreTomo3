@@ -53,7 +53,7 @@ CLogFiles::~CLogFiles(void)
 void CLogFiles::Create(const char* pcMdocFile)
 {
 	mCloseLogs();
-	memset(m_acLogDir, 0, sizeof(m_acLogDir));
+	if(pcMdocFile == 0L || strlen(pcMdocFile) == 0) return;
 	//-----------------
 	CInput* pInput = CInput::GetInstance();
 	strcpy(m_acLogDir, pInput->m_acOutDir);

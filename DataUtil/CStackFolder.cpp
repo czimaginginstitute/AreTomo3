@@ -124,7 +124,7 @@ bool CStackFolder::ReadFiles(void)
 bool CStackFolder::mReadSingle(void)
 {
 	CInput* pInput = CInput::GetInstance();
-	m_aFileQueue.push(pInput->m_acInPrefix);
+	this->PushFile(pInput->m_acInPrefix);
 	return true;
 }
 

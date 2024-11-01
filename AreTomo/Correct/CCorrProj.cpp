@@ -43,13 +43,10 @@ void CCorrProj::Setup
 	m_bFourierCrop = bFourierCrop;
 	m_fBinning = fBinning;
 	m_iNthGpu = iNthGpu;
-	//------------------
+	//-----------------
 	if(m_fBinning == 1) m_bFourierCrop = false;
 	if(m_bFourierCrop) m_bRandomFill = true;	
-	//--------------------------------------
-	CInput* pInput = CInput::GetInstance();
-	cudaSetDevice(pInput->m_piGpuIDs[m_iNthGpu]);
-	//-------------------------------------------
+	//-----------------
 	m_iInImgX = bInPadded ? (piInSize[0]/2 - 1) * 2 : piInSize[0];
 	size_t tBytes = m_aiInSize[0] * m_aiInSize[1] * sizeof(float);
 	cudaMalloc(&m_gfRawProj, tBytes);
