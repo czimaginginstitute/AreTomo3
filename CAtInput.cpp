@@ -56,7 +56,7 @@ CAtInput::CAtInput(void)
 	m_afTiltAxis[1] = 1.0f;
 	m_iAlignZ = 0;
 	m_iVolZ = -1;
-	m_iExtZ = 200;
+	m_iExtZ = 300;
 	m_afAtBin[0] = 1.0f;  // 1st res
 	m_afAtBin[1] = 0.0f;  // no second res
 	m_afAtBin[2] = 0.0f;  // no third res

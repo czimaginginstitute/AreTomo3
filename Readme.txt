@@ -345,3 +345,21 @@ AreTomo3 2.0.2 [10-23-2024]
 1. Added -SplitSum, giving users an option to suppress the generation of 
    odd/even tilt series and volumes.
 2. CInput.cpp: pixel size is set to zero by default.
+
+AreTomo3 2.0.3 [10-25-2024]
+---------------------------
+1. Changes: When using measured sample thickness for AlignZ, cap it to be at
+   at least 200 pixels. During the local alignment, cap it to be no more
+   than 1200 in PatchAlign/CLocalAlign.cpp.
+2. Bug fix: AreTomo/MrcUtil/CRemoveDarkFrames::mRemoveDarkFrames (line 108):
+   memset(pcLog, 0, sizeof(char) * iSize) strangely caused the single
+   instance of CInput reset to zeros. The fix is removing this line.
+3. Bug fix: AreTomo/Correct/CCorrProj.cpp: removed cudaSetDevice, which
+   caused segmentation fault.
+4. Bug fix: DataUtil/CStackFolder::mReadSingle (line 127):
+   pInput->m_acInPrefix cannot be pushed directly into the queue.
+   Used this->PushFile(pInput->m_acInPrefix) instead. (Note: this
+   bug may be the root cause of bug 2 and 3.)
+5. Change: AreTomo/Recon/CCalcVolThick::mDetectEdges:
+   Smoothed the CC curve before detecting the edges. 
+   CAtInput.cpp: The default ExtZ is changed to 300.

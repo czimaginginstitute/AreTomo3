@@ -430,7 +430,10 @@ void CAreTomoMain::mCalcThickness(void)
 	//-----------------------------------------------
 	// If users specify the AlignZ value, use it.
 	//-----------------------------------------------
-	if(pAtInput->m_iAlignZ <= 0) pParam->m_iAlignZ = iThickness;
+	if(pAtInput->m_iAlignZ <= 0) 
+	{	pParam->m_iAlignZ = iThickness;
+		if(pParam->m_iAlignZ < 200) pParam->m_iAlignZ = 200;
+	}
 	else pParam->m_iAlignZ = pAtInput->m_iAlignZ;
 }
 
