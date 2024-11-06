@@ -117,8 +117,8 @@ void CCalcVolThick::mSmooth(float* pfCCs, int iSize)
 		double dSum = 0;
 		for(int j=0; j<iWin; j++)
 		{	int k = j + iStart;
-			if(k < 0) k += iSize;
-			else if(k >= iSize) k -= iSize;
+			if(k < 0) k = 0;
+			else if(k >= iSize) k = iSize -1;
 			dSum += pfCCs[k];
 		}
 		pfBuf[i] = (float)dSum / iWin;
@@ -245,30 +245,15 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	// 1) Determine the true minimums that are free
 	// from SART artifact.
 	//-----------------------------------------------
-	int iPoints = (aiMaxLocs[0] - aiMinLocs[0]) / 5;
-	if(iPoints < 5) iPoints = 5;
-	float fMeanCC1 = 0.0f;
-	for(int i=1; i<=iPoints; i++)
-	{	int j = aiMinLocs[0] + i;
-		fMeanCC1 += pfCCs[j];
-	}
-	fMeanCC1 /= iPoints;
-	//-----------------
-	iPoints = (aiMinLocs[1] - aiMaxLocs[1]) / 5;
-	if(iPoints < 5) iPoints = 5;
-	float fMeanCC2 = 0.0f;
-	for(int i=1; i<=iPoints; i++)
-	{	int j = aiMinLocs[1] - i;
-		fMeanCC2 += pfCCs[j];
-	}
-	fMeanCC2 /= iPoints;
+	float fMinCC0 = pfCCs[aiMinLocs[0]];
+	float fMinCC1 = pfCCs[aiMinLocs[1]];
 	//-----------------------------------------------
 	// 1) The sample edges are in the middle between
 	// true minimum and maximum
 	//-----------------------------------------------
-	float fW = 0.85f;
-	float fEdgeCC1 = pfCCs[aiMaxLocs[0]] * (1 - fW) + fMeanCC1 * fW;
-	float fEdgeCC2 = pfCCs[aiMaxLocs[1]] * (1 - fW) + fMeanCC2 * fW;
+	float fW = 0.60f;
+	float fEdgeCC1 = pfCCs[aiMaxLocs[0]] * (1 - fW) + fMinCC0 * fW;
+	float fEdgeCC2 = pfCCs[aiMaxLocs[1]] * (1 - fW) + fMinCC1 * fW;
 	float fEdgeCC = (fEdgeCC1 + fEdgeCC2) * 0.5f;
 	//-----------------------------------------------
 	// 1) This is initialization just in case
@@ -289,35 +274,7 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 			break;
 		}
 	}
-	//-------------------------------------------------
-	// This is the two-peak case where they are well
-	// separated and have comparable peak CCs.
-	//-------------------------------------------------
-	float fCCmean = 0.0f, fCCstd = 0.0f;
-	for(int i=aiMinLocs[0]; i<aiMinLocs[1]; i++)
-	{	fCCmean += pfCCs[i];
-	}
-	iPoints = aiMinLocs[1] - aiMinLocs[0] - 1;
-	if(iPoints <= 0) iPoints = 1;
-	fCCmean = fCCmean / iPoints;
-	//-----------------
-	for(int i=aiMinLocs[0]; i<aiMinLocs[1]; i++)
-        {       float fVal = pfCCs[i] - fCCmean;
-		fCCstd += (fVal * fVal);
-        }
-	fCCstd = (float)sqrt(fCCstd / iPoints);
-	//-----------------
-	int iThick = aiMaxLocs[1] - aiMaxLocs[0];
-	float fMaxCC0 = pfCCs[aiMaxLocs[0]];
-	float fMaxCC1 = pfCCs[aiMaxLocs[1]];
-	float fDeltaCC = (float)fabs(fMaxCC1 - fMaxCC0);
-	printf("CcMean CcStd  DeltaCC MeanCC: %.5f  %.5f  %.5f\n",
-	   iPoints, fCCmean, fCCstd, fDeltaCC);
-	if(iThick > 0.2 * iSize && fDeltaCC < fCCstd)
-	{	m_aiSampleEdges[0] = aiMaxLocs[0];
-		m_aiSampleEdges[1] = aiMaxLocs[1];
-	}
-	//-----------------
+	//------------------
 	m_aiSampleEdges[0] *= m_fBinning;
 	m_aiSampleEdges[1] *= m_fBinning;
 	//-----------------

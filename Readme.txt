@@ -363,3 +363,8 @@ AreTomo3 2.0.3 [10-25-2024]
 5. Change: AreTomo/Recon/CCalcVolThick::mDetectEdges:
    Smoothed the CC curve before detecting the edges. 
    CAtInput.cpp: The default ExtZ is changed to 300.
+
+AreTomo3 2.0.4 [11-01-2024]
+---------------------------
+1. Change: AreTomo/Recon/CCalcVolThick::mDetectEdges:
+   Removed the two-peak cases, seem unnecessary and inaccurate.
