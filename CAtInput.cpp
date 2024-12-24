@@ -90,9 +90,13 @@ CAtInput::~CAtInput(void)
 
 void CAtInput::ShowTags(void)
 {
-	printf("%-10s\n", m_acTotalDoseTag);
 	printf("%-10s\n", m_acTiltAxisTag);
-	printf("   Tilt axis, default header value.\n\n");
+	printf("   1. User provided angle of tilt axis in degree. If users\n"
+	   "      do not provide one, AreTomo3 will search in full range.\n"
+	   "   2. If users provide one and do not want AreTomo3 to refine\n"
+	   "      it, add -1 after the provided tilt axis.\n"
+	   "   3. Otherwise, AreTomo3 regines the provided value in a\n"
+	   "      in a smaller range.\n\n");	   
 	//-----------------
 	printf("%-10s\n", m_acAlignZTag);
 	printf("   Volume height for alignment, default 256\n\n");

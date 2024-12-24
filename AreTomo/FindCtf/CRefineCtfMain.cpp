@@ -72,11 +72,6 @@ void CRefineCtfMain::DoIt(int iNthGpu)
 	//-----------------
 	pCtfRes->m_fAlphaOffset = m_fTiltOffset;
 	pCtfRes->m_fBetaOffset = m_fBetaOffset;
-	//-----------------
-	CAtInput* pAtInput = CAtInput::GetInstance();
-	if(pAtInput->m_afTiltCor[0] == 0) return;
-	pAlnParam->AddAlphaOffset(m_fTiltOffset);
-
 }
 
 void CRefineCtfMain::mFindHandedness(void)

@@ -11,6 +11,7 @@
 #include "FindCtf/CFindCtfInc.h"
 #include "ImodUtil/CImodUtilInc.h"
 #include <memory.h>
+#include <math.h>
 #include <stdio.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -70,6 +71,12 @@ bool CAreTomoMain::DoIt(int iNthGpu)
 	MD::CAsyncSaveVol* pSaveVol = 
 	   MD::CAsyncSaveVol::GetInstance(m_iNthGpu);
 	pSaveVol->WaitForExit(10.0f);
+	//----------------------------------------------------
+	// Save the metrics after tomograms are saved to help
+	// DenoisET to connect the metrics to the tomogram.
+	//----------------------------------------------------  
+	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance(m_iNthGpu);
+	pTsMetrics->Save();
 	return true;
 }
 
@@ -244,7 +251,31 @@ void CAreTomoMain::mFindCtf(bool bRefine)
 	else 
 	{	FindCtf::CRefineCtfMain refineCtfMain;
 		refineCtfMain.DoIt(m_iNthGpu);
+		//----------------
+		MD::CCtfResults* pCtfResults =
+		   MD::CCtfResults::GetInstance(m_iNthGpu);
+		MAM::CAlignParam* pAlnParam = sGetAlignParam(m_iNthGpu);
+		float fTiltAxis = pAlnParam->GetTiltAxis(0);
+		//----------------
+		if(pCtfResults->m_iDfHand == -1)
+		{	fTiltAxis -= 180.0f;
+		}
+		if(fTiltAxis < -180.0f) fTiltAxis += 360.0f;
+		else if(fTiltAxis > 180.0f) fTiltAxis -= 360.0f;
+		pAlnParam->SetTiltAxisAll(fTiltAxis);
+		//----------------------------------------------
+		// 1. Since we use the coordinate system whose
+		//    z-axis points to the electron source, it
+		//    has the positive defocus handedness.
+		// 2. Positive tilt makes the particle with
+		//    positive deltaX less defocused. This is
+		//    consistent with Alister's paper.
+		// 3. An image processing pipeline for electron
+		//    cryo-tomography in Relion-5.
+		//----------------------------------------------
+		pCtfResults->m_iDfHand = 1;
 	}
+
 }
 
 void CAreTomoMain::mMassNorm(void)
@@ -259,6 +290,7 @@ void CAreTomoMain::mAlign(void)
 	mCoarseAlign();
 	mFindCtf(true);
 	mCalcThickness();
+	mCorrAngOffset();
 	//-----------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->ResetShift();
@@ -277,13 +309,11 @@ void CAreTomoMain::mAlign(void)
 		}
 		mProjAlign();
 	}
-	pAlignParam->FitRotCenterZ();
-        pAlignParam->RemoveOffsetZ(1.0f);
 	//-----------------
 	mPatchAlign();
 	//-----------------
-	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance();
-	pTsMetrics->Save(m_iNthGpu);
+	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance(m_iNthGpu);
+	pTsMetrics->BuildMetrics();
 	//-----------------
 	mLogGlobalShift();
 	mLogLocalShift();
@@ -414,19 +444,24 @@ void CAreTomoMain::mPatchAlign(void)
 
 void CAreTomoMain::mCalcThickness(void)
 {
+	MD::CCtfResults* pCtfResults =MD::CCtfResults::GetInstance(m_iNthGpu);
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	float fAlpha0 = pCtfResults->m_fAlphaOffset;
+	pAlnParam->AddAlphaOffset(fAlpha0);
+	//-----------------	
 	Recon::CCalcVolThick calcVolThick;
         calcVolThick.DoIt(m_iNthGpu);
+	pAlnParam->AddAlphaOffset(-fAlpha0);
+	//-----------------
 	float fThickness = calcVolThick.GetThickness(false);
 	int iThickness = (int)fThickness / 2 * 2;
-	//-----------------
-	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
 	pAlnParam->m_iThickness = iThickness;
 	//-----------------
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	iThickness = iThickness * 8 / 20 * 2;
 	if(iThickness < 100) iThickness = 100;
-	else if(iThickness > 2000) iThickness = 2000;
+	else if(iThickness > 1200) iThickness = 1200;
 	//-----------------------------------------------
 	// If users specify the AlignZ value, use it.
 	//-----------------------------------------------
@@ -435,6 +470,16 @@ void CAreTomoMain::mCalcThickness(void)
 		if(pParam->m_iAlignZ < 200) pParam->m_iAlignZ = 200;
 	}
 	else pParam->m_iAlignZ = pAtInput->m_iAlignZ;
+}
+
+void CAreTomoMain::mCorrAngOffset(void)
+{
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	if(pAtInput->m_afTiltCor[0] == 0) return;
+	MD::CCtfResults* pCtfResults =MD::CCtfResults::GetInstance(m_iNthGpu);
+	//-----------------
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	pAlnParam->AddAlphaOffset(pCtfResults->m_fAlphaOffset);
 }
 
 void CAreTomoMain::mCorrectCTF(void)

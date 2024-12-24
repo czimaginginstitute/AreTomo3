@@ -9,12 +9,12 @@ using namespace McAreTomo::AreTomo;
 
 void CAtInstances::CreateInstances(int iNumGpus)
 {
+	CTsMetrics::CreateInstances();
 	CommonLine::CCommonLineParam::CreateInstances(iNumGpus);
 	ImodUtil::CImodUtil::CreateInstances(iNumGpus);
 	MrcUtil::CMuInstances::CreateInstances(iNumGpus);
 	PatchAlign::CPatchAlignMain::CreateInstances(iNumGpus);
 	ProjAlign::CParam::CreateInstances(iNumGpus);
-	//-----------------
 }
 
 void CAtInstances::DeleteInstances(void)
@@ -24,5 +24,6 @@ void CAtInstances::DeleteInstances(void)
 	MrcUtil::CMuInstances::DeleteInstances();
 	PatchAlign::CPatchAlignMain::DeleteInstances();
 	ProjAlign::CParam::DeleteInstances();
+	CTsMetrics::DeleteInstances();
 }
 

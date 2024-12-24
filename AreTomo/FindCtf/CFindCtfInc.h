@@ -515,6 +515,24 @@ private:
 	CCoreTile* m_pTiles;
 };
 
+class CTiltInducedZ
+{
+public:
+	CTiltInducedZ(void);
+	~CTiltInducedZ(void);
+	void Setup
+	( float fTilt, float fTiltAxis, // degree
+	  float fTilt0, float fBeta0
+	);
+	float DoIt(float fDeltaX, float fDeltaY);
+private:
+	float m_fTanAlpha;
+	float m_fCosTilt;
+	float m_fTanBeta;
+	float m_fCosTiltAxis;
+	float m_fSinTiltAxis;
+};
+
 class CCorrImgCtf
 {
 public:
@@ -524,8 +542,8 @@ public:
 	void SetLowpass(int iBFactor);
 	void DoIt
 	( float* pfImage, 
-	  float fTilt, 
-	  float fTiltAxis, 
+	  float fTilt, float fTiltAxis,
+	  float fAlpha0, float fBeta0,
 	  bool bPhaseFlip
 	);
 private:
@@ -552,6 +570,8 @@ private:
 	int m_aiImgSize[2];
 	float m_fTilt;
 	float m_fTiltAxis;
+	float m_fAlpha0;
+	float m_fBeta0;
 	int m_iDfHand;
 	int m_iBFactor;
 	//-----------------

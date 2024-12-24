@@ -251,9 +251,10 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	// 1) The sample edges are in the middle between
 	// true minimum and maximum
 	//-----------------------------------------------
-	float fW = 0.60f;
-	float fEdgeCC1 = pfCCs[aiMaxLocs[0]] * (1 - fW) + fMinCC0 * fW;
-	float fEdgeCC2 = pfCCs[aiMaxLocs[1]] * (1 - fW) + fMinCC1 * fW;
+	float fW = 0.55f;
+	fMaxCC = (pfCCs[aiMaxLocs[0]] + pfCCs[aiMaxLocs[1]]) * 0.5f;
+	float fEdgeCC1 = fMaxCC * (1 - fW) + fMinCC0 * fW;
+	float fEdgeCC2 = fMaxCC * (1 - fW) + fMinCC1 * fW;
 	float fEdgeCC = (fEdgeCC1 + fEdgeCC2) * 0.5f;
 	//-----------------------------------------------
 	// 1) This is initialization just in case

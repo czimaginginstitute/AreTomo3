@@ -90,20 +90,10 @@ void CFmGroupParam::Setup(int iGroupSize)
 	//-----------------
 	if(bGroupByDose) mGroupByDose();
 	else mGroupByRawSize();
-	//------------------------------------------------------------
-	// Calculate number of raw frames in each group. Note that
-	// each group contains certain numbers of integrated frames
-	// that are sums of certain numbers of raw frames.
-	//------------------------------------------------------------
-	int iNumRawFms = 0;
+	//-----------------
 	for(int g=0; g<m_iNumGroups; g++)
-	{	int iGroupRawFms = 0;
-		for(int i=0; i<m_piGroupSize[g]; i++)
-		{	int iIntFm = m_piGroupStart[g] + i;
-			iGroupRawFms += pFmIntParam->GetIntFmSize(iIntFm);
-		}
-		m_pfGroupCenters[g] = iNumRawFms + 0.5f * (iGroupRawFms - 1);
-		iNumRawFms += iGroupRawFms;
+	{	m_pfGroupCenters[g] = m_piGroupStart[g] 
+		   + 0.5f * m_piGroupSize[g];
 	}	
 	/*	
 	for(int i=0; i<m_iNumGroups; i++)

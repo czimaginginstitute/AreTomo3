@@ -199,7 +199,7 @@ private:
 	GCorrelateSum2D m_aGCorrelateSum;
 	MMD::CStackShift* m_pStackShift;
 	MU::CCufft2D* m_pInverseFFT;
-	int m_aiCent[3];
+	float m_afGroupCent[3];
 	int m_aiSeaSize[2];
 	int m_aiSumRange[2];
 	int m_iNumSteps;

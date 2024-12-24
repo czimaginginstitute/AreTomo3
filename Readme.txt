@@ -366,5 +366,33 @@ AreTomo3 2.0.3 [10-25-2024]
 
 AreTomo3 2.0.4 [11-01-2024]
 ---------------------------
-1. Change: AreTomo/Recon/CCalcVolThick::mDetectEdges:
+1. 1) Change: AreTomo/Recon/CCalcVolThick::mDetectEdges:
    Removed the two-peak cases, seem unnecessary and inaccurate.
+   2) Revised the help message for tilt axis input in CAtInput.cpp.
+
+AreTomo3 2.0.5 [12-04-2024]
+---------------------------
+1. 1) Revise CAreTomoMain.cpp: Set AlignZ upper ceiling to 1200 for global.
+   2) Revise AreTomo/PatchAlign/CLocalAlign.cpp: Set AlignZ <=1000 for local.
+2. 1) When defocus handedness is estimated to be -1, subtract 180 degree from
+   the measured tilt axis. CAreTomoMain.cpp.
+   2) Added FindCtf/CTiltInducedZ.cpp to calculate tilting induced z change.
+      It considers both alpha and beta offset.
+   3) As a result, CCorrImgCtf.cpp corrects local CTF with alpha0 and beta0
+      taken into account.
+3. 1) Fixed the careless mistake in calculating deltaZ due to tilting. The fix
+      has been implemented in CTiltInducedZ.cpp.
+   2) Bug fix in AreTomo/CTsMetrics.cpp:92: "float afS[] = {0.0f}", Changed to
+      "float afS[2] = {0.0f};".
+4. 1) [12-17-2024] Bug in MotionCor/DataUtil/CFmGroupParam.cpp::Setup:
+      m_pfGroupCenters were based on raw frames, inconsistent with
+      MotionCor/Align/CEarlyMotion.cpp that treats them relative to the
+      integrated frames. Now m_pfGroupCenters in CFmGroupParam have changed
+      to integrated frame based.
+   2) [12-17-2024]: Saved metrics into file after tomograms are saved. When
+      DenoisET finds a tomogram of interest, it knows the tomogram is
+      already there for processing.
+   3) [12-17-2024] Bug in MotionCor/DataUtil/CFmGroupParam.cpp: m_pfGroupCenters[g] =
+      iNumRawFms + 0.5f * (iGroupRawFms - 1); is a bug that causes segmentation fault
+      in MotionCor/Align/CEarlyMotion.cpp. Use m_pfGroupCenters[g] = m_piGroupStart[g]
+      + 0.5f * m_piGroupSize[g]; instead.
