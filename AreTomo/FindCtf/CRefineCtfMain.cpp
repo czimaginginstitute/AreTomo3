@@ -76,13 +76,7 @@ void CRefineCtfMain::DoIt(int iNthGpu)
 
 void CRefineCtfMain::mFindHandedness(void)
 {
-	CAtInput* pAtInput = CAtInput::GetInstance();
 	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
-	if(pAtInput->m_iDfHand != 0)
-	{	if(pAtInput->m_iDfHand > 0) pCtfRes->m_iDfHand = 1;
-		else pCtfRes->m_iDfHand = -1;
-		return;
-	}
 	//-------------------------------------
 	// Try positive handedness.
 	//-------------------------------------

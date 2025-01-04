@@ -895,6 +895,7 @@ public:
 	~CSaveCtfResults(void);
 	static void GenFileName(int iNthGpu, char* pcCtfFile);
 	void DoIt(int iNthGpu);
+	void DoFittings(int iNthGpu);
 private:
 	void mSaveImages(const char* pcCtfFile);
 	void mSaveFittings(const char* pcCtfFile);

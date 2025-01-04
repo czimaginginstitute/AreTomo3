@@ -24,12 +24,16 @@ CSaveAlignFile::~CSaveAlignFile(void)
 	mCloseFile();
 }
 
-void CSaveAlignFile::GenFileName(int iNthGpu, char* pcAlnFile)
-{
-	McAreTomo::CInput* pInput = McAreTomo::CInput::GetInstance();
+void CSaveAlignFile::GenFileName
+(	int iNthGpu, 
+	bool bSave,
+	char* pcAlnFile
+)
+{	McAreTomo::CInput* pInput = McAreTomo::CInput::GetInstance();
 	MD::CTsPackage* pPackage = MD::CTsPackage::GetInstance(iNthGpu);
 	//-----------------
-	strcpy(pcAlnFile, pInput->m_acOutDir);
+	if(bSave) strcpy(pcAlnFile, pInput->m_acOutDir);
+	else strcpy(pcAlnFile, pInput->m_acInDir);
 	strcat(pcAlnFile, pPackage->m_acMrcMain);
 	strcat(pcAlnFile, ".aln");
 }
@@ -39,7 +43,8 @@ void CSaveAlignFile::DoIt(int iNthGpu)
 	m_iNthGpu = iNthGpu;
 	//-----------------	
 	char acAlnFile[256] = {'\0'};
-	CSaveAlignFile::GenFileName(iNthGpu, acAlnFile);
+	bool bSave = true;
+	CSaveAlignFile::GenFileName(iNthGpu, bSave, acAlnFile);
 	//-----------------
 	m_pFile = fopen(acAlnFile, "wt");
 	if(m_pFile == 0L)

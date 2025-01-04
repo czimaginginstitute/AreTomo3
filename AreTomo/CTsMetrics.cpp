@@ -73,6 +73,11 @@ void CTsMetrics::BuildMetrics(void)
 
 void CTsMetrics::Save(void)
 {
+	CInput* pInput = CInput::GetInstance();
+	if(pInput->m_iCmd == 2) return;
+	if(pInput->m_iCmd == 3) return;
+	if(pInput->m_iCmd == 4) return;
+	//-----------------
 	pthread_mutex_lock(m_pMutex);
 	if(m_pFile != 0L) 
 	{	mSave();

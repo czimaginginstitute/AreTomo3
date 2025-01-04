@@ -35,6 +35,14 @@ void CSaveCtfResults::DoIt(int iNthGpu)
 	mSaveImod(acCtfFile);
 }
 
+void CSaveCtfResults::DoFittings(int iNthGpu)
+{
+	m_iNthGpu = iNthGpu;
+	char acCtfFile[256] = {'\0'};
+	CSaveCtfResults::GenFileName(m_iNthGpu, acCtfFile);
+	mSaveFittings(acCtfFile);
+}
+
 void CSaveCtfResults::mSaveImages(const char* pcCtfFile)
 {
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);

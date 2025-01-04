@@ -49,7 +49,6 @@ CAtInput::CAtInput(void)
 	strcpy(m_acBFactorTag, "-Bft");
 	strcpy(m_acIntpCorTag, "-IntpCor");
 	strcpy(m_acCorrCTFTag, "-CorrCTF");
-	strcpy(m_acDfHandTag, "-DfHand");
 	//-----------------
 	m_fTotalDose = 0.0f;
 	m_afTiltAxis[0] = 0.0f;
@@ -77,7 +76,6 @@ CAtInput::CAtInput(void)
 	m_iCtfTileSize = 512;
 	m_aiCorrCTF[0] = 1;
 	m_aiCorrCTF[1] = 15;
-	m_iDfHand = 0;
 	//-----------------
 	memset(m_afExtPhase, 0, sizeof(m_afExtPhase));
 	memset(m_aiAtPatches, 0, sizeof(m_aiAtPatches));
@@ -202,13 +200,7 @@ void CAtInput::ShowTags(void)
 	printf("%-10s\n", m_acCorrCTFTag);
 	printf("   1. When enabled, local CTF correction is performed on\n"
 	   "      raw tilt series. By default this function is enabled.\n"
-	   "   2. Passing 0 disables this function.\n");
-	//-----------------
-	printf("%-10s\n", m_acDfHandTag);
-	printf("   1. Defocus handedness. 0 means unknown and AreTomo3\n"
-	   "      will measured it.\n"
-	   "   2. 1 and -1 denote positive and negative handedness,\n"
-	   "      respectively. AreTomo3 will not measure it\n\n");
+	   "   2. Passing 0 disables this function.\n\n");
 }
 
 void CAtInput::Parse(int argc, char* argv[])
@@ -316,10 +308,6 @@ void CAtInput::Parse(int argc, char* argv[])
 	if(aiRange[1] > 2) aiRange[1] = 2;
 	aParseArgs.GetVals(aiRange, m_aiCorrCTF);	
 	//-----------------
-	aParseArgs.FindVals(m_acDfHandTag, aiRange);
-	if(aiRange[1] > 1) aiRange[1] = 1;
-	aParseArgs.GetVals(aiRange, &m_iDfHand);
-	//-----------------
 	mPrint();	
 }
 
@@ -379,7 +367,7 @@ void CAtInput::mPrint(void)
 	printf("%-10s  %d\n", m_acIntpCorTag, m_bIntpCor);
 	printf("%-10s  %d %d\n", m_acCorrCTFTag, 
 	   m_aiCorrCTF[0], m_aiCorrCTF[1]);
-	printf("%-10s  %d\n", m_acDfHandTag, m_iDfHand);
+	//-----------------
 	printf("\n");
 }
 

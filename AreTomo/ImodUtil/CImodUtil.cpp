@@ -47,9 +47,9 @@ CImodUtil::~CImodUtil(void)
 {
 }
 
-bool CImodUtil::bFolderExist(void)
+bool CImodUtil::bFolderExist(bool bSave)
 {
-	mGenFolderName();
+	mGenFolderName(bSave);
 	struct stat st = {0};
 	if (stat(m_acOutFolder, &st) == -1) return false;
 	else return true;
@@ -57,29 +57,44 @@ bool CImodUtil::bFolderExist(void)
 
 int CImodUtil::FindOutImodVal(void)
 {
-	if(!bFolderExist()) return 0;
+	bool bSave = false;
+	if(!bFolderExist(bSave)) return 0;
 	DIR* pDir = opendir(m_acOutFolder);
 	if(pDir == 0L) return 0;
 	//-----------------
-	int iOutImod = 0;
+	int iOutImod = 1;
+	char acFileXF[256] = {'\0'};
+	strcpy(acFileXF, m_acOutFolder);
 	struct dirent* pDirent;
+	//-----------------
 	while(true)
 	{	pDirent = readdir(pDir);
 		if(pDirent == 0L) break;
 		if(pDirent->d_name[0] == '.') continue;
 		//----------------
 		char* pcMrcFile = strstr(pDirent->d_name, "_st.mrc");
-		if(pcMrcFile != 0L)
-		{	iOutImod = 2; // aligned tilt series exists
-			break;
-		}
-		pcMrcFile = strstr(pDirent->d_name, ".mrc");
-		if(pcMrcFile != 0L)
-		{	iOutImod = 1; // dark-removed and unaligned
-			break;
-		}
+		if(pcMrcFile != 0L) iOutImod = 2;
+		//----------------
+		char* pcFileXF = strstr(pDirent->d_name, "_st.xf");
+		if(pcFileXF != 0L) strcat(acFileXF, pDirent->d_name);
 	}
 	closedir(pDir);
+	if(iOutImod == 1) return 1;
+	//-----------------
+	FILE* pFile = fopen(acFileXF, "rt");
+	if(pFile == 0L) return iOutImod;
+	//---------------------------------------------------------
+	// 1) For -OutImod 3, the _st.xf file has unit matrix
+	// since the saved is an aligned tilt series. This is
+	// why we need to look into the _st.xf file to decide
+	// what is the value of -OutImod.
+	//---------------------------------------------------------
+	float afVals[6] = {0.0f};
+	fscanf(pFile, "%f %f %f %f %f %f", &afVals[0], &afVals[1],
+	   &afVals[2], &afVals[3], &afVals[4], &afVals[5]);
+	if(afVals[0] == 1.0f && afVals[1] == 0.0f) iOutImod = 3;
+	fclose(pFile);
+	//-----------------
 	return iOutImod;
 }
 
@@ -87,7 +102,12 @@ void CImodUtil::CreateFolder(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	if(pAtInput->m_iOutImod == 0) return;
-	if(!this->bFolderExist()) 
+	//-----------------
+	bool bSave = true;
+	if(this->bFolderExist(bSave)) 
+	{	mRmDirContent();
+	}	
+	else
 	{	mkdir(m_acOutFolder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	}
 	//----------------
@@ -152,6 +172,11 @@ void CImodUtil::SaveTiltSeries(MD::CTiltSeries* pTiltSeries)
 	mSaveTiltComFile();
 }
 
+//--------------------------------------------------------------------
+// 1. -OutImod 1 does not save tilt series. -OutImod 2 saves dark
+//    removed raw tilt series. -OutImod 3 saves dark removed and
+//    aligned tilt series.
+//--------------------------------------------------------------------
 void CImodUtil::mSaveTiltSeries(void)
 {
 	if(m_pTiltSeries == 0L) return;
@@ -289,12 +314,14 @@ void CImodUtil::mCreateFileName(const char* pcInFileName, char* pcOutFileName)
 	strcat(pcOutFileName, pcInFileName);
 }
 
-void CImodUtil::mGenFolderName(void)
+void CImodUtil::mGenFolderName(bool bSave)
 {
         McAreTomo::CInput* pInput = CInput::GetInstance();
         MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
         //-----------------
-        strcpy(m_acOutFolder, pInput->m_acOutDir);
+	if(bSave) strcpy(m_acOutFolder, pInput->m_acOutDir);
+	else strcpy(m_acOutFolder, pInput->m_acInDir);
+	//-----------------
         strcat(m_acOutFolder, pTsPackage->m_acMrcMain);
         strcat(m_acOutFolder, "_Imod/");
 }
@@ -313,3 +340,25 @@ void CImodUtil::mGenMrcName(void)
         }
 }
 
+void CImodUtil::mRmDirContent(void)
+{
+	bool bSave = true;
+        if(!bFolderExist(bSave)) return;
+        DIR* pDir = opendir(m_acOutFolder);
+        if(pDir == 0L) return;
+        //-----------------
+        int iOutImod = 1;
+        char acFullPath[256] = {'\0'};
+        struct dirent* pDirent;
+        //-----------------
+        while(true)
+        {       pDirent = readdir(pDir);
+                if(pDirent == 0L) break;
+                if(pDirent->d_name[0] == '.') continue;
+                //----------------
+		strcpy(acFullPath, m_acOutFolder);
+		strcat(acFullPath, pDirent->d_name);
+		unlink(acFullPath);
+        }
+        closedir(pDir);
+}

@@ -162,7 +162,6 @@ public:
 	float m_fDarkTol;
 	bool m_bIntpCor;
 	int m_iCtfTileSize;
-	int m_iDfHand;
 	int m_aiCorrCTF[2];
 	//-----------------
 	char m_acTotalDoseTag[32];
@@ -188,7 +187,6 @@ public:
 	char m_acBFactorTag[32];
 	char m_acIntpCorTag[32];
 	char m_acCorrCTFTag[32];
-	char m_acDfHandTag[32];
 private:
         CAtInput(void);
         void mPrint(void);

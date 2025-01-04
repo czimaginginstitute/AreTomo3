@@ -394,5 +394,17 @@ AreTomo3 2.0.5 [12-04-2024]
       already there for processing.
    3) [12-17-2024] Bug in MotionCor/DataUtil/CFmGroupParam.cpp: m_pfGroupCenters[g] =
       iNumRawFms + 0.5f * (iGroupRawFms - 1); is a bug that causes segmentation fault
-      in MotionCor/Align/CEarlyMotion.cpp. Use m_pfGroupCenters[g] = m_piGroupStart[g]
-      + 0.5f * m_piGroupSize[g]; instead.
+      in MotionCor/Align/CEarlyMotion.cpp. Use m_pfGroupCenters[g] = 
+      m_piGroupStart[g] + 0.5f * m_piGroupSize[g]; instead.
+
+AreTomo3 2.0.6 [Jan-01-2025]
+1. 1) Added -Cmd 4. This mode rotates the tilt axis by 180 degree and generates
+      the updated .aln file. The files in _Imod directory including .xf,
+      _st.mrc are also updated to reflect the 180 degree rotation of the tilt
+      axis.
+   2) -Cmd 4 also reconstructs new volumes using the rotated tilt axis.
+   3) When -OutImod is enabled (its value > 0), its contents are removed if the
+      corresponding directory exists. The new contents are saved afterwards.
+   4) Revised the implementation of -Cmd 3. Added local CTF estimation.
+2. Updated Remap3D by copying Remap3D_0.3_07dec24 into tools.
+3. Updated user manuals for running -Cmd 4 and running Remap3D. 

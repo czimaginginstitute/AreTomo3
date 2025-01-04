@@ -80,6 +80,7 @@ private:
 	void mSkipAlign(void);
 	void mGenCtfTiles(void);
 	void mEstimateCtf(void);
+	void mRotateTiltAxis180(void);
 	//-----------------
 	void mRemoveDarkFrames(void);
 	void mRemoveDarkCtfs(void);
@@ -132,6 +133,8 @@ private:
 	//-----------------
 	void mLogGlobalShift(void);
 	void mLogLocalShift(void);
+	//-----------------
+	float mRotAxis180(float fAxis);
 	//-----------------
 	MAC::CCorrTomoStack* m_pCorrTomoStack;
 	float m_fRotScore;
