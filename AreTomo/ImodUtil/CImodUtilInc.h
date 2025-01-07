@@ -86,7 +86,7 @@ public:
 	static CImodUtil* GetInstance(int iNthGpu);
 	//-----------------
 	~CImodUtil(void);
-	bool bFolderExist(void);
+	bool bFolderExist(bool bSave);
 	int FindOutImodVal(void);
 	void CreateFolder(void);
 	void SaveTiltSeries(MD::CTiltSeries* pTiltSeries);
@@ -100,8 +100,9 @@ private:
 	void mSaveCtfFile(void);
 	void mCreateFileName(const char* pcInFileName, char* pcOutFileName);
 	//-----------------
-	void mGenFolderName(void);
+	void mGenFolderName(bool bSave);
 	void mGenMrcName(void);
+	void mRmDirContent(void);
 	//-----------------
 	char m_acOutFolder[256];
 	char m_acInMrcFile[128];

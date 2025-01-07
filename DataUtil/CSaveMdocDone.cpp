@@ -65,6 +65,12 @@ CSaveMdocDone::~CSaveMdocDone(void)
 
 void CSaveMdocDone::DoIt(const char* pcMdocFile)
 {
+	//---------------------------------------------------------
+	// 1) Saving MdocDone.txt is needed only for -Cmd = 0.
+	//---------------------------------------------------------
+	CInput* pInput = CInput::GetInstance();
+	if(pInput->m_iCmd != 0) return;
+	//-----------------
 	if(m_pLogFile == 0L) return;
 	pthread_mutex_lock(&s_mutex);
 	//-----------------

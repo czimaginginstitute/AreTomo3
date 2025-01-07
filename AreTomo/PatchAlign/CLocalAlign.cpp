@@ -66,7 +66,7 @@ void CLocalAlign::DoIt(MAM::CAlignParam* pAlignParam, int* piRoi)
 	pParam->m_fXcfSize = 1024.0f * 2.0f;
 	pParam->m_afMaskSize[0] = 0.25f;
 	pParam->m_afMaskSize[1] = 0.25f;
-	if(pParam->m_iAlignZ > 1200) pParam->m_iAlignZ = 1200;
+	if(pParam->m_iAlignZ > 1000) pParam->m_iAlignZ = 1000;
 	m_pProjAlignMain->Set1(pParam);
 	//-----------------
 	int iIterations = 2;

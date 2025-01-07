@@ -264,7 +264,11 @@ public:
 	~CSaveAlignFile(void);
 	void DoIt(int iNthGpu);
 	//-----------------
-	static void GenFileName(int iNthGpu, char* pcAlnFile);
+	static void GenFileName
+	( int iNthGpu,
+	  bool bSave, // false for load 
+	  char* pcAlnFile
+	);
 	//-----------------
 	static char m_acRawSizeTag[32];
 	static char m_acNumPatchesTag[32];

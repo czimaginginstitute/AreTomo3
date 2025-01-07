@@ -129,25 +129,18 @@ void CGenAvgSpectrum::mCalcTileCentZs(void)
 {
 	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
 	CTile* pTile = pTsTiles->GetTile(m_iTilt, 0);
-	float fTilt = (pTile->GetTilt() + m_fTiltOffset) * s_fD2R;
-	float fCosTilt = (float)cos(fTilt);
-	float fTanTilt = (float)tan(fTilt);
+	float fTilt = pTile->GetTilt();
 	//-----------------
-	float fTanBeta = (float)tan(m_fBetaOffset * s_fD2R);
-	//-----------------
-	float fCosTx = (float)cos(m_fTiltAxis * s_fD2R);
-	float fSinTx = (float)sin(m_fTiltAxis * s_fD2R);
+	CTiltInducedZ tiltInducedZ;
+	tiltInducedZ.Setup(fTilt, m_fTiltAxis, m_fTiltOffset, m_fBetaOffset);
 	//-----------------
 	int iImgTiles = pTsTiles->GetImgTiles();
 	for(int i=0; i<iImgTiles; i++)
 	{	pTile = pTsTiles->GetTile(m_iTilt, i);
 		float fCentX = pTile->GetCentX();
 		float fCentY = pTile->GetCentY();
-		//-----------------
-		float fX = fCentX * fCosTx + fCentY * fSinTx;
-		float fY = -fCentX * fSinTx + fCentY * fCosTx;
-		float fZ = fX * fTanTilt - fY * fTanBeta * fCosTilt;
-		pTile->SetCentZ(fZ);
+		float fDeltaZ = tiltInducedZ.DoIt(fCentX, fCentY);
+		pTile->SetCentZ(fDeltaZ);
 	}
 }
 

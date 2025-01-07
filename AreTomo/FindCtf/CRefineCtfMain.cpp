@@ -72,22 +72,11 @@ void CRefineCtfMain::DoIt(int iNthGpu)
 	//-----------------
 	pCtfRes->m_fAlphaOffset = m_fTiltOffset;
 	pCtfRes->m_fBetaOffset = m_fBetaOffset;
-	//-----------------
-	CAtInput* pAtInput = CAtInput::GetInstance();
-	if(pAtInput->m_afTiltCor[0] == 0) return;
-	pAlnParam->AddAlphaOffset(m_fTiltOffset);
-
 }
 
 void CRefineCtfMain::mFindHandedness(void)
 {
-	CAtInput* pAtInput = CAtInput::GetInstance();
 	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
-	if(pAtInput->m_iDfHand != 0)
-	{	if(pAtInput->m_iDfHand > 0) pCtfRes->m_iDfHand = 1;
-		else pCtfRes->m_iDfHand = -1;
-		return;
-	}
 	//-------------------------------------
 	// Try positive handedness.
 	//-------------------------------------

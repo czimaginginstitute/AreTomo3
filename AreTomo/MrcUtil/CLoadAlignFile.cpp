@@ -39,7 +39,8 @@ bool CLoadAlignFile::DoIt(int iNthGpu)
 	m_iNthGpu = iNthGpu;
 	//-----------------
 	char acAlnFile[256] = {'\0'};
-	CSaveAlignFile::GenFileName(m_iNthGpu, acAlnFile);
+	bool bSave = false;
+	CSaveAlignFile::GenFileName(m_iNthGpu, bSave, acAlnFile);
 	FILE* pFile = fopen(acAlnFile, "rt");
 	if(pFile == 0L) return false;
 	//-----------------

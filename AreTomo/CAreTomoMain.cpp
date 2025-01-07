@@ -11,6 +11,7 @@
 #include "FindCtf/CFindCtfInc.h"
 #include "ImodUtil/CImodUtilInc.h"
 #include <memory.h>
+#include <math.h>
 #include <stdio.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -64,12 +65,19 @@ bool CAreTomoMain::DoIt(int iNthGpu)
 	if(pInput->m_iCmd == 0 || pInput->m_iCmd == 1) mDoFull();
 	else if(pInput->m_iCmd == 2) mSkipAlign();
 	else if(pInput->m_iCmd == 3) mEstimateCtf();
+	else if(pInput->m_iCmd == 4) mRotateTiltAxis180();
 	//-----------------
 	FindCtf::CTsTiles::DeleteInstance(m_iNthGpu);
 	//-----------------
 	MD::CAsyncSaveVol* pSaveVol = 
 	   MD::CAsyncSaveVol::GetInstance(m_iNthGpu);
-	pSaveVol->WaitForExit(10.0f);
+	pSaveVol->WaitForExit(-1.0f);
+	//----------------------------------------------------
+	// Save the metrics after tomograms are saved to help
+	// DenoisET to connect the metrics to the tomogram.
+	//----------------------------------------------------  
+	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance(m_iNthGpu);
+	pTsMetrics->Save();
 	return true;
 }
 
@@ -120,6 +128,9 @@ void CAreTomoMain::mDoFull(void)
 //--------------------------------------------------------------------
 void CAreTomoMain::mSkipAlign(void)
 {
+	CInput* pInput = CInput::GetInstance();
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	//-----------------
 	MAM::CRemoveDarkFrames remDarkFrames;
         remDarkFrames.Setup(m_iNthGpu);
 	//---------------------------------------------------------
@@ -132,7 +143,7 @@ void CAreTomoMain::mSkipAlign(void)
 	MAM::CLoadAlignFile loadAlnFile;
 	bool bLoaded = loadAlnFile.DoIt(m_iNthGpu);
 	if(!bLoaded) return;
-	//-----------------
+	//---------------------------------------------------------
 	FindCtf::CLoadCtfResults loadCtfResults;
 	loadCtfResults.DoIt(m_iNthGpu);
 	//-----------------
@@ -147,6 +158,62 @@ void CAreTomoMain::mSkipAlign(void)
 	//-----------------
 	mCorrectCTF();
 	mRecon();
+}
+
+//--------------------------------------------------------------------
+// 1. This is for CInput::m_iCmd = 4, which rotates the tilt axis by
+//    180 degree. This function is used to correct the legacy issue
+//    that the tilt axis was off by 180 degree.
+// 2. This function will update the .aln file with the new tilt axis,
+//    _CTF.txt file by setting the dfHand 1, the Imod .xf file
+//    because of the tilt axis change, and the aligned tilt series
+//    if -OutImod = 3 was used.
+//--------------------------------------------------------------------
+void CAreTomoMain::mRotateTiltAxis180(void)
+{
+	MAM::CRemoveDarkFrames remDarkFrames;
+        remDarkFrames.Setup(m_iNthGpu);
+	//-----------------
+	MAM::CLoadAlignFile loadAlnFile;
+        bool bLoaded = loadAlnFile.DoIt(m_iNthGpu);
+        if(!bLoaded) return;
+	remDarkFrames.Remove();
+	//-----------------
+	MAM::CAlignParam* pAlnParam = sGetAlignParam(m_iNthGpu);
+	float fTiltAxis = pAlnParam->GetTiltAxis(0);
+	fTiltAxis = mRotAxis180(fTiltAxis);
+	pAlnParam->SetTiltAxisAll(fTiltAxis);
+	mSaveAlignment();
+	//-----------------
+	FindCtf::CLoadCtfResults loadCtfResults;
+	loadCtfResults.DoIt(m_iNthGpu);
+	//-----------------
+	MD::CCtfResults* pCtfResults =
+           MD::CCtfResults::GetInstance(m_iNthGpu);	
+	pCtfResults->m_iDfHand = 1;
+	//-----------------
+	FindCtf::CSaveCtfResults saveCtfRes; 
+	saveCtfRes.DoFittings(m_iNthGpu);
+	//-----------------
+	mRemoveDarkCtfs();
+	//-----------------
+	ImodUtil::CImodUtil* pImodUtil = 0L;
+        pImodUtil = ImodUtil::CImodUtil::GetInstance(m_iNthGpu);
+        int iOutImod = pImodUtil->FindOutImodVal();
+	CAtInput* pAtInput = CAtInput::GetInstance();
+        pAtInput->m_iOutImod = iOutImod;
+	//-----------------
+	if(pAtInput->m_iOutImod == 3) // for aligned tilt series
+	{	MAM::CRemoveDarkFrames remDarkFrames;
+		remDarkFrames.Setup(m_iNthGpu);
+	}
+	mSetupTsCorrection();
+	mSaveForImod();
+	//-----------------
+	mRecon2nd();
+	mCorrectCTF();
+	mRecon();
+	mAlignCTF();
 }
 
 //--------------------------------------------------------------------
@@ -165,6 +232,10 @@ void CAreTomoMain::mEstimateCtf(void)
         if(!bLoaded) return;
 	//-----------------
 	mFindCtf(false);
+	mFindCtf(true);
+	FindCtf::CSaveCtfResults saveCtfRes; 
+	saveCtfRes.DoFittings(m_iNthGpu);
+	//-----------------
 	mRemoveDarkCtfs();
 	//-----------------
 	ImodUtil::CImodUtil* pImodUtil = 0L;
@@ -223,6 +294,10 @@ void CAreTomoMain::mRemoveSpikes(void)
 
 void CAreTomoMain::mGenCtfTiles(void)
 {
+	CInput* pInput = CInput::GetInstance();
+	if(pInput->m_iCmd == 2) return; // recon only
+	if(pInput->m_iCmd == 4) return; // rotate tilt axis only
+	//-----------------
 	if(!FindCtf::CFindCtfMain::bCheckInput()) return;
 	FindCtf::CTsTiles *pTsTiles = 
 	   FindCtf::CTsTiles::GetInstance(m_iNthGpu);
@@ -244,7 +319,29 @@ void CAreTomoMain::mFindCtf(bool bRefine)
 	else 
 	{	FindCtf::CRefineCtfMain refineCtfMain;
 		refineCtfMain.DoIt(m_iNthGpu);
+		//----------------
+		MD::CCtfResults* pCtfResults =
+		   MD::CCtfResults::GetInstance(m_iNthGpu);
+		MAM::CAlignParam* pAlnParam = sGetAlignParam(m_iNthGpu);
+		float fTiltAxis = pAlnParam->GetTiltAxis(0);
+		//----------------
+		if(pCtfResults->m_iDfHand == -1)
+		{	fTiltAxis = mRotAxis180(fTiltAxis);
+		}
+		pAlnParam->SetTiltAxisAll(fTiltAxis);
+		//----------------------------------------------
+		// 1. Since we use the coordinate system whose
+		//    z-axis points to the electron source, it
+		//    has the positive defocus handedness.
+		// 2. Positive tilt makes the particle with
+		//    positive deltaX less defocused. This is
+		//    consistent with Alister's paper.
+		// 3. An image processing pipeline for electron
+		//    cryo-tomography in Relion-5.
+		//----------------------------------------------
+		pCtfResults->m_iDfHand = 1;
 	}
+
 }
 
 void CAreTomoMain::mMassNorm(void)
@@ -259,6 +356,7 @@ void CAreTomoMain::mAlign(void)
 	mCoarseAlign();
 	mFindCtf(true);
 	mCalcThickness();
+	mCorrAngOffset();
 	//-----------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->ResetShift();
@@ -277,13 +375,11 @@ void CAreTomoMain::mAlign(void)
 		}
 		mProjAlign();
 	}
-	pAlignParam->FitRotCenterZ();
-        pAlignParam->RemoveOffsetZ(1.0f);
 	//-----------------
 	mPatchAlign();
 	//-----------------
-	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance();
-	pTsMetrics->Save(m_iNthGpu);
+	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance(m_iNthGpu);
+	pTsMetrics->BuildMetrics();
 	//-----------------
 	mLogGlobalShift();
 	mLogLocalShift();
@@ -293,7 +389,10 @@ void CAreTomoMain::mCoarseAlign(void)
 {
 	MAS::CStreAlignMain streAlignMain;
 	streAlignMain.Setup(m_iNthGpu);
-	//-----------------
+	//---------------------------------------------------------
+	// 1) Users do not provide an initial estimate of the tilt
+	//    axis. Let's estimate here.
+	//---------------------------------------------------------
 	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->m_afTiltAxis[0] == 0)
 	{	for(int i=1; i<=3; i++)
@@ -303,14 +402,24 @@ void CAreTomoMain::mCoarseAlign(void)
 		mFindTiltOffset();
 		return;
 	}
-	//-----------------
+	//---------------------------------------------------------
+	// 1) Users provide an initial estimate of the tilt axis,
+	//    let's use it for initial alignment.
+	//---------------------------------------------------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->SetTiltAxisAll(pInput->m_afTiltAxis[0]);
-	//-----------------
+	//---------------------------------------------------------
+	// 2) Users do not want to refine their tilt axis, do not
+	//    run mRotAlign(...)
+	//---------------------------------------------------------
 	if(pInput->m_afTiltAxis[1] < 0)
 	{	streAlignMain.DoIt();
 		streAlignMain.DoIt();
 	}
+	//---------------------------------------------------------
+	// 3) Users provide an initial estimate and still want to
+	//    refine it. Let's refine it within +/- 5 degree.
+	//---------------------------------------------------------
 	else
 	{	for(int i=1; i<=2; i++)
 		{	streAlignMain.DoIt();
@@ -414,19 +523,24 @@ void CAreTomoMain::mPatchAlign(void)
 
 void CAreTomoMain::mCalcThickness(void)
 {
+	MD::CCtfResults* pCtfResults =MD::CCtfResults::GetInstance(m_iNthGpu);
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	float fAlpha0 = pCtfResults->m_fAlphaOffset;
+	pAlnParam->AddAlphaOffset(fAlpha0);
+	//-----------------	
 	Recon::CCalcVolThick calcVolThick;
         calcVolThick.DoIt(m_iNthGpu);
+	pAlnParam->AddAlphaOffset(-fAlpha0);
+	//-----------------
 	float fThickness = calcVolThick.GetThickness(false);
 	int iThickness = (int)fThickness / 2 * 2;
-	//-----------------
-	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
 	pAlnParam->m_iThickness = iThickness;
 	//-----------------
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	iThickness = iThickness * 8 / 20 * 2;
 	if(iThickness < 100) iThickness = 100;
-	else if(iThickness > 2000) iThickness = 2000;
+	else if(iThickness > 1200) iThickness = 1200;
 	//-----------------------------------------------
 	// If users specify the AlignZ value, use it.
 	//-----------------------------------------------
@@ -435,6 +549,16 @@ void CAreTomoMain::mCalcThickness(void)
 		if(pParam->m_iAlignZ < 200) pParam->m_iAlignZ = 200;
 	}
 	else pParam->m_iAlignZ = pAtInput->m_iAlignZ;
+}
+
+void CAreTomoMain::mCorrAngOffset(void)
+{
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	if(pAtInput->m_afTiltCor[0] == 0) return;
+	MD::CCtfResults* pCtfResults =MD::CCtfResults::GetInstance(m_iNthGpu);
+	//-----------------
+	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
+	pAlnParam->AddAlphaOffset(pCtfResults->m_fAlphaOffset);
 }
 
 void CAreTomoMain::mCorrectCTF(void)
@@ -487,7 +611,7 @@ void CAreTomoMain::mSaveForImod(void)
 	CInput* pInput = CInput::GetInstance();
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	ImodUtil::CImodUtil* pImodUtil = 0L;
-        pImodUtil = ImodUtil::CImodUtil::GetInstance(m_iNthGpu);
+	pImodUtil = ImodUtil::CImodUtil::GetInstance(m_iNthGpu);
 	if(pAtInput->m_iOutImod <= 0) return;
 	//--------------------------------------------------
 	// CreateFolder is skipped if the folder exists.
@@ -497,7 +621,8 @@ void CAreTomoMain::mSaveForImod(void)
 	//--------------------------------------------------
 	// CTF estimation is performed for m_iCmd = 0 and 1
 	//--------------------------------------------------
-	if(pInput->m_iCmd == 0 || pInput->m_iCmd == 1)
+	int iCmd = pInput->m_iCmd;
+	if(iCmd == 0 || iCmd == 1 || iCmd == 4)
 	{	if(pAtInput->m_iOutImod == 1) // for Relion 4
 		{	pImodUtil->SaveTiltSeries(0L);
 		}
@@ -528,13 +653,13 @@ void CAreTomoMain::mSaveForImod(void)
 	else if(pInput->m_iCmd == 2)
 	{	// do not update Imod subfolder	
 	}
-	//--------------------------------------------------
-	// 1) Since CTF estimation is repeated, needs to
-	// update the corresponding files in Imod sub
-	// when the last processing uses -OutImod 2.
-	// 2) When last processing uses -OutImod 3, we nned
-	// to re-align CTF by calling mAlignCTF.
-	//--------------------------------------------------
+	//--------------------------------------------------------
+	// 1) Since CTF estimation is repeated, needs to update 
+	// the corresponding files in Imod sub-directory when the 
+	// last processing uses -OutImod 2.
+	// 2) When last processing uses -OutImod 3, we need to 
+	// re-align CTF by calling mAlignCTF.
+	//---------------------------------------------------------
 	else if(pInput->m_iCmd == 3)
 	{	if(pAtInput->m_iOutImod == 2)
 		{	pImodUtil->SaveCtfFile();
@@ -819,4 +944,15 @@ void CAreTomoMain::mLogLocalShift(void)
 		}
 	}
 	fflush(pFile);	
+}
+
+float CAreTomoMain::mRotAxis180(float fAxis)
+{
+	float fNewAxis = fAxis - 180.0f;
+	fNewAxis = fNewAxis - 360.0f * (int)(fNewAxis / 360.0f);
+	//----------------
+	if(fNewAxis < -180.0f) fNewAxis += 360.0f;
+	else if(fNewAxis > 180.0f) fNewAxis -= 360.0f;
+	//----------------
+	return fNewAxis;
 }

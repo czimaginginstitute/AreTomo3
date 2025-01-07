@@ -8,61 +8,85 @@
 
 using namespace McAreTomo::AreTomo;
 
-CTsMetrics* CTsMetrics::m_pInstance = 0L;
+CTsMetrics* CTsMetrics::m_pInstances = 0L;
+int CTsMetrics::m_iNumGpus = 0;
+FILE* CTsMetrics::m_pFile = 0L;
+pthread_mutex_t* CTsMetrics::m_pMutex = 0L;
 
-CTsMetrics* CTsMetrics::GetInstance(void)
+void CTsMetrics::CreateInstances(void)
 {
-	if(m_pInstance != 0L) return m_pInstance;
-	m_pInstance = new CTsMetrics;
-	return m_pInstance;
+	CTsMetrics::DeleteInstances();
+	//-----------------
+	CInput* pInput = CInput::GetInstance();
+	m_iNumGpus = pInput->m_iNumGpus;
+	if(m_iNumGpus == 0) return;
+	//-----------------
+	m_pInstances = new CTsMetrics[m_iNumGpus];
+	for(int i=0; i<m_iNumGpus; i++)
+	{	m_pInstances[i].m_iNthGpu = i;
+	}
+	//-----------------
+	m_pMutex = new pthread_mutex_t;
+	pthread_mutex_init(m_pMutex, 0L);
 }
 
-void CTsMetrics::DeleteInstance(void)
+CTsMetrics* CTsMetrics::GetInstance(int iNthGpu)
 {
-	if(m_pInstance == 0L) return;
-	delete m_pInstance;
-	m_pInstance = 0L;
+	if(iNthGpu >= m_iNumGpus) return 0L;
+	return &m_pInstances[iNthGpu];
+}
+
+void CTsMetrics::DeleteInstances(void)
+{
+	if(m_pInstances != 0L) delete[] m_pInstances;
+	m_pInstances = 0L;
+	m_iNumGpus = 0;
+	//-----------------
+	if(m_pFile != 0L) fclose(m_pFile);
+	m_pFile = 0L;
+	//-----------------
+	if(m_pMutex != 0L)
+	{	pthread_mutex_destroy(m_pMutex);
+		delete m_pMutex;
+		m_pMutex = 0L;
+	}
 }
 
 CTsMetrics::CTsMetrics(void)
 {
-	m_pFile = 0L;
-	m_bFirstTime = true;
-	pthread_mutex_init(&m_aMutex, NULL);
 }
 
 CTsMetrics::~CTsMetrics(void)
 {
-	if(m_pFile != 0L) fclose(m_pFile);
-	pthread_mutex_destroy(&m_aMutex);
 }
 
-void CTsMetrics::Save(int iNthGpu)
+void CTsMetrics::BuildMetrics(void)
 {
-	pthread_mutex_lock(&m_aMutex);
-	//-----------------
-	if(m_pFile == 0L && m_bFirstTime)
-	{	mOpenFile();
-		m_bFirstTime = false;
-	}
-	//-----------------
-	if(m_pFile == 0L)
-	{	pthread_mutex_unlock(&m_aMutex);
-		return;
-	}
-	//-----------------
-	m_iNthGpu = iNthGpu;
 	mGetMrcName();
-	mGetPixelSize();
-	mGetThickness();
-	mGetGlobalShift();
-	mGetBadPatches();
-	mGetTiltAxis();
-	mGetCTF();
+        mGetPixelSize();
+        mGetThickness();
+        mGetGlobalShift();
+        mGetBadPatches();
+        mGetTiltAxis();
+        mGetCTF();
+}
+
+void CTsMetrics::Save(void)
+{
+	CInput* pInput = CInput::GetInstance();
+	if(pInput->m_iCmd == 2) return;
+	if(pInput->m_iCmd == 3) return;
+	if(pInput->m_iCmd == 4) return;
 	//-----------------
-	mSave();
-	//-----------------
-	pthread_mutex_unlock(&m_aMutex);
+	pthread_mutex_lock(m_pMutex);
+	if(m_pFile != 0L) 
+	{	mSave();
+	}
+	else if(m_pFile == 0L)
+	{	CTsMetrics::mOpenFile();
+		if(m_pFile != 0L) mSave();
+	}
+	pthread_mutex_unlock(m_pMutex);
 }
 
 void CTsMetrics::mGetMrcName(void)
@@ -89,7 +113,7 @@ void CTsMetrics::mGetGlobalShift(void)
 {
 	MAM::CAlignParam* pAlnParam; 
 	pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
-	float afS[] = {0.0f};
+	float afS[2] = {0.0f};
 	m_fGlobalShift = 0.0f;
 	//-----------------
 	for(int i=0; i<pAlnParam->m_iNumFrames; i++)
@@ -133,8 +157,18 @@ void CTsMetrics::mOpenFile(void)
 	strcpy(acFile, pInput->m_acOutDir);
 	strcat(acFile, "TiltSeries_Metrics.csv");
 	//-----------------
-	if(pInput->m_iResume == 0) m_pFile = fopen(acFile, "w");
-	else m_pFile = fopen(acFile, "wa");
+	bool bFirst = false;
+	if(pInput->m_iResume == 0) 
+	{	m_pFile = fopen(acFile, "w");
+		bFirst = true;
+	}
+	else 
+	{	m_pFile = fopen(acFile, "a");
+		if(m_pFile == 0L) 
+		{	m_pFile = fopen(acFile, "w");
+			bFirst = true;
+		}
+	}
 	//-----------------
 	if(m_pFile == 0L)
 	{	printf("Warning: metrics file cannot be created, "
@@ -142,10 +176,12 @@ void CTsMetrics::mOpenFile(void)
 		return;
 	}
 	//-----------------
-	fprintf(m_pFile, "Tilt_Series,Thickness(Pix),Tilt_Axis,"
-	   "Global_Shift(Pix),Bad_Patch_Low,Bad_Patch_All,"
-   	   "CTF_Res(A),CTF_Score,DF_Hand,Pix_Size(A),"
-	   "Cs(nm),Kv,Alpha0,Beta0\n");   
+	if(bFirst)
+	{	fprintf(m_pFile, "Tilt_Series,Thickness(Pix),Tilt_Axis,"
+	   	   "Global_Shift(Pix),Bad_Patch_Low,Bad_Patch_All,"
+   	   	   "CTF_Res(A),CTF_Score,DF_Hand,Pix_Size(A),"
+	   	   "Cs(nm),Kv,Alpha0,Beta0\n");
+	}
 }
 
 void CTsMetrics::mSave(void)

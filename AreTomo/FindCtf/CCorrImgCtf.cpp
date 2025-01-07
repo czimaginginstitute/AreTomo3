@@ -73,13 +73,15 @@ void CCorrImgCtf::Setup(int* piImgSize, int iNthGpu)
 
 void CCorrImgCtf::DoIt
 (	float* pfImage,	
-	float fTilt,
-	float fTiltAxis,
+	float fTilt, float fTiltAxis,
+	float fAlpha0, float fBeta0,
 	bool bPhaseFlip
 )
 {	m_pfImage = pfImage;
 	m_fTilt = fTilt;
 	m_fTiltAxis = fTiltAxis;
+	m_fAlpha0 = fAlpha0;
+	m_fBeta0 = fBeta0;
 	//-----------------
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
 	m_pImgCtfParam = pCtfResults->GetCtfParamFromTilt(m_fTilt);
@@ -165,21 +167,15 @@ float CCorrImgCtf::mCalcDeltaZ(int iTile)
 	afCent[0] -= (m_aiImgSize[0] * 0.5f);
 	afCent[1] -= (m_aiImgSize[1] * 0.5f);
 	//-----------------
-	float fCosTx = (float)cos(m_fTiltAxis * s_fD2R);
-	float fSinTx = (float)sin(m_fTiltAxis * s_fD2R);
-	float fX = afCent[0] * fCosTx + afCent[1] * fSinTx;
-	float fY = -afCent[0] * fSinTx + afCent[1] * fCosTx;
-	//-----------------
-	float fZ = fX * (float)tan(m_fTilt * s_fD2R);
-	return fZ;
+	CTiltInducedZ tiltInducedZ;
+	tiltInducedZ.Setup(m_fTilt, m_fTiltAxis, m_fAlpha0, m_fBeta0);
+	float fDeltaZ = tiltInducedZ.DoIt(afCent[0], afCent[1]);
+	return fDeltaZ;
 }
 
 //--------------------------------------------------------------------
-// 1. According to Wim Hagen, -Z moves the sample down, so you get
-//    more under-focus.
-// 2. In CTFFind4, CTF is -sin[...(...Cs - f) + extPhase + ampPhase].
-//    Therefore, defocus (f) should be positive.
-// 4. This is why we make fDeltaZ = -fDeltaZ.
+// Defocus handedness has been determined and encoded into tilt axis.
+// No need to take it into accound again.
 //--------------------------------------------------------------------
 void CCorrImgCtf::mCorrectCTF(int iTile)
 {
@@ -190,7 +186,7 @@ void CCorrImgCtf::mCorrectCTF(int iTile)
 	float fDfSigma = m_pImgCtfParam->GetDfSigma(!bAngstrom);
 	float fRatio = fDfSigma / fDfMean;
 	//-----------------
-	fDfMean = fDfMean + fDeltaZ * m_iDfHand;
+	fDfMean = fDfMean + fDeltaZ; 
 	fDfSigma = fDfMean * fRatio;
 	float fDfMin = fDfMean - fDfSigma;
 	float fDfMax = fDfMean + fDfSigma;

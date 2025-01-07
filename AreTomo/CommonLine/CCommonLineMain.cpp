@@ -44,16 +44,13 @@ float CCommonLineMain::DoInitial
 	//-----------------
 	CLineSet* pLineSet = new CLineSet;
 	pLineSet->Setup(m_iNthGpu);
-	//----------------
+	//-----------------
 	CFindTiltAxis findTiltAxis;
 	float fRotAngle = findTiltAxis.DoIt(pPossibleLines, pLineSet);
-	if(fRotAngle < -45 && pInput->m_afTiltAxis[0] == 0) 
-	{	fRotAngle += 180.0f;
-	}
-	//--------------------------
+	//-----------------
 	if(pPossibleLines != 0L) delete pPossibleLines;
 	if(pLineSet != 0L) delete pLineSet;
-	//---------------------------------
+	//-----------------
 	printf("Initial estimate of tilt axes:\n");
 	for(int i=0; i<pAlnParam->m_iNumFrames; i++)
 	{	pAlnParam->SetTiltAxis(i, fRotAngle);

@@ -61,11 +61,13 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 	   MAM::CAlignParam::GetInstance(m_iNthGpu);
 	float fTiltAxis = pAlignParam->GetTiltAxis(0);
 	float fAlpha0 = pAlignParam->m_fAlphaOffset;
+	float fBeta0 = pAlignParam->m_fBetaOffset;
 	//-----------------
 	for(int i=0; i<pTiltSeries->m_aiStkSize[2]; i++)
 	{	float* pfImage = (float*)pTiltSeries->GetFrame(i);
-		float fTilt = pTiltSeries->m_pfTilts[i] + fAlpha0;
-		m_pCorrImgCtf->DoIt(pfImage, fTilt, fTiltAxis, m_bPhaseFlip);
+		float fTilt = pTiltSeries->m_pfTilts[i];
+		m_pCorrImgCtf->DoIt(pfImage, fTilt, fTiltAxis, 
+		   fAlpha0, fBeta0, m_bPhaseFlip);
 	}
 	//-----------------
 	/* Debugging code here	

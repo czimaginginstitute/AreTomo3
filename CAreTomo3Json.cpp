@@ -284,9 +284,6 @@ void CAreTomo3Json::mAddAtInput(void)
         mAddKeyFloatPair(pAtInput->m_acExtPhaseTag + 1, 
 	   pAtInput->m_afExtPhase, 2, 10, bList, !bEnd);
 	//-----------------
-	mAddKeyIntPair(pAtInput->m_acDfHandTag + 1,
-	   &(pAtInput->m_iDfHand), 1, 10, !bList, !bEnd);
-	//-----------------
         mAddKeyIntPair(pAtInput->m_acCorrCTFTag + 1, 
 	   pAtInput->m_aiCorrCTF, 2, 10, bList, bEnd);
 }

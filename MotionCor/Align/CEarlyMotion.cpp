@@ -58,22 +58,29 @@ void CEarlyMotion::Setup(int iBuffer, float fBFactor, int iNthGpu)
 }
 
 void CEarlyMotion::DoIt(MMD::CStackShift* pStackShift)
-{	
+{
 	CMcInput* pMcInput = CMcInput::GetInstance();
 	if(m_iBuffer == MD::EBuffer::xcf 
 	   && pMcInput->m_aiGroup[0] == 1) return;
 	if(m_iBuffer == MD::EBuffer::pat 
 	   && pMcInput->m_aiGroup[1] == 1) return;
+	if(pStackShift->m_iNumFrames < 2) return;
 	//-----------------
 	m_pStackShift = pStackShift; 
 	//-----------------
 	bool bPatch = (m_iBuffer == MD::EBuffer::pat) ? true : false;
 	MMD::CFmGroupParam* pFmGrpParam = 
 	   MMD::CFmGroupParam::GetInstance(m_iNthGpu, bPatch);
-	//-----------------
-	m_aiCent[0] = 0;
-	m_aiCent[1] = (int)(pFmGrpParam->GetGroupCenter(0) + 0.5f);
-	m_aiCent[2] = (int)(pFmGrpParam->GetGroupCenter(1) + 0.5f);
+	if(pFmGrpParam->m_iNumGroups < 2) return;
+	//-------------------------------------------------------
+	// 1) GroupCent[0] is at the 1st int frame. GroupCent[1]
+	//    is at the center of the 1st group. GroupCent[2]
+	//    if at the center of the 2nd group.
+	// 2) This is why we need at least two group sums.
+	//-------------------------------------------------------
+	m_afGroupCent[0] = 0.0f;
+	m_afGroupCent[1] = pFmGrpParam->GetGroupCenter(0);
+	m_afGroupCent[2] = pFmGrpParam->GetGroupCenter(1);
 	//-------------------------------------------------------
 	// 1. calculate the sum from the 1st frame in the second
 	//    group to the frame at 2/3 of all frames.
@@ -170,9 +177,9 @@ void CEarlyMotion::mGetNodeShifts
 	int iAxis, float* pfShift
 )
 {	float afShifts[6] = {0.0f};
-	pStackShift->GetShift(m_aiCent[0], &afShifts[0]);
-	pStackShift->GetShift(m_aiCent[1], &afShifts[2]);
-	pStackShift->GetShift(m_aiCent[2], &afShifts[4]);
+	pStackShift->GetShift((int)m_afGroupCent[0], &afShifts[0]);
+	pStackShift->GetShift((int)m_afGroupCent[1], &afShifts[2]);
+	pStackShift->GetShift((int)m_afGroupCent[2], &afShifts[4]);
 	pfShift[0] = afShifts[0 + iAxis];
 	pfShift[1] = afShifts[2 + iAxis];
 	pfShift[2] = afShifts[4 + iAxis];
@@ -181,15 +188,15 @@ void CEarlyMotion::mGetNodeShifts
 void CEarlyMotion::mCalcCoeff(float fGain, float* pfShift, float* pfCoeff)
 {
 	pfCoeff[0] = pfShift[0] + fGain;
-	//-------------------------------------------------------------
-	float x1_2 = m_aiCent[1] * m_aiCent[1];
-	float x2_2 = m_aiCent[2] * m_aiCent[2];
-	float fDelta = m_aiCent[1] * x2_2 - m_aiCent[2] * x1_2;
-	//-----------------------------------------------------
+	//------------------
+	float x1_2 = m_afGroupCent[1] * m_afGroupCent[1];
+	float x2_2 = m_afGroupCent[2] * m_afGroupCent[2];
+	float fDelta = m_afGroupCent[1] * x2_2 - m_afGroupCent[2] * x1_2;
+	//------------------
 	pfCoeff[1] = ((pfShift[1] - pfCoeff[0]) * x2_2 - 
 	   (pfShift[2] - pfCoeff[0]) * x1_2) / fDelta;
-	pfCoeff[2] = ((pfShift[2] - pfCoeff[0]) * m_aiCent[1] -
-	   (pfShift[1] - pfCoeff[0]) * m_aiCent[2]) / fDelta;
+	pfCoeff[2] = ((pfShift[2] - pfCoeff[0]) * m_afGroupCent[1] -
+	   (pfShift[1] - pfCoeff[0]) * m_afGroupCent[2]) / fDelta;
 }
 
 void CEarlyMotion::mCalcShift
@@ -216,6 +223,9 @@ void CEarlyMotion::mCalcShift
 
 void CEarlyMotion::mCorrelate(int iStep, MMD::CStackShift* pStackShift)
 {
+	//------------------------------------------------
+	// 1) generated the aligned sum of the 1st group.
+	//------------------------------------------------
 	int aiSumRange[2] = {0, 1};
 	aiSumRange[1] = m_aiSumRange[0] - 1;
 	CAlignedSum alignedSum;
@@ -228,7 +238,11 @@ void CEarlyMotion::mCorrelate(int iStep, MMD::CStackShift* pStackShift)
 	int iSeaSize = m_aiSeaSize[0] * m_aiSeaSize[1];
 	float* pfPinnedBuf = (float*)m_pBufferPool->GetPinnedBuf(0);
 	float* pfXcfBuf = pfPinnedBuf + iSeaSize * iStep;
-	//-----------------
+	//------------------------------------------------
+	// 1) correlate the aligned sum of the 1st group
+	//    against the reference to see if there is
+	//    any residual shift in the 1st group.
+	//------------------------------------------------
 	m_aGCorrelateSum.DoIt(m_gCmpRef, gCmpSum, pfXcfBuf, m_pInverseFFT, 0);	
 }
 

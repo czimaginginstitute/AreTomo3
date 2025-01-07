@@ -9,13 +9,16 @@ class ReadAlnFile:
 
     def doIt(self, fileName):
         self.mInit()
-        alnFile = open(fileName, 'r')
-        self.lines = alnFile.readlines()
-        #-----------------
-        if len(self.lines) <= 0:
-            alnFile.close()
+        try:
+            alnFile = open(fileName, 'r')
+            self.lines = alnFile.readlines()
+            if len(self.lines) <= 0:
+                alnFile.close()
+                return False
+        except:
             return False
         #-----------------
+        self.fileName = fileName
         self.mParseHeader()
         self.mParseGlobal()
         self.mParseLocal()
@@ -28,6 +31,7 @@ class ReadAlnFile:
         for secIdx in self.sectionIds:
             self.secToIndex[secIdx] = iCount
             iCount += 1
+        return True
 
     def findSectionId(self, fTilt):
         fMinDif = 1e10
