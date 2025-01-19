@@ -91,6 +91,10 @@ void CFindDefocus2D::Setup2(float afResRange[2])
 	m_pGCC2D->Setup(fMinFreq, fMaxFreq, 100.0f);
 }
 
+//--------------------------------------------------------------------
+// 1. DoIt() should be called after CFindDefocus1D::DoIt(), which
+//    generates an estimate of m_fDfMean.
+//--------------------------------------------------------------------
 void CFindDefocus2D::Setup3
 (	float fDfMean,
 	float fAstRatio,
@@ -100,20 +104,20 @@ void CFindDefocus2D::Setup3
 {	m_fDfMean = fDfMean;
 	m_fAstRatio = fAstRatio;
 	m_fAstAngle = fAstAngle;
-	m_fExtPhase = fExtPhase;
+	m_afPhaseRange[0] = fExtPhase;
 }
 
-void CFindDefocus2D::DoIt(float* gfSpect, float* pfPhaseRange)
+void CFindDefocus2D::DoIt(float* gfSpect, float fPhaseRange)
 {
 	m_gfSpect = gfSpect;
+	m_afPhaseRange[1] = fPhaseRange;
         //-----------------
 	m_afDfRange[0] = m_fDfMean * 0.9f;
 	m_afDfRange[1] = m_fDfMean * 1.1f;
 	m_afAstRange[0] = 0.0f;
-	m_afAstRange[1] = 0.1f;
+	m_afAstRange[1] = 0.06f;
 	m_afAngRange[0] = -90.0f;
 	m_afAngRange[1] = 90.0f;
-	memcpy(m_afPhaseRange, pfPhaseRange, sizeof(float) * 2);
 	//-----------------
 	mIterate();
 	mCalcCtfRes();	
@@ -134,15 +138,13 @@ void CFindDefocus2D::Refine
 	//-----------------
 	fHalfR = 0.5f * fAstRange;
 	m_afAstRange[0] = fmaxf(m_fAstRatio - fHalfR, 0.0f);
-	m_afAstRange[1] = fminf(m_fAstRatio + fHalfR, 0.1f);
+	m_afAstRange[1] = fminf(m_fAstRatio + fHalfR, 0.02f);
 	//-----------------
 	fHalfR = 0.5f * fAngRange;
 	m_afAngRange[0] = fmaxf(m_fAstAngle - fHalfR, -90.0f);
 	m_afAngRange[1] = fminf(m_fAstAngle + fHalfR, 90.0f);
 	//-----------------
-	fHalfR = 0.5f * fPhaseRange;
-	m_afPhaseRange[0] = fmaxf(m_fExtPhase - fHalfR, 0.0f);
-	m_afPhaseRange[1] = fminf(m_fExtPhase + fHalfR, 179.0f);
+	m_afPhaseRange[1] = fPhaseRange;
 	//-----------------
 	mIterate();
 	mCalcCtfRes();
@@ -157,10 +159,10 @@ void CFindDefocus2D::mIterate(void)
 	if(fOldCC > m_fCCMax) return;
 	//-----------------
 	int iIterations = 20;
+	m_fExtPhase = m_afPhaseRange[0];
 	float fDfRange = m_afDfRange[1] - m_afDfRange[0];
         float fAstRange = m_afAstRange[1] - m_afAstRange[0];
         float fAngRange = m_afAngRange[1] - m_afAngRange[0];
-        float fPhaseRange = m_afPhaseRange[1] - m_afPhaseRange[0];
 	for(int i=1; i<iIterations; i++)
         {       float fScale = 1.0f - i * 0.5f / iIterations;
                 //----------------
@@ -175,7 +177,7 @@ void CFindDefocus2D::mIterate(void)
 		fRange = fScale * fDfRange;
 		mRefineDfMean(fRange);
 		//----------------
-                fRange = fScale * fPhaseRange;
+		fRange = fScale * m_afPhaseRange[1];
 		mRefinePhase(fRange);
         }
 }
@@ -187,12 +189,12 @@ float CFindDefocus2D::mFindAstig(float* pfAstRange, float* pfAngRange)
 	float fAngRange = pfAngRange[1] - pfAngRange[0];
 	if(fAstRange < fTiny  && fAngRange < fTiny) return 0.0f;
 	//-----------------
-	int iAstSteps = 21, iAngSteps = 37;
+	int iAstSteps = 51, iAngSteps = 51;
 	float fAstStep = fAstRange / iAstSteps;
 	float fAngStep = fAngRange / iAngSteps;
 	//-----------------
-	iAstSteps = (fAstStep < 1e-5) ? 1 : 51;
-	iAngSteps = (fAngStep < 1e-5) ? 1 : 51;
+	if(fAstStep < 1e-5) iAstSteps = 1;
+	if(fAngStep < 1e-5) iAngSteps = 1;
 	if(iAstSteps == 1 && iAngSteps == 1) return 0.0f;
 	//-----------------
 	float fAngMax, fAstMax, fCCMax = (float)-1e20;
@@ -325,16 +327,25 @@ float CFindDefocus2D::mRefinePhase(float fPhaseRange)
 	if(fPhaseRange < fTiny) return 0.0f;
 	//-----------------
 	int iSteps = 61;
-	float fMin = fmax(m_fExtPhase - fPhaseRange * 0.5f, m_afPhaseRange[0]);
-	float fMax = fmin(m_fExtPhase + fPhaseRange * 0.5f, m_afPhaseRange[1]);
 	float fStep = fPhaseRange / iSteps;
-	if(fStep < 0.5f) fStep = 0.5f;
-	iSteps = (int)((fMax - fMin) / fStep) / 2 * 2 + 1;
-	if(iSteps == 1) return 0.0f;
+	if(fStep < 0.03f) return 0.0f;
 	//-----------------
-	float fCCMax = (float)-1e20, fPhaseMax = 0.0f;
+	if(fStep > 1.0f)
+	{	fStep = 1.0f;
+		iSteps = (int)(fPhaseRange / fStep);
+		iSteps = iSteps / 2 * 2 + 1;
+	}
+	//-----------------
+	float fMinPhase = m_afPhaseRange[0] - m_afPhaseRange[1] * 0.5f;
+	float fMaxPhase = m_afPhaseRange[1] + m_afPhaseRange[1] * 0.5f;
+	if(fMinPhase < 0) fMinPhase = 0.0f;
+	if(fMaxPhase > 150) fMaxPhase = 180.0f;
+	//-----------------
+	float fCCMax = (float)-1e20, fPhaseMax = 0.0f, fPhase = 0.0f;
 	for(int i=0; i<iSteps; i++)
-	{	float fPhase = fMin + i * fStep;
+	{	fPhase = m_fExtPhase + (i - iSteps / 2)  * fStep;
+		if(fPhase < fMinPhase || fPhase > fMaxPhase) continue;
+		//----------------
 		float fCC = mCorrelate(m_fAstRatio, m_fAstAngle, fPhase);
 		if(fCC <= fCCMax) continue;
 		//----------------

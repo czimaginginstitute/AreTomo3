@@ -305,7 +305,7 @@ void CCtfResults::Display(int iNthCtf, char* pcLog)
 {
 	char acBuf[128] = {'\0'};
 	sprintf(acBuf, "%4d  %7.2f  %8.2f  %8.2f  %6.2f "
-	   "%6.2f %6.2f %9.5f %3d\n", 
+	   "%9.4f %6.2f %9.5f %3d\n", 
 	   iNthCtf+1, this->GetTilt(iNthCtf),
 	   this->GetDfMin(iNthCtf),   this->GetDfMax(iNthCtf), 
 	   this->GetAzimuth(iNthCtf), this->GetExtPhase(iNthCtf),

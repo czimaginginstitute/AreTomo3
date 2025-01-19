@@ -97,12 +97,13 @@ public:
 private:
 	CFmGroupParam(void);
         void mGroupByRawSize(void);
-        void mGroupByDose(void);
+	void mFindMaxGroupRawFms(void);
         void mClean(void);
         void mAllocate(void);
         int* m_piGroupStart;
-        int* m_piGroupSize;
+	int* m_piGroupSize;
         float* m_pfGroupCenters;
+	int m_iMaxGroupRawFms;
 	//-----------------
 	static CFmGroupParam* m_pInstances;
 	static int m_iNumGpus;

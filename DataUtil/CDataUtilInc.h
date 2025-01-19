@@ -46,7 +46,7 @@ public:
 	void SetTilts(float* pfTilts);
 	void SetDoses(float* pfDoses);
 	void SetAcqs(int* piAcqIndices);
-	void SetSecs(int* piSecIndices);
+	void SetSecIndices(int* piSecIndices);
 	//-----------------
 	void SetImage(int iTilt, void* pvImage);
 	void SetCenter(int iFrame, float* pfCent);

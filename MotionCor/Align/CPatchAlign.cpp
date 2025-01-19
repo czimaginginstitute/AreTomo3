@@ -31,9 +31,10 @@ void CPatchAlign::DoIt(int iNthGpu)
 	//-----------------
 	CFullAlign::Align(iNthGpu);
 	mCorrectFullShift();
-	//------------------
+	//-----------------
 	Util_Time aTimer;
 	aTimer.Measure();
+	//-----------------
 	mCalcPatchShifts();
 	float fSeconds = aTimer.GetElapsedSeconds();
 	printf("Patch alignment time: %.2f(sec)\n\n", fSeconds);

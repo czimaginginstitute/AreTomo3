@@ -105,10 +105,11 @@ void CSaveTilts::mGenList(void)
 	for(int i=0; i<m_iAllTilts; i++)
 	{	float fTilt = pDarkFrames->GetTilt(i);
 		int iSecIdx = pDarkFrames->GetSecIdx(i);
-		char* pcLine = m_pcOrderedList + iSecIdx * m_iLineSize;
+		int iImgIdx = iSecIdx - 1;
+		char* pcLine = m_pcOrderedList + iImgIdx * m_iLineSize;
 		sprintf(pcLine, "%8.2f", fTilt);
 		//----------------
-		m_pbDarkImgs[iSecIdx] = pDarkFrames->IsDarkFrame(i);
+		m_pbDarkImgs[iImgIdx] = pDarkFrames->IsDarkFrame(i);
 	}
 }
 

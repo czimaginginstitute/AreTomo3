@@ -45,12 +45,8 @@ void CRemoveDarkFrames::Remove(void)
 	{	mRemoveSeries(i);
 	}
 	//-----------------
-	/*
-	for(int i=pDarkFrames->m_iNumDarks-1; i>=0; i--)
-	{	int iFrmIdx = pDarkFrames->GetDarkIdx(i);
-		pAlnParam->RemoveFrame(iFrmIdx);
-	}
-	*/
+	CAlignParam* pAlnParam = CAlignParam::GetInstance(m_iNthGpu);
+	pAlnParam->RemoveDarkFrames();	
 }
 
 void CRemoveDarkFrames::mDetect(void)

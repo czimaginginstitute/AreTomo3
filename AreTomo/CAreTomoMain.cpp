@@ -90,11 +90,12 @@ void CAreTomoMain::mDoFull(void)
 	// and beta tilt offset.
 	//-----------------------------------------------
 	mFindCtf(false);
-	mRemoveDarkFrames();
 	//-----------------
 	mCreateAlnParams();
 	mRemoveSpikes();	
 	mMassNorm();
+	//-----------------
+	mRemoveDarkFrames();
 	//-----------------
 	mAlign();
 	mSaveAlignment();

@@ -84,7 +84,7 @@ void CSaveCtfResults::mSaveFittings(const char* pcCtfFile)
 	   "fit successfully; "
 	   "#8 - dfHand\n");
 	for(int i=0; i<pCtfResults->m_iNumImgs; i++)
-	{	fprintf(pFile, "%4d   %8.2f  %8.2f  %8.2f  %8.2f  "
+	{	fprintf(pFile, "%4d   %8.2f  %8.2f  %8.2f  %9.4f  "
 		   "%8.4f  %8.4f  %3d\n", i+1,
 		   pCtfResults->GetDfMax(i),
 		   pCtfResults->GetDfMin(i),

@@ -398,6 +398,7 @@ AreTomo3 2.0.5 [12-04-2024]
       m_piGroupStart[g] + 0.5f * m_piGroupSize[g]; instead.
 
 AreTomo3 2.0.6 [Jan-01-2025]
+----------------------------
 1. 1) Added -Cmd 4. This mode rotates the tilt axis by 180 degree and generates
       the updated .aln file. The files in _Imod directory including .xf,
       _st.mrc are also updated to reflect the 180 degree rotation of the tilt
@@ -407,4 +408,25 @@ AreTomo3 2.0.6 [Jan-01-2025]
       corresponding directory exists. The new contents are saved afterwards.
    4) Revised the implementation of -Cmd 3. Added local CTF estimation.
 2. Updated Remap3D by copying Remap3D_0.3_07dec24 into tools.
-3. Updated user manuals for running -Cmd 4 and running Remap3D. 
+3. Updated user manuals for running -Cmd 4 and running Remap3D.
+
+AreTomo 2.0.7 [Jan-13-2025]
+---------------------------
+1. 1) Bug fix (MotionCor/CFmIntParam.cpp)  If the sum of the group sizes of 
+      (n-1) lines exceeds the total frames, AreTomo3 crashes. Fixed.
+   2) Bug fix (AreTomo/MrcUtil/CAlignParam.cpp) Remove dark frames one by
+      one can be buggy because the old implementation does not track the
+      original sequence. New implementation removes them all at once.
+   3) Bug fix (AreTomo/MrcUtil/CAlignParam.cpp) Section indices are 
+      initialized to 1-based. Aln and CTF files contain 1-based section
+      indices.
+   4) Bug fix (AreTomo/FindCtf/CSaveCtfResults) Using 4 decimals for extra
+      phase shift since it is in radian.
+   5) Bug fix (MotionCor/DataUtil/CPatchShifts::SetRawShift) Incorrect
+      determination of the starting location of m_pfPatShifts. Fixed!
+   6) Bug fix (MotionCor/DataUtil/CFmGroupParam) Group center should be based
+      on number of raw frames, not integrated frames.
+   7) Bug fix (MotionCor/Align/CEarlyMotion) The shifts at the nodes are the
+      ones of integrated frames. Do not use CFmGroupParam::m_pfGroupCenters
+2. 1) FindCtf: limit the estimation of extra phase shift to within [0, 150]
+      range to prevent accidental contrast flipping.

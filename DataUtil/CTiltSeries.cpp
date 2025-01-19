@@ -133,7 +133,7 @@ void CTiltSeries::SetAcqs(int* piAcqIndices)
 	memcpy(m_piAcqIndices, piAcqIndices, iBytes);
 }
 
-void CTiltSeries::SetSecs(int* piSecIndices)
+void CTiltSeries::SetSecIndices(int* piSecIndices)
 {
 	int iBytes = sizeof(int) * m_aiStkSize[2];
 	if(iBytes <= 0) return;
@@ -258,7 +258,7 @@ float** CTiltSeries::GetImages(void)
 void CTiltSeries::ResetSecIndices(void)
 {
 	for(int i=0; i<m_aiStkSize[2]; i++)
-	{	m_piSecIndices[i] = i;
+	{	m_piSecIndices[i] = i + 1;
 	}
 }
 

@@ -135,7 +135,6 @@ void CFmIntParam::mCalcIntFms(void)
 {
 	CReadFmIntFile* pReadFmIntFile = CReadFmIntFile::GetInstance();
 	int iNumEntries = pReadFmIntFile->m_iNumEntries;
-	int iCount = 0, iExtra = 0, iIntSize = 0;
 	//-----------------------------------------------
 	// 1) Check whether the number frames in the
 	// FmIntFile matches the m_iNumRawFms.
@@ -146,60 +145,48 @@ void CFmIntParam::mCalcIntFms(void)
 	int* piGroupSizes = new int[iNumEntries * 2];
 	int* piNumInts = &piGroupSizes[iNumEntries];
 	//-----------------
+	int iCount = 0, iLeft = 0;
 	for(int i=0; i<iNumEntries; i++)
-	{	piGroupSizes[i] = pReadFmIntFile->GetGroupSize(i);
-		iCount += pReadFmIntFile->GetGroupSize(i);
+	{	int iGroupSize = pReadFmIntFile->GetGroupSize(i);
+		int iIntSize = pReadFmIntFile->GetIntSize(i);
+		iGroupSize = iGroupSize / iIntSize * iIntSize;
+		//----------------
+		iLeft = m_iNumRawFms - iCount;
+		if(iLeft < iGroupSize)
+		{	iGroupSize = iLeft / iIntSize * iIntSize;
+		}
+		piGroupSizes[i] = iGroupSize;
+		iCount += iGroupSize;
 	}
-        //-----------------
-	iExtra = iCount - m_iNumRawFms;
-	int iLastEntry = iNumEntries - 1;
-	if(iExtra > 0)
-	{	for(int i=iLastEntry; i>=0; i--)
-		{	int iGroupSize = piGroupSizes[i];
-			piGroupSizes[i] -= iExtra;
-			if(piGroupSizes[i] <= 0) piGroupSizes[i] = 0;
-                        else iExtra = iExtra - iGroupSize;
-                        //---------------
-                        if(iExtra <= 0) break;
-                }
-        }
-        else if(iExtra < 0) piGroupSizes[iNumEntries-1] -= iExtra;
-	//-----------------------------------------------
-        // 1) For each entry the extra frames are moved
-        // to the next entry. As a result, only the
-        // last entry may have extra raw frames.
-        //-----------------------------------------------
-        for(int i=0; i<iLastEntry; i++)
-        {       iIntSize = pReadFmIntFile->GetIntSize(i);
-                piNumInts[i] = piGroupSizes[i] / iIntSize;
-                piGroupSizes[i+1] += (piGroupSizes[i] % iIntSize);
-        }
-        //-----------------
-        iIntSize = pReadFmIntFile->GetIntSize(iLastEntry);
-        iExtra = piGroupSizes[iLastEntry] % iIntSize;
-        piNumInts[iLastEntry] = piGroupSizes[iLastEntry] / iIntSize;
-        //-----------------------------------------------
-        // 1) Count total integrated frames.
-        // 2) distribute the extra raw frames to the
-        // last integrated frames one by one.
-        //-----------------------------------------------
+	iLeft = m_iNumRawFms - iCount;
+	//-----------------
         m_iNumIntFms = 0;
         for(int i=0; i<iNumEntries; i++)
-        {       m_iNumIntFms += piNumInts[i];
+        {       int iIntSize = pReadFmIntFile->GetIntSize(i);
+		m_iNumIntFms += (piGroupSizes[i] / iIntSize);
         }
         mAllocate();
         //-----------------
         iCount = 0;
         for(int i=0; i<iNumEntries; i++)
-        {       iIntSize = pReadFmIntFile->GetIntSize(i);
-                for(int k=0; k<piNumInts[i]; k++)
+        {       int iIntSize = pReadFmIntFile->GetIntSize(i);
+		int iGroupSize = piGroupSizes[i];
+		int iNumIntFms = iGroupSize / iIntSize;
+		//----------------
+                for(int k=0; k<iNumIntFms; k++)
                 {       m_piIntFmSize[iCount] = iIntSize;
                         iCount += 1;
                 }
         }
         if(piGroupSizes != 0L) delete[] piGroupSizes;
+	if(m_iNumIntFms == 0) return;
 	//-----------------
-        for(int i=0; i<iExtra; i++)
+	int iStep = iLeft / m_iNumIntFms;
+	iLeft = iLeft % m_iNumIntFms;
+	for(int i=0; i<m_iNumIntFms; i++)
+	{	m_piIntFmSize[i] += iStep;
+	}
+        for(int i=0; i<iLeft; i++)
         {       int j = m_iNumIntFms - 1 - i;
                 m_piIntFmSize[j] += 1;
         }

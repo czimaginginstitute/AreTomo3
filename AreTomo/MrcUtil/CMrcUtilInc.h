@@ -70,7 +70,7 @@ public:
 	void ResetShift(void);
 	void SortByTilt(void);
 	void SortBySecIndex(void);
-	void RemoveFrame(int iFrame);
+	void RemoveDarkFrames(void);
 	//-----------------
 	CAlignParam* GetCopy(void);
 	CAlignParam* GetCopy(int iStartFm, int iNumFms);

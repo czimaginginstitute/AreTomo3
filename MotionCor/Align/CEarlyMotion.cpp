@@ -176,10 +176,25 @@ void CEarlyMotion::mGetNodeShifts
 (	MMD::CStackShift* pStackShift, 
 	int iAxis, float* pfShift
 )
-{	float afShifts[6] = {0.0f};
-	pStackShift->GetShift((int)m_afGroupCent[0], &afShifts[0]);
-	pStackShift->GetShift((int)m_afGroupCent[1], &afShifts[2]);
-	pStackShift->GetShift((int)m_afGroupCent[2], &afShifts[4]);
+{	bool bPatch = (m_iBuffer == MD::EBuffer::pat) ? true : false;
+	MMD::CFmGroupParam* pFmGrpParam = 0L;
+	pFmGrpParam = MMD::CFmGroupParam::GetInstance(m_iNthGpu, bPatch);
+	//-----------------
+	int aiGroupCent[3] = {0};
+	aiGroupCent[0] = pFmGrpParam->GetGroupStart(0) + 
+	   pFmGrpParam->GetGroupSize(0) / 2;
+	aiGroupCent[1] = pFmGrpParam->GetGroupStart(1) +
+	   pFmGrpParam->GetGroupSize(1) / 2;
+	//-----------------
+	float afShifts[6] = {0.0f};
+	//pStackShift->GetShift((int)m_afGroupCent[0], &afShifts[0]);
+	//pStackShift->GetShift((int)m_afGroupCent[1], &afShifts[2]);
+	//pStackShift->GetShift((int)m_afGroupCent[2], &afShifts[4]);
+	
+	pStackShift->GetShift(aiGroupCent[0], &afShifts[0]);
+	pStackShift->GetShift(aiGroupCent[1], &afShifts[2]);
+	pStackShift->GetShift(aiGroupCent[2], &afShifts[4]);
+
 	pfShift[0] = afShifts[0 + iAxis];
 	pfShift[1] = afShifts[2 + iAxis];
 	pfShift[2] = afShifts[4 + iAxis];

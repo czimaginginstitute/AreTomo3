@@ -744,7 +744,7 @@ public:
 	//-----------------
 	void DoIt
 	( float* gfSpect,
-	  float* pfPhaseRange
+	  float fPhaseRange
 	);
 	void Refine
 	( float* gfSpect, float fDfMeanRange,

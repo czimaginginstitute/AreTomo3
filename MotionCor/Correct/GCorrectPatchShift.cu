@@ -22,7 +22,8 @@ static __global__ void mGCorrect3D
 	bool* gbBadShifts,
 	float* gfPadFrmOut
 )
-{	int y = blockIdx.y * blockDim.y + threadIdx.y;
+{	int x = 0;
+	int y = blockIdx.y * blockDim.y + threadIdx.y;
         if(y >= giSizes[1]) return;
 	int iOut = y * giSizes[0] + blockIdx.x;
 	//-------------------------------------
@@ -43,9 +44,11 @@ static __global__ void mGCorrect3D
 		fSx += gfPatShifts[p * 2] * afXYZ[0];
 		fSy += gfPatShifts[p * 2 + 1] * afXYZ[0];
 	}
-	fW += (float)1e-20;	
-	int x = (int)(blockIdx.x - fSx / fW);
-	y = (int)(y - fSy / fW);
+	x = blockIdx.x;
+	if(fW > 0)	
+	{	x = (int)(blockIdx.x - fSx / fW);
+		y = (int)(y - fSy / fW);
+	}
 	//----------------------
 	if(x < 0 || y < 0 || x >= gridDim.x || y >= giSizes[1])
 	{	x = (x < 0) ? -x : x;

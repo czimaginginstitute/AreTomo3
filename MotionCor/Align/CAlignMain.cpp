@@ -21,11 +21,14 @@ void CAlignMain::DoIt(int iNthGpu)
 	nvtxRangePush ("CAlignMain::DoIt");
 	m_iNthGpu = iNthGpu;
 	//-----------------
+	MD::CMcPackage* pMcPackage = MD::CMcPackage::GetInstance(m_iNthGpu);
+	float fTilt = pMcPackage->m_fTilt;
+	//-----------------
 	CAlignBase* pAlignBase = 0L;
 	CAlignParam* pAlignParam = CAlignParam::GetInstance();
 	//-----------------
 	nvtxRangePushA("align select");
-	if(pAlignParam->bPatchAlign()) 
+	if(pAlignParam->bPatchAlign() && fabs(fTilt) < 40.0f) 
 	{	printf("Patch based alignment\n");
 		pAlignBase = new CPatchAlign;
 	}

@@ -43,7 +43,7 @@ void CMeasurePatches::DoIt
 	{	extractPatch.DoIt(i, m_iNthGpu);
 		mCalcPatchShift(i);
 	}
-	m_pPatchShifts->MakeRelative();
+	//m_pPatchShifts->MakeRelative();
 	m_pPatchShifts->DetectBads();
 }
 
