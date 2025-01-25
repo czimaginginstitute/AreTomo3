@@ -73,14 +73,22 @@ void CEarlyMotion::DoIt(MMD::CStackShift* pStackShift)
 	   MMD::CFmGroupParam::GetInstance(m_iNthGpu, bPatch);
 	if(pFmGrpParam->m_iNumGroups < 2) return;
 	//-------------------------------------------------------
-	// 1) GroupCent[0] is at the 1st int frame. GroupCent[1]
-	//    is at the center of the 1st group. GroupCent[2]
+	// 1) NodeFm[0] is at the 0th int frame. NodeFm[1]
+	//    is at the center of the 1st group. NodeFm[2]
 	//    if at the center of the 2nd group.
 	// 2) This is why we need at least two group sums.
 	//-------------------------------------------------------
-	m_afGroupCent[0] = 0.0f;
-	m_afGroupCent[1] = pFmGrpParam->GetGroupCenter(0);
-	m_afGroupCent[2] = pFmGrpParam->GetGroupCenter(1);
+	m_aiNodeFm[0] = 0;
+	m_aiNodeFm[1] = pFmGrpParam->GetGroupStart(0) +
+	   pFmGrpParam->GetGroupSize(0) / 2;
+	m_aiNodeFm[2] = pFmGrpParam->GetGroupStart(1) +
+	   pFmGrpParam->GetGroupSize(1) / 2;
+	//-----------------
+	MMD::CFmIntParam* pFmIntParam = 
+	   MMD::CFmIntParam::GetInstance(m_iNthGpu);
+	m_afNodeCent[0] = pFmIntParam->m_pfIntFmCents[m_aiNodeFm[0]];
+	m_afNodeCent[1] = pFmIntParam->m_pfIntFmCents[m_aiNodeFm[1]];
+	m_afNodeCent[2] = pFmIntParam->m_pfIntFmCents[m_aiNodeFm[2]];
 	//-------------------------------------------------------
 	// 1. calculate the sum from the 1st frame in the second
 	//    group to the frame at 2/3 of all frames.
@@ -187,14 +195,10 @@ void CEarlyMotion::mGetNodeShifts
 	   pFmGrpParam->GetGroupSize(1) / 2;
 	//-----------------
 	float afShifts[6] = {0.0f};
-	//pStackShift->GetShift((int)m_afGroupCent[0], &afShifts[0]);
-	//pStackShift->GetShift((int)m_afGroupCent[1], &afShifts[2]);
-	//pStackShift->GetShift((int)m_afGroupCent[2], &afShifts[4]);
-	
 	pStackShift->GetShift(aiGroupCent[0], &afShifts[0]);
 	pStackShift->GetShift(aiGroupCent[1], &afShifts[2]);
 	pStackShift->GetShift(aiGroupCent[2], &afShifts[4]);
-
+	//-----------------
 	pfShift[0] = afShifts[0 + iAxis];
 	pfShift[1] = afShifts[2 + iAxis];
 	pfShift[2] = afShifts[4 + iAxis];
@@ -204,14 +208,14 @@ void CEarlyMotion::mCalcCoeff(float fGain, float* pfShift, float* pfCoeff)
 {
 	pfCoeff[0] = pfShift[0] + fGain;
 	//------------------
-	float x1_2 = m_afGroupCent[1] * m_afGroupCent[1];
-	float x2_2 = m_afGroupCent[2] * m_afGroupCent[2];
-	float fDelta = m_afGroupCent[1] * x2_2 - m_afGroupCent[2] * x1_2;
+	float x1_2 = m_afNodeCent[1] * m_afNodeCent[1];
+	float x2_2 = m_afNodeCent[2] * m_afNodeCent[2];
+	float fDelta = m_afNodeCent[1] * x2_2 - m_afNodeCent[2] * x1_2;
 	//------------------
 	pfCoeff[1] = ((pfShift[1] - pfCoeff[0]) * x2_2 - 
 	   (pfShift[2] - pfCoeff[0]) * x1_2) / fDelta;
-	pfCoeff[2] = ((pfShift[2] - pfCoeff[0]) * m_afGroupCent[1] -
-	   (pfShift[1] - pfCoeff[0]) * m_afGroupCent[2]) / fDelta;
+	pfCoeff[2] = ((pfShift[2] - pfCoeff[0]) * m_afNodeCent[1] -
+	   (pfShift[1] - pfCoeff[0]) * m_afNodeCent[2]) / fDelta;
 }
 
 void CEarlyMotion::mCalcShift
@@ -219,18 +223,23 @@ void CEarlyMotion::mCalcShift
 	float* pfCoeffYs,
 	MMD::CStackShift* pStackShift
 )
-{	float afShift[2] = {0.0f};
+{	float fX = 0.0f, fX2 = 0.0f;
+	float afShift[2] = {0.0f};
+	MMD::CFmIntParam* pFmIntParam = 
+	   MMD::CFmIntParam::GetInstance(m_iNthGpu);
+	//-----------------
 	for(int i=0; i<m_aiSumRange[0]; i++)
 	{	pStackShift->GetShift(i, afShift);
-		int x = i;
-		int x2 = x * x;
+		fX = pFmIntParam->m_pfIntFmCents[i]; 
+		fX2 = fX * fX;
+		//----------------
 		if(pfCoeffXs != 0L)
-		{	afShift[0] = pfCoeffXs[0] + pfCoeffXs[1] * x 
-			   + pfCoeffXs[2] * x2;
+		{	afShift[0] = pfCoeffXs[0] + pfCoeffXs[1] * fX
+			   + pfCoeffXs[2] * fX2;
 		}
 		if(pfCoeffYs != 0L)
-		{	afShift[1] = pfCoeffYs[0] + pfCoeffYs[1] * x 
-			   + pfCoeffYs[2] * x2;
+		{	afShift[1] = pfCoeffYs[0] + pfCoeffYs[1] * fX 
+			   + pfCoeffYs[2] * fX2;
 		}
 		pStackShift->SetShift(i, afShift);
 	}

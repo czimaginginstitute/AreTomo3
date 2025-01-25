@@ -126,7 +126,7 @@ MMD::CStackShift* CIterativeAlign::mAlignStack(MMD::CStackShift* pInitShift)
 		//----------------
 		pTotalShift->AddShift(pGroupShift);
 		pIntShift = aIntpShift.DoIt(pGroupShift, 
-		   m_iNthGpu, bPatch, false);
+		   m_iNthGpu, bPatch, true);
                 pTmpShift->AddShift(pIntShift);
 		if(pIntShift != 0L) delete pIntShift;
 		//----------------
@@ -134,7 +134,6 @@ MMD::CStackShift* CIterativeAlign::mAlignStack(MMD::CStackShift* pInitShift)
                 m_iIterations += 1;
 		if(fMaxErr < m_fTol && i > 0) break;
         }
-	pTotalShift->RemoveSpikes(true);
 	pIntShift = aIntpShift.DoIt(pTotalShift, m_iNthGpu, bPatch, false);
 	pIntShift->RemoveSpikes(false);
 	pIntShift->Smooth(0.5f);

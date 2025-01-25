@@ -121,6 +121,7 @@ void CPatchAlign::mLogShift(void)
 			   afShift[0], afShift[1]);
 		}
 	}
+	fprintf(pFile, "\n");
 	fflush(pFile);
 }
 

@@ -21,19 +21,12 @@ CFindCtfMain::~CFindCtfMain(void)
 
 void CFindCtfMain::Clean(void)
 {
-	if(m_ppfHalfSpects != 0L)
-	{	for(int i=0; i<m_iNumTilts; i++)
-		{	if(m_ppfHalfSpects[i] == 0L) continue;
-			else delete[] m_ppfHalfSpects[i];
-		}
-		delete[] m_ppfHalfSpects;
-		m_ppfHalfSpects = 0L;
-	}
+	mCleanSpects();
+	//-----------------
 	if(m_pFindCtf2D != 0L)
 	{	delete m_pFindCtf2D;
 		m_pFindCtf2D = 0L;
 	}
-	m_iNumTilts = 0;
 }
 
 bool CFindCtfMain::bCheckInput(void)
@@ -110,9 +103,12 @@ void CFindCtfMain::mGenAvgSpects
 	float fBetaOffset,
 	float fMaxTilt
 )
-{	bool bRaw = true, bToHost = true;
-	if(m_ppfHalfSpects == 0L) m_ppfHalfSpects = new float*[m_iNumTilts];
+{	mCleanSpects();
+	m_ppfHalfSpects = new float*[m_iNumTilts];
+	memset(m_ppfHalfSpects, 0, sizeof(float*) * m_iNumTilts);
+	//-----------------
 	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
+	bool bRaw = true, bToHost = true;
 	//-----------------
 	for(int i=0; i<m_iNumTilts; i++)
 	{	float fTilt = fabs(pCtfRes->GetTilt(i));
@@ -237,4 +233,15 @@ float CFindCtfMain::mGetResults(int iTilt)
 	m_pFindCtf2D->GenFullSpectrum(pfSpect);
 	//-----------------
 	return m_pFindCtf2D->m_fScore;
+}
+
+void CFindCtfMain::mCleanSpects(void)
+{
+	if(m_ppfHalfSpects == 0L) return;
+	for(int i=0; i<m_iNumTilts; i++)
+	{	if(m_ppfHalfSpects[i] == 0L) continue;
+		else delete[] m_ppfHalfSpects[i];
+	}
+	delete[] m_ppfHalfSpects;
+	m_ppfHalfSpects = 0L;
 }

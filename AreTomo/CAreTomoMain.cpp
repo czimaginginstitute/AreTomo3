@@ -843,7 +843,10 @@ void CAreTomoMain::mWbpRecon
 	pVolStack->m_fPixSize = pSeries->m_fPixSize;
 	printf("GPU %d: WBP Recon: %.2f sec\n\n", m_iNthGpu,
 	   aTimer.GetElapsedSeconds());
-	//-----------------
+	//--------------------------------------------------
+	// Note pVolStack is deleted in mFlipVol, so no
+	// memory leak here.
+	//--------------------------------------------------
 	MD::CTiltSeries* pNewVol = mFlipVol(pVolStack);
 	if(pNewVol != 0L) pVolStack = pNewVol;
 	//-----------------

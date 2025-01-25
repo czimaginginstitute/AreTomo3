@@ -54,8 +54,8 @@ void CPatchShifts::SetRawShift(CStackShift* pStackShift, int iPatch)
 {
         if(iPatch < 0 || iPatch >= m_iNumPatches) return;
         //-----------------------------------------------
-        for(int i=1; i<m_aiFullSize[2]; i++)
-        {       int j = i + m_iNumPatches + iPatch;
+        for(int i=0; i<m_aiFullSize[2]; i++)
+        {       int j = i * m_iNumPatches + iPatch;
 		float* pfDst = &m_pfPatShifts[j * 2];
                 pStackShift->GetShift(i, pfDst);
         }
@@ -292,7 +292,7 @@ void CPatchShifts::mDetectBadOnFrame(int iFrame)
 		}
 	}
 	dFmRms = sqrtf(dFmRms / iCount);
-	float fTol = (float)(dFmRms * 2);
+	float fTol = (float)(dFmRms * 2.0);
 	//printf("**** Frame RMS: %4d  %8.2f\n", iFrame, dFmRms);
 	//-----------------------------------------------------
 	bool* pbBads = m_pbBadShifts + iFrame * m_iNumPatches;

@@ -424,9 +424,21 @@ AreTomo 2.0.7 [Jan-13-2025]
       phase shift since it is in radian.
    5) Bug fix (MotionCor/DataUtil/CPatchShifts::SetRawShift) Incorrect
       determination of the starting location of m_pfPatShifts. Fixed!
+      5.1) SetRawShift: loop starts from i=1, should be i=0, fixed.
    6) Bug fix (MotionCor/DataUtil/CFmGroupParam) Group center should be based
       on number of raw frames, not integrated frames.
    7) Bug fix (MotionCor/Align/CEarlyMotion) The shifts at the nodes are the
       ones of integrated frames. Do not use CFmGroupParam::m_pfGroupCenters
 2. 1) FindCtf: limit the estimation of extra phase shift to within [0, 150]
       range to prevent accidental contrast flipping.
+
+AreTomo3 2.0.8 [Jan-23-2025]
+----------------------------
+1. 1) Bug fix (AreTomo/FindCtf/CRefineCtfMain.cpp): Memory leak in 
+      CFindCtfMain::mGenAvgSpects. When m_ppfSpects[i] is not empty, 
+      the new memory pointer returned by m_pFindCtf2D->GetHalfSpect
+      overrides the old one.
+      Fix: Added mCleanSpects and mGenAvgSpects alway calls it.
+2. In MotionCor/Align/CAlignMain.cpp, temporally diabled local motion correction
+   on tilt images when their tilt angles higher than 5 degree. Need more robust
+   implementation. 

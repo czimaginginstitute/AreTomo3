@@ -943,6 +943,7 @@ protected:
 	  float fBetaOffset, 
 	  float fMaxTilt
 	);
+	void mCleanSpects(void);
 	//-----------------
 	void mSaveSpectFile(void);
 	float mGetResults(int iTilt);

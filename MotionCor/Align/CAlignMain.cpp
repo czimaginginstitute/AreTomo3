@@ -26,9 +26,11 @@ void CAlignMain::DoIt(int iNthGpu)
 	//-----------------
 	CAlignBase* pAlignBase = 0L;
 	CAlignParam* pAlignParam = CAlignParam::GetInstance();
-	//-----------------
+	//------------------------------------------------------------
+	// Temporarily diable local motion correction at high tilts.
+	//------------------------------------------------------------
 	nvtxRangePushA("align select");
-	if(pAlignParam->bPatchAlign() && fabs(fTilt) < 40.0f) 
+	if(pAlignParam->bPatchAlign() && fabs(fTilt) < 5.0f) 
 	{	printf("Patch based alignment\n");
 		pAlignBase = new CPatchAlign;
 	}
@@ -50,37 +52,6 @@ void CAlignMain::DoIt(int iNthGpu)
 }
 
 char* CAlignMain::mCreateLogFile(void)
-{	/*
-	CMcInput* pInput = CMcInput::GetInstance();
-	if(0 == strlen(pInput->m_acLogDir)) return 0L;
-	//-----------------
-	MD::CMcPackage* pMcPkg = MD::CMcPackage::GetInstance(m_iNthGpu);
-	char* pcInFile = strrchr(pMcPkg->m_pcInFileName, '/');
-	if(pcInFile != 0L) pcInFile += 1;
-	else pcInFile = pMcPkg->m_pcInFileName;
-	//-----------------
-	char* pcLogFile = new char[256];
-	strcpy(pcLogFile, pInput->m_acLogDir);
-	strcat(pcLogFile, pcInFile);
-	//-----------------
-	char* pcFileExt = strcasestr(pcLogFile, ".mrc");
-	if(pcFileExt != 0L) 
-	{	strcpy(pcFileExt, "");
-		return pcLogFile;
-	}
-	pcFileExt = strcasestr(pcLogFile, ".tif");
-	if(pcFileExt != 0L)
-	{	strcpy(pcFileExt, "");
-		return pcLogFile;
-	}
-	pcFileExt = strcasestr(pcLogFile, ".eer");
-	if(pcFileExt != 0L)
-	{	strcpy(pcFileExt, "");
-		return pcLogFile;
-	}
-	//-----------------
-	delete pcLogFile; return 0L;
-	*/
-	return 0L;
+{	return 0L;	
 }
 

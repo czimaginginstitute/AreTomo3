@@ -76,16 +76,14 @@ void CFmGroupParam::Setup(int iGroupSize)
 	mFindMaxGroupRawFms();
 	mGroupByRawSize();
 	//-----------------
-	int iRawFmCount = 0;
 	for(int g=0; g<m_iNumGroups; g++)
-	{	int iGroupRawFms = 0;
+	{	float fSumCents = 0.0f;
 		for(int i=0; i<m_piGroupSize[g]; i++)
 		{	int iIntFm = m_piGroupStart[g] + i;
-			iGroupRawFms += pFmIntParam->GetIntFmSize(iIntFm);
+			fSumCents += pFmIntParam->m_pfIntFmCents[iIntFm];
 		}
-		m_pfGroupCenters[g] = iRawFmCount + (iGroupRawFms - 1) * 0.5f;
-		iRawFmCount += iGroupRawFms;
-	}	
+		m_pfGroupCenters[g] = fSumCents / m_piGroupSize[g];
+	}
 }
 
 void CFmGroupParam::mGroupByRawSize(void)

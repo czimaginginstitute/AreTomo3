@@ -173,7 +173,7 @@ void GCorrectPatchShift::mCorrectGpuFrames(void)
 
 void GCorrectPatchShift::mAlignFrame(cufftComplex* gCmpFrm)
 {
-	float fBFactor = 10.0f;
+	float fBFactor = 100.0f;
 	float* gfPadFrm = reinterpret_cast<float*>(gCmpFrm);
 	//------------------
 	MD::CBufferPool* pBufferPool = MD::CBufferPool::GetInstance(m_iNthGpu);
