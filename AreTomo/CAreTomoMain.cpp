@@ -817,7 +817,10 @@ void CAreTomoMain::mSartRecon
 	   aTimer.GetElapsedSeconds());
 	//-----------------
 	MD::CTiltSeries* pNewVol = mFlipVol(pVolStack);
-        if(pNewVol != 0L) pVolStack = pNewVol;
+	if(pNewVol != 0L) 
+	{	delete pVolStack;
+		pVolStack = pNewVol;
+	}
 	//-----------------
 	bool bClean = true;
 	mSaveVol(pVolStack, iSeries, bClean);
@@ -843,12 +846,12 @@ void CAreTomoMain::mWbpRecon
 	pVolStack->m_fPixSize = pSeries->m_fPixSize;
 	printf("GPU %d: WBP Recon: %.2f sec\n\n", m_iNthGpu,
 	   aTimer.GetElapsedSeconds());
-	//--------------------------------------------------
-	// Note pVolStack is deleted in mFlipVol, so no
-	// memory leak here.
-	//--------------------------------------------------
+	//-----------------
 	MD::CTiltSeries* pNewVol = mFlipVol(pVolStack);
-	if(pNewVol != 0L) pVolStack = pNewVol;
+	if(pNewVol != 0L) 
+	{	delete pVolStack;
+		pVolStack = pNewVol;
+	}
 	//-----------------
 	bool bClean = true;
 	mSaveVol(pVolStack, iSeries, bClean);
@@ -877,7 +880,6 @@ MD::CTiltSeries* CAreTomoMain::mFlipVol(MD::CTiltSeries* pVolSeries)
 	MD::CTiltSeries* pVolXYZ = pVolSeries->FlipVol(bFlip);
 	printf("GPU %d: Flip volume completed.\n\n", m_iNthGpu);
 	//-----------------
-	delete pVolSeries;
 	return pVolXYZ;
 }
 

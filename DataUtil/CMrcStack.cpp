@@ -22,7 +22,7 @@ CMrcStack::~CMrcStack(void)
 {
 	mCleanFrames();
 }
-
+/*
 void CMrcStack::Create(int iMode, int* piStkSize)
 {
 	//----------------------------------------------------
@@ -44,6 +44,24 @@ void CMrcStack::Create(int iMode, int* piStkSize)
 	m_iMode = iMode;
 	memcpy(m_aiStkSize, piStkSize, sizeof(int) * 3);
 }
+*/
+
+void CMrcStack::Create(int iMode, int* piStkSize)
+{
+	mCleanFrames();
+	//-----------------
+	m_iMode = iMode;
+	memcpy(m_aiStkSize, piStkSize, sizeof(int) * 3);
+	m_tFmBytes = Mrc::C4BitImage::GetImgBytes(iMode, piStkSize);
+	//-----------------
+	m_ppvFrames = new void*[piStkSize[2]];
+        for(int i=0; i<piStkSize[2]; i++)
+	{	m_ppvFrames[i] = new char[m_tFmBytes];
+	}
+        //-----------------
+        m_iBufSize = piStkSize[2];
+}
+
 
 void* CMrcStack::GetFrame(int iFrame)
 {

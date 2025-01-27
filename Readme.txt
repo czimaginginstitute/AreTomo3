@@ -441,4 +441,10 @@ AreTomo3 2.0.8 [Jan-23-2025]
       Fix: Added mCleanSpects and mGenAvgSpects alway calls it.
 2. In MotionCor/Align/CAlignMain.cpp, temporally diabled local motion correction
    on tilt images when their tilt angles higher than 5 degree. Need more robust
-   implementation. 
+   implementation.
+
+AreTomo3 2.0.9 [Jan-26-2025]
+----------------------------
+1. 1) Bug fix (AreTomo/CAreTomoMain.cpp): valgrind reported indirect memory leak
+      at mFlipVol. Changes were made in mWbpRecon and mSartRecon to delete
+      pVolStack in place. After this change valgrind reported no memory leak. 
