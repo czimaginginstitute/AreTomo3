@@ -39,12 +39,18 @@ CCorrTomoStack::~CCorrTomoStack(void)
 
 void CCorrTomoStack::Clean(void)
 {
-	if(m_gfLocalParam != 0L) cudaFree(m_gfLocalParam);
-	if(m_pOutSeries != 0L) delete m_pOutSeries;
-	if(m_pGRWeight != 0L) delete m_pGRWeight;
-	m_gfLocalParam = 0L;
-	m_pOutSeries = 0L;
-	m_pGRWeight = 0L;
+	if(m_gfLocalParam != 0L) 
+	{	cudaFree(m_gfLocalParam);
+		m_gfLocalParam = 0L;
+	}
+	if(m_pOutSeries != 0L) 
+	{	delete m_pOutSeries;
+		m_pOutSeries = 0L;
+	}
+	if(m_pGRWeight != 0L) 
+	{	delete m_pGRWeight;
+		m_pGRWeight = 0L;
+	}
 }
 
 void CCorrTomoStack::GetBinning(float* pfBinning)

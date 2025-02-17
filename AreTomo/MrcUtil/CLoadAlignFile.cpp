@@ -68,7 +68,14 @@ bool CLoadAlignFile::DoIt(int iNthGpu)
 	{	mLoadGlobal();
 		mLoadLocal();
 	}
-	//-----------------
+	//-----------------------------------------------
+	// We need to convert section index to 1-based
+	// since older version is zero based.
+	//-----------------------------------------------
+	if(m_bLoaded)
+	{	mToOneBased();
+	}
+	//---------------------------
 	mClean();
 	if(!m_bLoaded)
 	{	printf("Error (GPU %d): loading alignment file\n"
@@ -278,4 +285,15 @@ void CLoadAlignFile::mLoadLocal(void)
 		   iNumReads, iSize);
 	}
 }	
+
+void CLoadAlignFile::mToOneBased(void)
+{
+	CAlignParam* pAlignParam = CAlignParam::GetInstance(m_iNthGpu);
+	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
+	bool bDark0Based = pDarkFrames->bZeroBased();
+	bool bAln0Based = pAlignParam->bZeroBased();
+	if(!bDark0Based && !bAln0Based) return;
+	pAlignParam->ToOneBased();
+	pDarkFrames->ToOneBased();
+}
 

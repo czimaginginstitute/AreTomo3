@@ -893,7 +893,7 @@ class CSaveCtfResults
 public:
 	CSaveCtfResults(void);
 	~CSaveCtfResults(void);
-	static void GenFileName(int iNthGpu, char* pcCtfFile);
+	static void GenFileName(int iNthGpu, bool bInDir, char* pcCtfFile);
 	void DoIt(int iNthGpu);
 	void DoFittings(int iNthGpu);
 private:
@@ -908,7 +908,7 @@ class CLoadCtfResults
 public:
 	CLoadCtfResults(void);
 	~CLoadCtfResults(void);
-	bool DoIt(int iNthGpu);
+	bool DoIt(int iNthGpu, bool bInputDir);
 	//-----------------
 	bool m_bLoaded;
 	int m_iNthGpu;

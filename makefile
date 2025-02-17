@@ -207,6 +207,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/FindCtf/CCoreTile.cpp \
 	./AreTomo/FindCtf/CTsTiles.cpp \
 	./AreTomo/FindCtf/CExtractTiles.cpp \
+	./AreTomo/FindCtf/CTiltInducedZ.cpp \
 	./AreTomo/FindCtf/CCorrImgCtf.cpp \
 	./AreTomo/FindCtf/CGenAvgSpectrum.cpp \
 	./AreTomo/FindCtf/CSaveCtfResults.cpp \

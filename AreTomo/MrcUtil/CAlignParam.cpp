@@ -302,8 +302,12 @@ void CAlignParam::RemoveDarkFrames(void)
 	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
 	int iNumDarks = pDarkFrames->m_iNumDarks;
 	if(iNumDarks <= 0) return;
+	//-----------------------------------------------
+	// This is to avoid removing twice accidentally.
+	//-----------------------------------------------
+	int iNumFrms = pDarkFrames->GetNumAlnTilts();
+	if(iNumFrms == m_iNumFrames) return;
 	//-----------------
-	int iNumFrms = m_iNumFrames - iNumDarks;
 	int* piSecIdx = new int[iNumFrms];
 	float* pfTilts = new float[iNumFrms];
 	float* pfShiftXs = new float[iNumFrms * 2];
@@ -538,4 +542,19 @@ void CAlignParam::CalcZInducedShift(int iFrame, float* pfShift)
 	float fTilt = m_pfTilts[iFrame] * s_fD2R;
 	pfShift[0] = (float)(-m_fZ0 * sin(m_pfTilts[iFrame] * s_fD2R));
 	CAlignParam::RotShift(pfShift, m_pfTiltAxis[iFrame], pfShift);
-}	
+}
+
+bool CAlignParam::bZeroBased(void)
+{
+	for(int i=0; i<m_iNumFrames; i++)
+	{	if(m_piSecIndex[i] == 0) return true;
+	}
+	return false;
+}
+
+void CAlignParam::ToOneBased(void)
+{
+	for(int i=0; i<m_iNumFrames; i++)
+	{	m_piSecIndex[i] += 1;
+	}
+}

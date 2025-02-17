@@ -447,4 +447,13 @@ AreTomo3 2.0.9 [Jan-26-2025]
 ----------------------------
 1. 1) Bug fix (AreTomo/CAreTomoMain.cpp): valgrind reported indirect memory leak
       at mFlipVol. Changes were made in mWbpRecon and mSartRecon to delete
-      pVolStack in place. After this change valgrind reported no memory leak. 
+      pVolStack in place. After this change valgrind reported no memory leak.
+
+AreTomo3 2.0.10 [Feb-17-2025]
+-----------------------------
+1. 1) Bug fix: -Cmd 4 incorrectly generates .aln and .ctf file when there are
+      rejected dark frames. This is because old .aln files are 0-based section
+      indices and the new ones are 1-based.
+      Changes haved been in AreTomo/MrcUtil/CDarkFrames, CRemoveDarkFrames,
+      CLoadAlignFile, CSaveAlignFile, CAlignParam  AreTomo/CAreTomoMain, and
+      AreTomo/FindCtf/CLoadCtfResults.cpp 

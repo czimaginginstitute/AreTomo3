@@ -84,7 +84,10 @@ void CRemoveDarkFrames::mDetect(void)
 	for(int i=0; i<m_iAllFrms; i++)
 	{	if(fabs(pTiltSeries->m_pfTilts[i]) < 3.5f) continue;	
 		else if(pfRatio[i] > fTol) continue;
-		else pDarkFrames->AddDark(i);
+		//----------------
+		int iSecIdx = pTiltSeries->m_piSecIndices[i];
+		float fTilt = pTiltSeries->m_pfTilts[i];
+		pDarkFrames->AddDark(i, iSecIdx, fTilt);
 	}
 	if(pfRatio != 0L) delete[] pfRatio;
 	//-----------------
@@ -109,9 +112,10 @@ void CRemoveDarkFrames::mRemoveSeries(int iSeries)
 	{	int iDarkIdx = pDarkFrames->GetDarkIdx(i);
 		float fTilt = pTiltSeries->m_pfTilts[iDarkIdx];
 		pTiltSeries->RemoveFrame(iDarkIdx);
-		sprintf(acBuf, "Remove image at %.2f deg \n", fTilt);
+		sprintf(acBuf, "Remove image %d at %.2f deg \n", iDarkIdx, fTilt);
 		strcat(pcLog, acBuf);
 	}
+
 	//-----------------
 	printf("%s\n", pcLog);
 	if(pcLog != 0L) delete[] pcLog;
