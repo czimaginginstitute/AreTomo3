@@ -315,6 +315,7 @@ public:
 	int m_iAcqIdx;
 	float m_fTilt;
 	float m_fPixSize;
+	float m_fTotalDose; // from mdoc file
 	int m_iNthGpu;
 private:
 	CMcPackage(void);

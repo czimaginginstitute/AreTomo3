@@ -457,3 +457,13 @@ AreTomo3 2.0.10 [Feb-17-2025]
       Changes haved been in AreTomo/MrcUtil/CDarkFrames, CRemoveDarkFrames,
       CLoadAlignFile, CSaveAlignFile, CAlignParam  AreTomo/CAreTomoMain, and
       AreTomo/FindCtf/CLoadCtfResults.cpp 
+
+AreTomo3 2.1.0 [Feb-18-2025]
+----------------------------
+1. Bug Fix:
+2. Improvement:
+   1) Improved location motion correction. The iterative alignment stops
+      it gets worse.
+   2) Using fixed frame integration instead since per-tilt dose is so
+      small.
+   3) Using sliding window to avoid shift interpolation.

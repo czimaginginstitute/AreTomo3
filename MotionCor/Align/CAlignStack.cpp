@@ -84,11 +84,11 @@ void CAlignStack::mDoGroups(void)
 
 void CAlignStack::mDoGroup(int iGroup, int iStream)
 {
-	int iGpStart = m_pFmGroupParam->GetGroupStart(iGroup);
-	int iGpSize = m_pFmGroupParam->GetGroupSize(iGroup);
+	int* piGroupIdxs = m_pFmGroupParam->GetGroupIdxs(iGroup);
+	int iGpSize = m_pFmGroupParam->m_iGroupSize;
 	//-----------------
 	for(int i=0; i<iGpSize; i++)
-	{	m_iFrame = iGpStart + i;
+	{	m_iFrame = piGroupIdxs[i];
 		bool bSum = (i > 0) ? true : false;
 		mPhaseShift(iStream, bSum);
 	}

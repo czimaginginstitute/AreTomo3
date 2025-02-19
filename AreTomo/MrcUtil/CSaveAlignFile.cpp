@@ -52,7 +52,6 @@ void CSaveAlignFile::DoIt(int iNthGpu)
 		   "   Unable to open aln file %s\n\n", m_iNthGpu, acAlnFile);
 		return;
 	}
-	fprintf(m_pFile, "Hello\n");
 	//-----------------
 	McAreTomo::CInput* pInput = McAreTomo::CInput::GetInstance();
         MD::CTsPackage* pPackage = MD::CTsPackage::GetInstance(iNthGpu);

@@ -28,11 +28,11 @@ CMcInput::CMcInput(void)
 	strcpy(m_acGainFileTag, "-Gain");
 	strcpy(m_acDarkMrcTag, "-Dark");
 	strcpy(m_acDefectFileTag, "-DefectFile");
-	strcpy(m_acFmIntFileTag, "-FmIntFile");
 	strcpy(m_acPatchesTag, "-McPatch");
 	strcpy(m_acIterTag, "-McIter");
 	strcpy(m_acTolTag, "-McTol");
 	strcpy(m_acMcBinTag, "-McBin");
+	strcpy(m_acFmIntTag, "-FmInt");
 	strcpy(m_acGroupTag, "-Group");
 	strcpy(m_acFmRefTag, "-FmRef");
 	strcpy(m_acRotGainTag, "-RotGain");
@@ -49,8 +49,9 @@ CMcInput::CMcInput(void)
 	m_fMcTol = 0.1f;
 	m_fMcBin = 1.0f;
 	m_iFmRef = -1;
+	m_iFmInt = 10;
 	m_aiGroup[0] = 1; 
-	m_aiGroup[1] = 4;
+	m_aiGroup[1] = 3;
 	m_iRotGain = 0;
 	m_iFlipGain = 0;
 	m_iInvGain = 0;
@@ -163,14 +164,10 @@ void CMcInput::Parse(int argc, char* argv[])
 	memset(m_acGainFile, 0, sizeof(m_acGainFile));
 	memset(m_acDarkMrc, 0, sizeof(m_acDarkMrc));
 	memset(m_acDefectFile, 0, sizeof(m_acDefectFile));
-	memset(m_acFmIntFile, 0, sizeof(m_acFmIntFile));
 	//-----------------
 	int aiRange[2];
 	MU::CParseArgs aParseArgs;
 	aParseArgs.Set(argc, argv);
-	//-----------------
-	aParseArgs.FindVals(m_acFmIntFileTag, aiRange);
-	aParseArgs.GetVal(aiRange[0], m_acFmIntFile);
 	//-----------------
 	aParseArgs.FindVals(m_acGainFileTag, aiRange);
 	aParseArgs.GetVal(aiRange[0], m_acGainFile);
@@ -203,6 +200,11 @@ void CMcInput::Parse(int argc, char* argv[])
 	aParseArgs.FindVals(m_acMcBinTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_fMcBin);
+	//-----------------
+	aParseArgs.FindVals(m_acFmIntTag, aiRange);
+	if(aiRange[1] > 1) aiRange[1] = 1;
+        aParseArgs.GetVals(aiRange, &m_iFmInt);
+	if(m_iFmInt < 1) m_iFmInt = 1;
 	//-----------------
 	aParseArgs.FindVals(m_acGroupTag, aiRange);
 	if(aiRange[1] > 2) aiRange[1] = 2;
@@ -282,7 +284,6 @@ void CMcInput::mPrint(void)
 {
 	printf("Motion correction input parameters\n");
 	printf("----------------------------------\n");
-	printf("%-15s  %s\n", m_acFmIntFileTag, m_acFmIntFile);
 	printf("%-15s  %s\n", m_acGainFileTag, m_acGainFile);
 	printf("%-15s  %s\n", m_acDarkMrcTag, m_acDarkMrc);
 	printf("%-15s  %s\n", m_acDefectFileTag, m_acDefectFile);
@@ -292,6 +293,7 @@ void CMcInput::mPrint(void)
 	printf("%-15s  %d\n", m_acIterTag, m_iMcIter);
 	printf("%-15s  %.2f\n", m_acTolTag, m_fMcTol);
 	printf("%-15s  %.2f\n", m_acMcBinTag, m_fMcBin);
+	printf("%-15s  %d\n", m_acFmIntTag, m_iFmInt);
 	printf("%-15s  %d  %d\n", m_acGroupTag, m_aiGroup[0], m_aiGroup[1]);
 	printf("%-15s  %d\n", m_acFmRefTag, m_iFmRef);
 	printf("%-15s  %d\n", m_acRotGainTag, m_iRotGain);

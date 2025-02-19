@@ -170,49 +170,6 @@ private:
 	float* m_pfCC;
 };
 
-class CEarlyMotion
-{
-public:
-	CEarlyMotion(void);
-	~CEarlyMotion(void);
-	void Setup(int iBuffer, float fBFactor, int iNthGpu);
-	void DoIt(MMD::CStackShift* pStackShifti);	
-	
-private:
-	void mDoIt(void);
-	float mIterate(MMD::CStackShift* pStackShift, int iAxis);
-	void mGetNodeShifts
-	( MMD::CStackShift* pStackShift, 
-	  int iAxis, float* pfShift
-	);
-	void mCalcCoeff(float fGain, float* pfShift, float* pfCoeff);
-	void mCalcShift
-	( float* pfCoeffXs, float* pfCoeffYs,
-	  MMD::CStackShift* pfStackShift
-	);
-	void mCorrelate(int iStep, MMD::CStackShift* pStackShift);
-	void mFindPeaks(float* pfPeaks);
-	void mFindPeak(int iPeak, float* pfPeak);
-	//-----------------
-	cufftComplex* m_gCmpRef;
-	int m_aiCmpSize[2];
-	GCorrelateSum2D m_aGCorrelateSum;
-	MMD::CStackShift* m_pStackShift;
-	MU::CCufft2D* m_pInverseFFT;
-	//-----------------
-	int m_aiNodeFm[3];
-	float m_afNodeCent[3];
-	int m_aiSeaSize[2];
-	int m_aiSumRange[2];
-	int m_iNumSteps;
-	float m_fStepSize;
-	//-----------------
-	MD::CBufferPool* m_pBufferPool;
-	int m_iBuffer;
-	float m_fBFactor;
-	int m_iNthGpu;
-};
-
 class CAlignStack
 {
 public:

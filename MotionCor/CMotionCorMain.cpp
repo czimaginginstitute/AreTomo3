@@ -37,13 +37,6 @@ void CMotionCorMain::LoadRefs(void)
 	   pMcInput->m_iFlipGain, pMcInput->m_iInvGain);
 }
 
-void CMotionCorMain::LoadFmIntFile(void)
-{
-	MMD::CReadFmIntFile* pReadFmIntFile = 
-	   MMD::CReadFmIntFile::GetInstance();
-	pReadFmIntFile->DoIt();
-}
-
 bool CMotionCorMain::DoIt(int iNthGpu)
 {
 	m_iNthGpu = iNthGpu;

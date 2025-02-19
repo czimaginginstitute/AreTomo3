@@ -30,7 +30,7 @@ void CAlignMain::DoIt(int iNthGpu)
 	// Temporarily diable local motion correction at high tilts.
 	//------------------------------------------------------------
 	nvtxRangePushA("align select");
-	if(pAlignParam->bPatchAlign() && fabs(fTilt) < 5.0f) 
+	if(pAlignParam->bPatchAlign()) 
 	{	printf("Patch based alignment\n");
 		pAlignBase = new CPatchAlign;
 	}

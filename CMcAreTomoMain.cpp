@@ -70,7 +70,6 @@ bool CMcAreTomoMain::DoIt(void)
 	//-----------------------------------
 	if(pInput->m_iCmd == 0)
 	{	MM::CMotionCorMain::LoadRefs();	
-		MM::CMotionCorMain::LoadFmIntFile();
 	}
 	//--------------------------------------------------------
 	// wait a new movie for 10 minutes and quit if not found.

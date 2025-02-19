@@ -84,11 +84,11 @@ public:
 	char m_acGainFile[256];
 	char m_acDarkMrc[256];
 	char m_acDefectFile[256];
-	char m_acFmIntFile[256];
 	int m_aiNumPatches[3];
 	int m_iMcIter;
 	float m_fMcTol;
 	float m_fMcBin;
+	int m_iFmInt;
 	int m_aiGroup[2];
 	int m_iFmRef;
 	int m_iRotGain;
@@ -103,7 +103,7 @@ public:
 	char m_acGainFileTag[32];
 	char m_acDarkMrcTag[32];
 	char m_acDefectFileTag[32];
-	char m_acFmIntFileTag[32];
+	char m_acFmIntTag[32];
 	char m_acPatchesTag[32];
 	char m_acIterTag[32];
 	char m_acTolTag[32];

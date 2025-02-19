@@ -34,16 +34,16 @@ void CIterativeAlign::Setup
 {	m_iBuffer = iBuffer;
 	m_iNthGpu = iNthGpu;
 	//-----------------
-	m_fBFactor = (iBuffer == MD::EBuffer::xcf) ? 500.0f : 150.0f;
+	m_fBFactor = (iBuffer == MD::EBuffer::xcf) ? 500.0f : 50.0f;
 	m_bPhaseOnly = false;
 	//-----------------
 	CMcInput* pMcInput = CMcInput::GetInstance();	
 	m_iMaxIterations = pMcInput->m_iMcIter;
 	//-----------------
 	MD::CBufferPool* pBufferPool = MD::CBufferPool::GetInstance(m_iNthGpu);
-	float fBin = fmaxf(pBufferPool->m_afXcfBin[0], 
-	   pBufferPool->m_afXcfBin[1]);
-	m_fTol = pMcInput->m_fMcTol / fBin;
+	m_afXcfBin[0] = pBufferPool->m_afXcfBin[0];
+	m_afXcfBin[1] = pBufferPool->m_afXcfBin[1];
+	m_fTol = pMcInput->m_fMcTol / (m_afXcfBin[0] + m_afXcfBin[1]) * 2.0f;
 	//-----------------		
 	if(m_pfErrors != 0L) delete[] m_pfErrors;
 	int iSize = m_iMaxIterations * 100;
@@ -77,12 +77,6 @@ void CIterativeAlign::DoIt(MMD::CStackShift* pStackShift)
 	if(pResShift != 0L) delete pResShift;
 	pStackShift->Smooth(fWeight);
 	//-----------------
-	if(pFmGroupParam->m_iGroupSize >= 2)
-	{	CEarlyMotion* pEarlyMotion = new CEarlyMotion;
-		pEarlyMotion->Setup(m_iBuffer, m_fBFactor, m_iNthGpu);
-		pEarlyMotion->DoIt(pStackShift);
-		delete pEarlyMotion;
-	}
 	delete m_pAlignStack;
 	//-----------------
         nvtxRangePop();
@@ -97,52 +91,64 @@ MMD::CStackShift* CIterativeAlign::mAlignStack(MMD::CStackShift* pInitShift)
 	   MMD::CFmGroupParam::GetInstance(m_iNthGpu, bPatch);
 	int iNumGroups = pFmGroupParam->m_iNumGroups;
 	//-----------------
-	MMD::CStackShift* pTmpShift = pInitShift->GetCopy();
 	MMD::CStackShift* pGroupShift = new MMD::CStackShift;
 	MMD::CStackShift* pTotalShift = new MMD::CStackShift;
 	pGroupShift->Setup(iNumGroups);
 	pTotalShift->Setup(iNumGroups);
 	//-----------------
 	float fBFactor = m_fBFactor;
-	MMD::CStackShift* pIntShift = 0L;
-	float fMaxErr = 0.0f;
-	CInterpolateShift aIntpShift;
+	float fMaxErr = bPatch ? 10.0f : 100.0f;
+	fMaxErr = fMaxErr * 2.0f / (m_afXcfBin[0] + m_afXcfBin[1]);
 	CAlignedSum alignedSum;
 	//-----------------
+	float fBestBF = 0.0f;
+	float fMinErr = (float)1e20;
 	for(int i=0; i<m_iMaxIterations; i++)
-	{	alignedSum.DoIt(m_iBuffer, pTmpShift, 0L, m_iNthGpu);
+        {       fBFactor = i * 5.0f; 
+		alignedSum.DoIt(m_iBuffer, pTotalShift, 0L, m_iNthGpu);
+                m_pAlignStack->Set2(fBFactor, m_bPhaseOnly);
+                m_pAlignStack->DoIt(pTotalShift, pGroupShift);
+                //----------------
+                m_pAlignStack->WaitStreams();
+                float fErr = m_pAlignStack->m_fErr;
+		if(fErr < fMinErr)
+		{	fMinErr = fErr;
+			fBestBF = fBFactor;
+		}
+	}
+	if(fMinErr > fMaxErr)
+	{	delete pGroupShift;
+		printf("Inaccurate measurement, skip.\n\n");
+		return pTotalShift;
+	}
+	fBFactor = fBestBF;
+	//---------------------------
+	for(int i=0; i<m_iMaxIterations; i++)
+	{	alignedSum.DoIt(m_iBuffer, pTotalShift, 0L, m_iNthGpu);
 		m_pAlignStack->Set2(fBFactor, m_bPhaseOnly);
-		m_pAlignStack->DoIt(pTmpShift, pGroupShift);
-		//----------------
-		fBFactor -= 2;
-		if(fBFactor < 20) fBFactor = 20.0f;
-		//----------------
-		fMaxErr = 0.0f;
+		m_pAlignStack->DoIt(pTotalShift, pGroupShift);
+		//-------------------
 		m_pAlignStack->WaitStreams();
 		float fErr = m_pAlignStack->m_fErr;
-		if(m_pAlignStack->m_fErr > fMaxErr) 
-		{	fMaxErr = m_pAlignStack->m_fErr;
+		if(fErr < fMaxErr) 
+		{	fMaxErr = fErr;
+			pTotalShift->AddShift(pGroupShift);
 		}
-		//----------------
-		pTotalShift->AddShift(pGroupShift);
-		pIntShift = aIntpShift.DoIt(pGroupShift, 
-		   m_iNthGpu, bPatch, true);
-                pTmpShift->AddShift(pIntShift);
-		if(pIntShift != 0L) delete pIntShift;
-		//----------------
-                m_pfErrors[m_iIterations] = fMaxErr;
+		else 
+		{	fBFactor -= 1;
+			if(fBFactor < 1) fBFactor = 1.0f;
+			break;
+		}
+                m_pfErrors[m_iIterations] = fErr;
                 m_iIterations += 1;
 		if(fMaxErr < m_fTol && i > 0) break;
         }
-	pIntShift = aIntpShift.DoIt(pTotalShift, m_iNthGpu, bPatch, false);
-	pIntShift->RemoveSpikes(false);
-	pIntShift->Smooth(0.5f);
+	pTotalShift->RemoveSpikes(false);
+	pTotalShift->Smooth(0.4f);
 	//-----------------
 	if(pGroupShift != 0L) delete pGroupShift;
-	if(pTotalShift != 0L) delete pTotalShift;
-	if(pTmpShift != 0L) delete pTmpShift;
-	if(fMaxErr < m_fTol) pIntShift->m_bConverged = true;
-	return pIntShift;	
+	if(fMaxErr < m_fTol) pTotalShift->m_bConverged = true;
+	return pTotalShift;	
 }
 
 char* CIterativeAlign::GetErrorLog(void)
@@ -152,8 +158,7 @@ char* CIterativeAlign::GetErrorLog(void)
 	memset(pcLog, 0, sizeof(char) * iSize);
 	//-------------------------------------
 	MD::CBufferPool* pBufferPool = MD::CBufferPool::GetInstance(m_iNthGpu);
-	float fXcfBin = fmaxf(pBufferPool->m_afXcfBin[0], 
-		pBufferPool->m_afXcfBin[1]);
+	float fXcfBin = fmaxf(m_afXcfBin[0], m_afXcfBin[1]);
 	char acBuf[80] = {0};
 	//-------------------
 	for(int i=0; i<m_iIterations; i++)

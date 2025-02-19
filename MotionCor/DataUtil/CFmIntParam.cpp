@@ -38,11 +38,11 @@ CFmIntParam* CFmIntParam::GetInstance(int iNthGpu)
 
 CFmIntParam::CFmIntParam(void)
 {
-	m_piIntFmStart = 0L;
-	m_piIntFmSize = 0L;
-	m_pfIntFmDose = 0L;
-	m_pfAccFmDose = 0L;
-	m_pfIntFmCents = 0L;
+	m_piIntFmStarts = 0L;
+	m_piIntFmSizes = 0L;
+	m_pfIntFmDoses = 0L;
+	m_pfAccFmDoses = 0L;
+	m_fTotalDose = 0.0f;
 	m_iNumIntFms = 0;
 	m_iMrcMode = -1;
 }
@@ -53,32 +53,26 @@ CFmIntParam::~CFmIntParam(void)
 	mClean();
 }
 
-void CFmIntParam::Setup(int iNumRawFms, int iMrcMode)
+void CFmIntParam::Setup(int iNumRawFms, int iMrcMode, float fMdocDose)
 {
-	CMcInput* pMcInput = CMcInput::GetInstance();
-	if(m_iNumRawFms == iNumRawFms && m_iMrcMode == iMrcMode) return; 
-	//-----------------
 	mClean();
+	//-----------------
+	CMcInput* pMcInput = CMcInput::GetInstance();
 	m_iNumRawFms = iNumRawFms;
 	m_iMrcMode = iMrcMode;
 	//-----------------
-	CReadFmIntFile* pReadFmIntFile = CReadFmIntFile::GetInstance();
-	bool bIntegrate = pReadFmIntFile->NeedIntegrate();
-	if(bIntegrate) mCalcIntFms(); 
-	else mSetup();
-	//-----------------
-	mCalcIntFmCenters();
-
+	m_fTotalDose = fMdocDose;
+	mCalcIntFms(); 
 }
 
 int CFmIntParam::GetIntFmStart(int iIntFrame)
 {
-	return m_piIntFmStart[iIntFrame];
+	return m_piIntFmStarts[iIntFrame];
 }
 
 int CFmIntParam::GetIntFmSize(int iIntFrame)
 {
-	return m_piIntFmSize[iIntFrame];
+	return m_piIntFmSizes[iIntFrame];
 }
 
 int CFmIntParam::GetNumIntFrames(void)
@@ -86,158 +80,73 @@ int CFmIntParam::GetNumIntFrames(void)
 	return m_iNumIntFms;
 }
 
-float CFmIntParam::GetAccruedDose(int iIntFrame)
+float CFmIntParam::GetAccDose(int iIntFrame)
 {
-	return m_pfAccFmDose[iIntFrame];
+	return m_pfAccFmDoses[iIntFrame];
 }
 
 float CFmIntParam::GetTotalDose(void)
 {
-	return m_pfAccFmDose[m_iNumIntFms - 1];
+	return m_fTotalDose;
 }
 
 bool CFmIntParam::bIntegrate(void)
 {
-	CReadFmIntFile* pReadFmIntFile = CReadFmIntFile::GetInstance();
-	return pReadFmIntFile->NeedIntegrate();
+	CMcInput* pMcInput = CMcInput::GetInstance();
+	if(pMcInput->m_iFmInt > 1) return true;
+	else return false;
 }
 
-//--------------------------------------------------------------------
-// Note: Dose weighting is done in AreTomo, not in MotionCor.
-//--------------------------------------------------------------------
-bool CFmIntParam::bDoseWeight(void)
+bool CFmIntParam::bHasDose(void)
 {
-	return false;
-}
-
-//-------------------------------------------------------------------
-// For the case where there is no frame integration file is given.
-//-------------------------------------------------------------------
-void CFmIntParam::mSetup(void)
-{
-	m_iNumIntFms = m_iNumRawFms; 
-	mAllocate();
-	//-----------------
-	CInput* pInput = CInput::GetInstance();
-	float fFmDose = pInput->m_fFmDose;
-	//-----------------
-	for(int i=0; i<m_iNumIntFms; i++)
-	{	m_piIntFmStart[i] = i;
-		m_piIntFmSize[i] = 1;
-		m_pfIntFmDose[i] = fFmDose;
-		//----------------
-		int iFmCount = m_piIntFmStart[i] + m_piIntFmSize[i];
-		m_pfAccFmDose[i] = fFmDose * (i+1);
-	}
+	if(m_fTotalDose <= 0) return false;
+	else return true;
 }
 
 void CFmIntParam::mCalcIntFms(void)
 {
-	CReadFmIntFile* pReadFmIntFile = CReadFmIntFile::GetInstance();
-	int iNumEntries = pReadFmIntFile->m_iNumEntries;
-	//-----------------------------------------------
-	// 1) Check whether the number frames in the
-	// FmIntFile matches the m_iNumRawFms.
-	// 2) If more, subtract extra from the each
-	// entry from last to first.
-	// 3) If less, add extra to the last entry
-	//-----------------------------------------------
-	int* piGroupSizes = new int[iNumEntries * 2];
-	int* piNumInts = &piGroupSizes[iNumEntries];
-	//-----------------
-	int iCount = 0, iLeft = 0;
-	for(int i=0; i<iNumEntries; i++)
-	{	int iGroupSize = pReadFmIntFile->GetGroupSize(i);
-		int iIntSize = pReadFmIntFile->GetIntSize(i);
-		iGroupSize = iGroupSize / iIntSize * iIntSize;
-		//----------------
-		iLeft = m_iNumRawFms - iCount;
-		if(iLeft < iGroupSize)
-		{	iGroupSize = iLeft / iIntSize * iIntSize;
-		}
-		piGroupSizes[i] = iGroupSize;
-		iCount += iGroupSize;
+	CMcInput* pMcInput = CMcInput::GetInstance();
+	m_iNumIntFms = m_iNumRawFms / pMcInput->m_iFmInt;
+	if(m_iNumIntFms < 1) m_iNumIntFms = 1;
+	//---------------------------
+	mAllocate();
+	float fRawFmDose = m_fTotalDose / m_iNumRawFms;
+	int iLast = m_iNumIntFms - 1;
+	//---------------------------
+	for(int i=0; i<iLast; i++)
+	{	m_piIntFmStarts[i] = i * pMcInput->m_iFmInt;
+		m_piIntFmSizes[i] = pMcInput->m_iFmInt;
+		m_pfIntFmDoses[i] = m_piIntFmSizes[i] * fRawFmDose;
+		int iAccFms = m_piIntFmStarts[i] + m_piIntFmSizes[i];
+		m_pfAccFmDoses[i] = iAccFms * fRawFmDose;
 	}
-	iLeft = m_iNumRawFms - iCount;
 	//-----------------
-        m_iNumIntFms = 0;
-        for(int i=0; i<iNumEntries; i++)
-        {       int iIntSize = pReadFmIntFile->GetIntSize(i);
-		m_iNumIntFms += (piGroupSizes[i] / iIntSize);
-        }
-        mAllocate();
-        //-----------------
-        iCount = 0;
-        for(int i=0; i<iNumEntries; i++)
-        {       int iIntSize = pReadFmIntFile->GetIntSize(i);
-		int iGroupSize = piGroupSizes[i];
-		int iNumIntFms = iGroupSize / iIntSize;
-		//----------------
-                for(int k=0; k<iNumIntFms; k++)
-                {       m_piIntFmSize[iCount] = iIntSize;
-                        iCount += 1;
-                }
-        }
-        if(piGroupSizes != 0L) delete[] piGroupSizes;
-	if(m_iNumIntFms == 0) return;
-	//-----------------
-	int iStep = iLeft / m_iNumIntFms;
-	iLeft = iLeft % m_iNumIntFms;
-	for(int i=0; i<m_iNumIntFms; i++)
-	{	m_piIntFmSize[i] += iStep;
-	}
-        for(int i=0; i<iLeft; i++)
-        {       int j = m_iNumIntFms - 1 - i;
-                m_piIntFmSize[j] += 1;
-        }
-        //-----------------
-        m_piIntFmStart[0] = 0;
-        for(int i=1; i<m_iNumIntFms; i++)
-        {       int k = i - 1;
-                m_piIntFmStart[i] = m_piIntFmStart[k] + m_piIntFmSize[k];
-        }
-        //-----------------
-        float fRawFmDose = pReadFmIntFile->GetDose(0);
-        for(int i=0; i<m_iNumIntFms; i++)
-        {       m_pfIntFmDose[i] = m_piIntFmSize[i] * fRawFmDose;
-        }
-        m_pfAccFmDose[0] = m_pfIntFmDose[0];
-        for(int i=1; i<m_iNumIntFms; i++)
-        {       m_pfAccFmDose[i] = m_pfAccFmDose[i-1] + m_pfIntFmDose[i];
-        }
-        //------------------
-        mCalcIntFmCenters();
-        //mDisplay();
+	m_piIntFmStarts[iLast] = iLast * pMcInput->m_iFmInt;
+	m_piIntFmSizes[iLast] = m_iNumRawFms - m_piIntFmStarts[iLast];
+	m_pfIntFmDoses[iLast] = m_piIntFmSizes[iLast] * fRawFmDose;
+	m_pfAccFmDoses[iLast] = m_fTotalDose;
 }
 
 void CFmIntParam::mClean(void)
 {
-	if(m_piIntFmStart != 0L) delete[] m_piIntFmStart;
-	if(m_pfIntFmDose != 0L) delete[] m_pfIntFmDose;
-	m_piIntFmStart = 0L;
-	m_piIntFmSize = 0L;
-	m_pfIntFmDose = 0L;
-	m_pfAccFmDose = 0L;
-	m_pfIntFmCents = 0L;
-	m_iNumRawFms = 0;
-	m_iNumIntFms = 0;
+	if(m_piIntFmStarts != 0L) 
+	{	delete[] m_piIntFmStarts;
+		m_piIntFmStarts = 0L;
+		m_piIntFmSizes = 0L;
+	}
+	if(m_pfIntFmDoses != 0L) 
+	{	delete[] m_pfIntFmDoses;
+		m_pfIntFmDoses = 0L;
+		m_pfAccFmDoses = 0L;
+	}
 }
 
 void CFmIntParam::mAllocate(void)
 {
-	m_piIntFmStart = new int[m_iNumIntFms * 2];
-	m_piIntFmSize = &m_piIntFmStart[m_iNumIntFms];
-	m_pfIntFmDose = new float[m_iNumIntFms * 3];
-	m_pfAccFmDose = &m_pfIntFmDose[m_iNumIntFms];
-	m_pfIntFmCents = &m_pfIntFmDose[m_iNumIntFms * 2];
-}
-
-void CFmIntParam::mCalcIntFmCenters(void)
-{
-	for(int i=0; i<m_iNumIntFms; i++)
-	{	m_pfIntFmCents[i] = m_piIntFmStart[i] +
-		   0.5f * (m_piIntFmSize[i] - 1.0f);
-	}
+	m_piIntFmStarts = new int[m_iNumIntFms * 2];
+	m_piIntFmSizes = &m_piIntFmStarts[m_iNumIntFms];
+	m_pfIntFmDoses = new float[m_iNumIntFms * 3];
+	m_pfAccFmDoses = &m_pfIntFmDoses[m_iNumIntFms];
 }
 
 //--------------------------------------------------------------------
@@ -249,8 +158,8 @@ void CFmIntParam::mDisplay(void)
 	printf(" IntFm  Start  Size    Dose     AccDose\n");
 	for(int i=0; i<m_iNumIntFms; i++)
 	{	printf("%4d   %4d  %5d  %8.3f  %9.3f\n", i,
-		   m_piIntFmStart[i], m_piIntFmSize[i],
-		   m_pfIntFmDose[i], m_pfAccFmDose[i]);
+		   m_piIntFmStarts[i], m_piIntFmSizes[i],
+		   m_pfIntFmDoses[i], m_pfAccFmDoses[i]);
 	}
 	printf("\n");
 }
