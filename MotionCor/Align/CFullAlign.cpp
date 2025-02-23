@@ -103,10 +103,9 @@ void CFullAlign::mDoAlign(void)
 		// We need to transform back xcf stack back to real
 		// space to extract patches.
 		//--------------------------------------------------
-		bool bCorrBilinear = false, bMotionDecon = false;
+		bool bGenReal = true;
 		MMC::CGenRealStack genRealStack;
-		genRealStack.Setup(MD::EBuffer::xcf, bCorrBilinear, 
-		   bMotionDecon, m_iNthGpu);
+		genRealStack.Setup(MD::EBuffer::xcf, bGenReal, m_iNthGpu); 
 		genRealStack.DoIt(m_pFullShift);
 	}
 	//-----------------

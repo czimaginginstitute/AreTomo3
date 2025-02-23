@@ -382,7 +382,7 @@ void CAreTomoMain::mAlign(void)
 	{	float fRange = (pInput->m_afTiltAxis[0] == 0) ? 20.0f : 6.0f;
 		int iIters = (pInput->m_afTiltAxis[0] == 0) ? 4 : 2;
 		for(int i=1; i<=iIters; i++) 
-		{	mRotAlign(fRange/i, 100);
+		{	mRotAlign(fRange/i , 100);
 			if(i == 1) mProjAlign();
 		}
 		mProjAlign();
@@ -407,9 +407,14 @@ void CAreTomoMain::mCoarseAlign(void)
 	//---------------------------------------------------------
 	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->m_afTiltAxis[0] == 0)
-	{	for(int i=1; i<=3; i++)
+	{	for(int i=1; i<=4; i++)
 		{	streAlignMain.DoIt();
-			mRotAlign(180.0f / i, 100);
+			float fRange = fmax(180.0f / i, 50.0f);
+			mRotAlign(fRange, 100);
+		}
+		for(int i=1; i<=5; i++)
+		{	float fRange = fmax(50.0f / i, 10);
+			mRotAlign(fRange, 100);
 		}
 		mFindTiltOffset();
 		return;

@@ -54,17 +54,13 @@ void CPatchAlign::mCorrectFullShift(void)
 	CAlignParam* pAlignParam = CAlignParam::GetInstance();
 	int iRefFrame = pAlignParam->GetFrameRef(m_pFullShift->m_iNumFrames);
 	m_pFullShift->MakeRelative(iRefFrame);
-	//-----------------
-	CMcInput* pInput = CMcInput::GetInstance();
-	bool bCorrInterp = (pInput->m_iCorrInterp == 0) ? false : true;
-	bool bMotionDecon = (pInput->m_iInFmMotion == 0) ? false : true;
-	//-----------------
+	//---------------------------
 	Util_Time utilTime; utilTime.Measure();
 	MMC::CGenRealStack genRealStack;
-	genRealStack.Setup(MD::EBuffer::frm, 
-	   bCorrInterp, bMotionDecon, m_iNthGpu);
+	bool bGenReal = true;
+	genRealStack.Setup(MD::EBuffer::frm, !bGenReal, m_iNthGpu); 
 	genRealStack.DoIt(m_pFullShift);
-	//-----------------
+	//---------------------------
 	printf("Global shifts are corrected: %f sec\n",
 	   utilTime.GetElapsedSeconds());
 	nvtxRangePop();

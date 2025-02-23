@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	//-----------------
 	char acVersion[64] = {'\0'};
-	strcpy(acVersion, "version 2.1.0, built on Feb 19, 2025");
+	strcpy(acVersion, "version 2.1.0, built on Feb 21, 2025");
 	if(argc == 1)
 	{	printf("\nAreTomo3: fully integrated and automated cryoET "
 		   "pipeline for both real-time and offline tomographic "
