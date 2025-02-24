@@ -461,6 +461,8 @@ AreTomo3 2.0.10 [Feb-17-2025]
 AreTomo3 2.1.0 [Feb-18-2025]
 ----------------------------
 1. Bug Fix:
+   1) Forgot to delete m_iUpsample = 1 (debugging code) in GCorrectPatchShift.
+      Fixed (02-24-2025).
 2. Improvement:
    1) Improved location motion correction. The iterative alignment stops
       it gets worse.

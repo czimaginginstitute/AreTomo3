@@ -247,7 +247,6 @@ void GCorrectPatchShift::mSetupUpSample(void)
 	if(iImgSize > m_aiInCmpSize[1]) iImgSize = m_aiInCmpSize[1];
 	if(iImgSize >= 8192) m_iUpsample = 1;
 	//---------------------------
-	m_iUpsample = 1;
 	m_aiUpCmpSize[0] = (m_aiInCmpSize[0] - 1) * m_iUpsample + 1;
 	m_aiUpCmpSize[1] = m_aiInCmpSize[1] * m_iUpsample;
 	//---------------------------
