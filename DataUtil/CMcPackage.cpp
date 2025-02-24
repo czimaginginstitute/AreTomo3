@@ -43,6 +43,7 @@ CMcPackage::CMcPackage(void)
 	//-----------------
 	m_iAcqIdx = 0;
 	m_fTilt = 0.0f;
+	m_fTotalDose = 0.0f;
 	m_iNthGpu = 0;
 }
 

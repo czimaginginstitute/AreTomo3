@@ -47,20 +47,21 @@ void CPatchShifts::Setup(int iPatchesX, int iPatchesY, int* piFullSize)
 	this->Setup(iNumPatches, piFullSize);
 }
 
+//--------------------------------------------------------------------
+// m_pfPatShifts[(iFm * m_iNumPatches + iPatch) * 2]
+//--------------------------------------------------------------------
 void CPatchShifts::SetRawShift(CStackShift* pStackShift, int iPatch)
 {
-	if(iPatch < 0 || iPatch >= m_iNumPatches) return;
-	//-----------------------------------------------
-	int iOffset = m_iNumPatches * 2;
-	float* pfDstShift = m_pfPatShifts + iPatch * 2;
-	pStackShift->GetShift(0, pfDstShift);
-	for(int i=1; i<m_aiFullSize[2]; i++)
-	{	pfDstShift = pfDstShift + iOffset;
-		pStackShift->GetShift(i, pfDstShift);
-	}
-	//-------------------------------------------
-	float* pfDstCenter = m_pfPatCenters + iPatch * 2;
-	pStackShift->GetCenter(pfDstCenter);
+        if(iPatch < 0 || iPatch >= m_iNumPatches) return;
+        //-----------------------------------------------
+        for(int i=0; i<m_aiFullSize[2]; i++)
+        {       int j = i * m_iNumPatches + iPatch;
+		float* pfDst = &m_pfPatShifts[j * 2];
+                pStackShift->GetShift(i, pfDst);
+        }
+        //-------------------------------------------
+        float* pfDstCenter = m_pfPatCenters + iPatch * 2;
+        pStackShift->GetCenter(pfDstCenter);
 }
 
 void CPatchShifts::SetFullShift(CStackShift* pFullShift)
@@ -291,7 +292,7 @@ void CPatchShifts::mDetectBadOnFrame(int iFrame)
 		}
 	}
 	dFmRms = sqrtf(dFmRms / iCount);
-	float fTol = (float)(dFmRms * 2);
+	float fTol = (float)(dFmRms * 2.0);
 	//printf("**** Frame RMS: %4d  %8.2f\n", iFrame, dFmRms);
 	//-----------------------------------------------------
 	bool* pbBads = m_pbBadShifts + iFrame * m_iNumPatches;

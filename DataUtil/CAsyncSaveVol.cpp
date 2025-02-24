@@ -41,6 +41,7 @@ void CAsyncSaveVol::DeleteInstances(void)
 CAsyncSaveVol::CAsyncSaveVol(void)
 {
 	m_iNthGpu = 0;
+	m_pVolSeries = 0L;
 }
 
 //------------------------------------------------------------------------------
@@ -48,6 +49,9 @@ CAsyncSaveVol::CAsyncSaveVol(void)
 //------------------------------------------------------------------------------
 CAsyncSaveVol::~CAsyncSaveVol(void)
 {
+	if(m_pVolSeries != 0L) 
+	{	delete m_pVolSeries;
+	}
 }
 
 bool CAsyncSaveVol::DoIt
@@ -56,7 +60,12 @@ bool CAsyncSaveVol::DoIt
 	bool bAsync,
 	bool bClean
 )
-{	m_pVolSeries = pVolSeries;
+{	if(m_pVolSeries != 0L)
+	{	delete m_pVolSeries;
+		m_pVolSeries = 0L;
+	}
+	//-----------------
+	m_pVolSeries = pVolSeries;
 	m_iNthVol = iNthVol;
 	m_bClean = bClean;
 	//-----------------
@@ -104,8 +113,10 @@ void CAsyncSaveVol::mSaveVol(void)
 	}
 	saveMrc.CloseFile();
 	//-----------------
-	if(m_bClean && m_pVolSeries != 0L) delete m_pVolSeries;
-	m_pVolSeries = 0L;
+	if(m_bClean && m_pVolSeries != 0L) 
+	{	delete m_pVolSeries;
+		m_pVolSeries = 0L;
+	}
 	//-----------------
 	printf("GPU %d: MRC file saved: %s\n\n", m_iNthGpu, acMrcFile);
 }

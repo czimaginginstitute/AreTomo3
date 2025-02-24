@@ -71,7 +71,7 @@ void CSaveAlignFile::mSaveHeader(void)
 	m_iNumTilts = m_pAlignParam->m_iNumFrames;
 	m_iNumPatches = m_pLocalParam->m_iNumPatches;
 	//-----------------
-	fprintf(m_pFile, "# AreTomo Alignment / Priims bprmMn \n");
+	fprintf(m_pFile, "%s\n", "# AreTomo Alignment / Priims bprmMn");
 	fprintf(m_pFile, "# %s = %d %d %d\n", m_acRawSizeTag, 
 	   pDarkFrames->m_aiRawStkSize[0],
 	   pDarkFrames->m_aiRawStkSize[1],
@@ -89,8 +89,8 @@ void CSaveAlignFile::mSaveHeader(void)
 	//-----------------------------------------------
 	for(int i=0; i<pDarkFrames->m_iNumDarks; i++)
 	{	int iDarkFm = pDarkFrames->GetDarkIdx(i);
-		int iSecIdx = pDarkFrames->GetSecIdx(iDarkFm);
-		float fTilt = pDarkFrames->GetTilt(iDarkFm);
+		int iSecIdx = pDarkFrames->GetDarkSec(i);
+		float fTilt = pDarkFrames->GetDarkTilt(i);
 		fprintf(m_pFile, "# %s =  %4d %4d %8.2f\n", m_acDarkFrameTag,
 		   iDarkFm, iSecIdx, fTilt);
 	}

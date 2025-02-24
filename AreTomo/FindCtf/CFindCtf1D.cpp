@@ -105,7 +105,7 @@ void CFindCtf1D::mRefinePhase(float fPhaseRange)
 	afPsRange[0] = m_fExtPhase - fPhaseRange * 0.5f;
 	afPsRange[1] = m_fExtPhase + fPhaseRange * 0.5f;
 	if(afPsRange[0] < 0) afPsRange[0] = 0.0f;
-	if(afPsRange[1] > 180) afPsRange[1] = 180.0f;
+	if(afPsRange[1] > 150) afPsRange[1] = 150.0f;
 	//-----------------
 	float afDfRange[] = {m_fDfMin, m_fDfMin};
 	//-----------------

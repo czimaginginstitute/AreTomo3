@@ -398,6 +398,7 @@ AreTomo3 2.0.5 [12-04-2024]
       m_piGroupStart[g] + 0.5f * m_piGroupSize[g]; instead.
 
 AreTomo3 2.0.6 [Jan-01-2025]
+----------------------------
 1. 1) Added -Cmd 4. This mode rotates the tilt axis by 180 degree and generates
       the updated .aln file. The files in _Imod directory including .xf,
       _st.mrc are also updated to reflect the 180 degree rotation of the tilt
@@ -407,4 +408,64 @@ AreTomo3 2.0.6 [Jan-01-2025]
       corresponding directory exists. The new contents are saved afterwards.
    4) Revised the implementation of -Cmd 3. Added local CTF estimation.
 2. Updated Remap3D by copying Remap3D_0.3_07dec24 into tools.
-3. Updated user manuals for running -Cmd 4 and running Remap3D. 
+3. Updated user manuals for running -Cmd 4 and running Remap3D.
+
+AreTomo 2.0.7 [Jan-13-2025]
+---------------------------
+1. 1) Bug fix (MotionCor/CFmIntParam.cpp)  If the sum of the group sizes of 
+      (n-1) lines exceeds the total frames, AreTomo3 crashes. Fixed.
+   2) Bug fix (AreTomo/MrcUtil/CAlignParam.cpp) Remove dark frames one by
+      one can be buggy because the old implementation does not track the
+      original sequence. New implementation removes them all at once.
+   3) Bug fix (AreTomo/MrcUtil/CAlignParam.cpp) Section indices are 
+      initialized to 1-based. Aln and CTF files contain 1-based section
+      indices.
+   4) Bug fix (AreTomo/FindCtf/CSaveCtfResults) Using 4 decimals for extra
+      phase shift since it is in radian.
+   5) Bug fix (MotionCor/DataUtil/CPatchShifts::SetRawShift) Incorrect
+      determination of the starting location of m_pfPatShifts. Fixed!
+      5.1) SetRawShift: loop starts from i=1, should be i=0, fixed.
+   6) Bug fix (MotionCor/DataUtil/CFmGroupParam) Group center should be based
+      on number of raw frames, not integrated frames.
+   7) Bug fix (MotionCor/Align/CEarlyMotion) The shifts at the nodes are the
+      ones of integrated frames. Do not use CFmGroupParam::m_pfGroupCenters
+2. 1) FindCtf: limit the estimation of extra phase shift to within [0, 150]
+      range to prevent accidental contrast flipping.
+
+AreTomo3 2.0.8 [Jan-23-2025]
+----------------------------
+1. 1) Bug fix (AreTomo/FindCtf/CRefineCtfMain.cpp): Memory leak in 
+      CFindCtfMain::mGenAvgSpects. When m_ppfSpects[i] is not empty, 
+      the new memory pointer returned by m_pFindCtf2D->GetHalfSpect
+      overrides the old one.
+      Fix: Added mCleanSpects and mGenAvgSpects alway calls it.
+2. In MotionCor/Align/CAlignMain.cpp, temporally diabled local motion correction
+   on tilt images when their tilt angles higher than 5 degree. Need more robust
+   implementation.
+
+AreTomo3 2.0.9 [Jan-26-2025]
+----------------------------
+1. 1) Bug fix (AreTomo/CAreTomoMain.cpp): valgrind reported indirect memory leak
+      at mFlipVol. Changes were made in mWbpRecon and mSartRecon to delete
+      pVolStack in place. After this change valgrind reported no memory leak.
+
+AreTomo3 2.0.10 [Feb-17-2025]
+-----------------------------
+1. 1) Bug fix: -Cmd 4 incorrectly generates .aln and .ctf file when there are
+      rejected dark frames. This is because old .aln files are 0-based section
+      indices and the new ones are 1-based.
+      Changes haved been in AreTomo/MrcUtil/CDarkFrames, CRemoveDarkFrames,
+      CLoadAlignFile, CSaveAlignFile, CAlignParam  AreTomo/CAreTomoMain, and
+      AreTomo/FindCtf/CLoadCtfResults.cpp 
+
+AreTomo3 2.1.0 [Feb-18-2025]
+----------------------------
+1. Bug Fix:
+   1) Forgot to delete m_iUpsample = 1 (debugging code) in GCorrectPatchShift.
+      Fixed (02-24-2025).
+2. Improvement:
+   1) Improved location motion correction. The iterative alignment stops
+      it gets worse.
+   2) Using fixed frame integration instead since per-tilt dose is so
+      small.
+   3) Using sliding window to avoid shift interpolation.

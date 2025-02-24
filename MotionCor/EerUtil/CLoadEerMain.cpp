@@ -54,7 +54,8 @@ void CLoadEerMain::mLoadHeader(void)
 	MD::CMcPackage* pPackage = MD::CMcPackage::GetInstance(m_iNthGpu);
 	MMD::CFmIntParam* pFmIntParam = 
 	   MMD::CFmIntParam::GetInstance(m_iNthGpu);
-	pFmIntParam->Setup(m_pLoadHeader->m_iNumFrames, Mrc::eMrcUChar);
+	pFmIntParam->Setup(m_pLoadHeader->m_iNumFrames, Mrc::eMrcUChar,
+	   pPackage->m_fTotalDose);
 	//----------------------------------------------------------------
 	// Need two group parameters, one for global, one for local align.
 	//----------------------------------------------------------------

@@ -21,19 +21,12 @@ CFindCtfMain::~CFindCtfMain(void)
 
 void CFindCtfMain::Clean(void)
 {
-	if(m_ppfHalfSpects != 0L)
-	{	for(int i=0; i<m_iNumTilts; i++)
-		{	if(m_ppfHalfSpects[i] == 0L) continue;
-			else delete[] m_ppfHalfSpects[i];
-		}
-		delete[] m_ppfHalfSpects;
-		m_ppfHalfSpects = 0L;
-	}
+	mCleanSpects();
+	//-----------------
 	if(m_pFindCtf2D != 0L)
 	{	delete m_pFindCtf2D;
 		m_pFindCtf2D = 0L;
 	}
-	m_iNumTilts = 0;
 }
 
 bool CFindCtfMain::bCheckInput(void)
@@ -69,7 +62,6 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	mDoLowTilts();
 	mDoHighTilts();
 	//-----------------
-	
 	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
 	pCtfRes->DisplayAll();
 	printf("GPU %d: initial estimation of tilt series CTF, "
@@ -111,9 +103,12 @@ void CFindCtfMain::mGenAvgSpects
 	float fBetaOffset,
 	float fMaxTilt
 )
-{	bool bRaw = true, bToHost = true;
-	if(m_ppfHalfSpects == 0L) m_ppfHalfSpects = new float*[m_iNumTilts];
+{	mCleanSpects();
+	m_ppfHalfSpects = new float*[m_iNumTilts];
+	memset(m_ppfHalfSpects, 0, sizeof(float*) * m_iNumTilts);
+	//-----------------
 	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
+	bool bRaw = true, bToHost = true;
 	//-----------------
 	for(int i=0; i<m_iNumTilts; i++)
 	{	float fTilt = fabs(pCtfRes->GetTilt(i));
@@ -143,11 +138,15 @@ void CFindCtfMain::mDoLowTilts(void)
 	m_fLowTilt = 12.5f;
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
 	//-----------------
+	float fInitPhase = m_pFindCtf2D->m_fExtPhase;
+	if(fPhaseRange > 0) fPhaseRange = fminf(fPhaseRange, 5.0f);
+	//-----------------
 	for(int i=0; i<m_iNumTilts; i++)
 	{	float fTilt = pTsTiles->GetTilt(i);
-		if(fabs(pTsTiles->GetTilt(i)) > m_fLowTilt) continue;
+		if(fabs(fTilt) > m_fLowTilt) continue;
 		else if(i == iZeroTilt) continue;
 		//----------------
+		m_pFindCtf2D->SetPhase(fInitPhase, fPhaseRange);
 		m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
 		m_pFindCtf2D->Do2D();
 		mGetResults(i);
@@ -156,7 +155,8 @@ void CFindCtfMain::mDoLowTilts(void)
 	int iCount = 0.0f;
 	float fSum1 = 0.0f, fSum2 = 0.0f;
 	for(int i=0; i<m_iNumTilts; i++)
-	{	if(fabs(pTsTiles->GetTilt(i)) > m_fLowTilt) continue;
+	{	float fTilt = pTsTiles->GetTilt(i);
+		if(fabs(fTilt) > m_fLowTilt) continue;
 		else if(i == iZeroTilt) continue;
 		//----------------
 		float fDf = (pCtfResults->GetDfMin(i) + 
@@ -179,6 +179,10 @@ void CFindCtfMain::mDoLowTilts(void)
 	   
 void CFindCtfMain::mDoHighTilts(void)
 {
+	CAtInput* pAtInput = CAtInput::GetInstance();
+        float fPhaseRange = fmaxf(pAtInput->m_afExtPhase[1], 0.0f);
+	if(fPhaseRange > 0.0f) fPhaseRange = 5.0f;
+	//-----------------
 	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
 	int iZeroTilt = pTsTiles->GetTiltIdx(0.0f);
 	//-----------------	
@@ -198,11 +202,13 @@ void CFindCtfMain::mDoHighTilts(void)
 	afAstAngle[1] = 10.0f;
 	//-----------------
 	afExtPhase[0] = pCtfResults->GetExtPhase(iZeroTilt);
-	afExtPhase[1] = 0.0f;
 	int iNumTilts = pTsTiles->GetNumTilts();
 	//-----------------
 	for(int i=0; i<iNumTilts; i++)
-	{	m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
+	{	float fTilt = pTsTiles->GetTilt(i);
+		afExtPhase[1] = fPhaseRange * (float)cos(fTilt * 0.01744);
+		//----------------
+		m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
 		m_pFindCtf2D->Refine(afDfRange, afAstRatio, 
 		   afAstAngle, afExtPhase);
 		float fScore = mGetResults(i);
@@ -227,4 +233,15 @@ float CFindCtfMain::mGetResults(int iTilt)
 	m_pFindCtf2D->GenFullSpectrum(pfSpect);
 	//-----------------
 	return m_pFindCtf2D->m_fScore;
+}
+
+void CFindCtfMain::mCleanSpects(void)
+{
+	if(m_ppfHalfSpects == 0L) return;
+	for(int i=0; i<m_iNumTilts; i++)
+	{	if(m_ppfHalfSpects[i] == 0L) continue;
+		else delete[] m_ppfHalfSpects[i];
+	}
+	delete[] m_ppfHalfSpects;
+	m_ppfHalfSpects = 0L;
 }

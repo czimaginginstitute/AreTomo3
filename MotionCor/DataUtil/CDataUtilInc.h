@@ -13,99 +13,73 @@ public:
         float m_fFmDose;   // raw frame dose e/A2
 };
 
-
-class CReadFmIntFile
-{
-public:
-	static CReadFmIntFile* GetInstance(void);
-	static void DeleteInstance(void);
-	~CReadFmIntFile(void);
-	bool HasDose(void);
-	bool NeedIntegrate(void);
-	int GetGroupSize(int iEntry);
-	int GetIntSize(int iEntry);
-	float GetDose(int iEntry);
-	void DoIt(void);
-	int m_iNumEntries;
-private:
-	CReadFmIntFile(void);
-	void mClean(void);
-	CEntry** m_ppEntries;
-	static CReadFmIntFile* m_pInstance;
-};
-
 class CFmIntParam
 {
 public:
 	static void CreateInstances(int iNumGpus);
 	static void DeleteInstances(void);
 	static CFmIntParam* GetInstance(int iNthGpu);
-        ~CFmIntParam(void);
-	bool bDoseWeight(void);
+	~CFmIntParam(void);
 	bool bIntegrate(void);
-	//-----------------
-        void Setup(int iNumRawFms, int iMrcMode);// All frames in input movie
+	bool bHasDose(void);
+        //-----------------
+	void Setup
+	( int iNumRawFms,   // frames of raw movie
+          int iMrcMode,
+          float fMdocDose   // movie dose
+        );
         int GetIntFmStart(int iIntFrame);
         int GetIntFmSize(int iIntFrame);
         int GetNumIntFrames(void);
-        float GetAccruedDose(int iIntFrame);
-	float GetTotalDose(void);
-	//-----------------
-	int m_iNthGpu;
+        float GetIntFmDose(int iIntFrame);
+        float GetAccDose(int iIntFrame);
+        float GetTotalDose(void);
+        //-----------------
+        int m_iNthGpu;
         int m_iNumIntFms;
-        float* m_pfIntFmDose;  // Dose within int. frame exposure
-        float* m_pfAccFmDose;  // Acumulated dose of each int. frame
-	float* m_pfIntFmCents; // Centers of int. frames for shift
-	                       // interpolation.
+        float m_fTotalDose;     // total dose of the movie
+        float* m_pfIntFmDoses;  // Dose within int. frame exposure
+        float* m_pfAccFmDoses;  // Acumulated dose of each int frame
 private:
-	CFmIntParam(void);
-        void mSetup(void);
-	void mCalcIntFms(void);
+        CFmIntParam(void);
+        void mCalcIntFms(void);
         void mClean(void);
         void mAllocate(void);
-	void mCalcIntFmCenters(void);
-	void mDisplay(void);
-	//-----------------
-        int* m_piIntFmStart;
-        int* m_piIntFmSize;
+        void mCalcIntFmCenters(void);
+        void mDisplay(void);
+        //-----------------
+        int* m_piIntFmStarts;
+        int* m_piIntFmSizes;
         int m_iNumRawFms;   // All frames in the input movie file
-	int m_iLeftRaws;    // leftover raw frames
         int m_iMrcMode;
-	//-----------------
-	static CFmIntParam* m_pInstances;
-	static int m_iNumGpus; 
+        //-----------------
+        static CFmIntParam* m_pInstances;
+        static int m_iNumGpus;
 };
 
 class CFmGroupParam
 {
 public:
         static void CreateInstances(int iNumGpus);
-	static void DeleteInstances(void);
-	static CFmGroupParam* GetInstance(int iNthGpu, bool bLocal);
-	//-----------------
-	~CFmGroupParam(void);
-	void Setup(int iGroupSize);
-        int GetGroupStart(int iGroup);
-        int GetGroupSize(int iGroup);
-        float GetGroupCenter(int iGroup);
-	//-----------------
+        static void DeleteInstances(void);
+        static CFmGroupParam* GetInstance(int iNthGpu, bool bLocal);
+        //-----------------
+        ~CFmGroupParam(void);
+        void Setup(int iGroupSize);
+        int* GetGroupIdxs(int iGroup); // do not free
+        //-----------------
         int m_iNumGroups;
         int m_iNumIntFms;
-	bool m_bGrouping;
-	int m_iGroupSize;
-	int m_iNthGpu;
+        int m_iGroupSize;
+        int m_iNthGpu;
 private:
-	CFmGroupParam(void);
-        void mGroupByRawSize(void);
-        void mGroupByDose(void);
+        CFmGroupParam(void);
         void mClean(void);
-        void mAllocate(void);
-        int* m_piGroupStart;
-        int* m_piGroupSize;
-        float* m_pfGroupCenters;
-	//-----------------
-	static CFmGroupParam* m_pInstances;
-	static int m_iNumGpus;
+        void mAlloc(void);
+        int** m_ppiGroupIdxs;
+        //-----------------
+        static CFmGroupParam* m_pInstances;
+        static int m_iNumGpus;
 };
 
 class CStackShift

@@ -86,16 +86,20 @@ void CAlignParam::Create(int iNumFrames)
 {
 	this->Clean();
 	m_iNumFrames = iNumFrames;	
-	//------------------------
+	//---------------------------------------------------------
+	// Section index (image index in MRC file) is 1-based.
+	//--------------------------------------------------------- 
 	m_piSecIndex = new int[m_iNumFrames];
-	for(int i=0; i<m_iNumFrames; i++) m_piSecIndex[i] = i;
-	//-----------------------------------------------------
+	for(int i=0; i<m_iNumFrames; i++) 
+	{	m_piSecIndex[i] = i + 1; 
+	}
+	//-----------------
 	m_pfTilts = new float[m_iNumFrames];
 	memset(m_pfTilts , 0, sizeof(float) * m_iNumFrames);
-	//--------------------------------------------------
+	//-----------------
 	m_pfTiltAxis = new float[m_iNumFrames];
 	memset(m_pfTiltAxis, 0, sizeof(float) * m_iNumFrames);
-	//----------------------------------------------------
+	//-----------------
 	int iSize = m_iNumFrames * 2;
 	m_pfShiftXs = new float[iSize];
 	m_pfShiftYs = m_pfShiftXs + m_iNumFrames;
@@ -293,18 +297,41 @@ void CAlignParam::SortBySecIndex(void)
 	}
 }
 
-void CAlignParam::RemoveFrame(int iFrame)
+void CAlignParam::RemoveDarkFrames(void)
 {
-	for(int i=iFrame+1; i<m_iNumFrames; i++)
-	{	int j = i - 1;
-		m_piSecIndex[j] = m_piSecIndex[i];
-		m_pfTilts[j] = m_pfTilts[i];
-		m_pfTiltAxis[j] = m_pfTiltAxis[i];
-		//--------------------------------
-		m_pfShiftXs[j] = m_pfShiftXs[i];
-		m_pfShiftYs[j] = m_pfShiftYs[i];
+	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
+	int iNumDarks = pDarkFrames->m_iNumDarks;
+	if(iNumDarks <= 0) return;
+	//-----------------------------------------------
+	// This is to avoid removing twice accidentally.
+	//-----------------------------------------------
+	int iNumFrms = pDarkFrames->GetNumAlnTilts();
+	if(iNumFrms == m_iNumFrames) return;
+	//-----------------
+	int* piSecIdx = new int[iNumFrms];
+	float* pfTilts = new float[iNumFrms];
+	float* pfShiftXs = new float[iNumFrms * 2];
+	float* pfShiftYs = &pfShiftXs[iNumFrms];
+	//-----------------
+	int k = 0;
+	for(int i=0; i<m_iNumFrames; i++)
+	{	if(pDarkFrames->IsDarkFrame(i)) continue;
+		piSecIdx[k] = m_piSecIndex[i];
+		pfTilts[k] = m_pfTilts[i];
+		pfShiftXs[k] = m_pfShiftXs[i];
+		pfShiftYs[k] = m_pfShiftYs[i];
+		k += 1;
 	}
-	m_iNumFrames--;
+	//-----------------
+	delete[] m_piSecIndex;
+	delete[] m_pfTilts;
+	delete[] m_pfShiftXs;
+	//-----------------
+	m_piSecIndex = piSecIdx;
+	m_pfTilts = pfTilts;
+	m_pfShiftXs = pfShiftXs;
+	m_pfShiftYs = pfShiftYs;
+	m_iNumFrames = iNumFrms;
 }
 
 CAlignParam* CAlignParam::GetCopy(void)
@@ -515,4 +542,19 @@ void CAlignParam::CalcZInducedShift(int iFrame, float* pfShift)
 	float fTilt = m_pfTilts[iFrame] * s_fD2R;
 	pfShift[0] = (float)(-m_fZ0 * sin(m_pfTilts[iFrame] * s_fD2R));
 	CAlignParam::RotShift(pfShift, m_pfTiltAxis[iFrame], pfShift);
-}	
+}
+
+bool CAlignParam::bZeroBased(void)
+{
+	for(int i=0; i<m_iNumFrames; i++)
+	{	if(m_piSecIndex[i] == 0) return true;
+	}
+	return false;
+}
+
+void CAlignParam::ToOneBased(void)
+{
+	for(int i=0; i<m_iNumFrames; i++)
+	{	m_piSecIndex[i] += 1;
+	}
+}

@@ -85,16 +85,17 @@ void CBufferPool::Clean(void)
 // 3. The number of frames in a movie can be changed using Adjust(...);
 //------------------------------------------------------------------------------
 void CBufferPool::Create(int* piStkSize)
-{
+{	
+	CInput* pInput = CInput::GetInstance();
+        m_iGpuID = pInput->m_piGpuIDs[m_iNthGpu];
+	cudaSetDevice(m_iGpuID);
+	//---------------------------
 	if(m_bCreated) 
 	{	this->Adjust(piStkSize[2]);
 		return;
 	}
 	//-----------------
 	this->Clean();
-	CInput* pInput = CInput::GetInstance();
-	m_iGpuID = pInput->m_piGpuIDs[m_iNthGpu];
-	//-----------------
 	memcpy(m_aiStkSize, piStkSize, sizeof(m_aiStkSize));
 	m_pCufft2Ds = new MU::CCufft2D[2];
 	//-----------------
@@ -110,8 +111,8 @@ void CBufferPool::Create(int* piStkSize)
 	// from the load queue to the proc queue. This happens in the
 	// single processing or the first movie of the batch processing.
 	//---------------------------------------------------------------
-	mCreateSumBuffer();
 	mCreateTmpBuffer();
+	mCreateSumBuffer();
 	mCreateXcfBuffer();
 	mCreatePatBuffer();
 	mCreateFrmBuffer();
@@ -175,17 +176,19 @@ void CBufferPool::mCreateSumBuffer(void)
 
 void CBufferPool::mCreateTmpBuffer(void)
 {
-	int iNumFrames = 4;
-	//-----------------
 	int iSizeX = (m_aiStkSize[0] > 4096) ? m_aiStkSize[0] : 4096;
 	int iSizeY = (m_aiStkSize[1] > 4096) ? m_aiStkSize[1] : 4096;
 	int aiCmpSize[] = {iSizeX / 2 + 1, iSizeY};
-	//-----------------	
-	m_pTmpBuffer = new CStackBuffer;
-	m_pTmpBuffer->Create(aiCmpSize, iNumFrames, m_iGpuID);
-	//-----------------
-	cudaMallocHost(&m_avPinnedBuf[0], m_pTmpBuffer->m_tFmBytes);
-	cudaMallocHost(&m_avPinnedBuf[1], m_pTmpBuffer->m_tFmBytes);
+	//----------------------------
+	size_t tFmBytes = sizeof(cufftComplex) * aiCmpSize[0];
+	tFmBytes *= aiCmpSize[1];
+	cudaMallocHost(&m_avPinnedBuf[0], tFmBytes);
+	cudaMallocHost(&m_avPinnedBuf[1], tFmBytes);
+	//---------------------------
+	int iNumFrames = 4;
+        m_pTmpBuffer = new CStackBuffer;
+        m_pTmpBuffer->Create(aiCmpSize, iNumFrames, m_iGpuID);
+
 }
 
 void CBufferPool::mCreateXcfBuffer(void)

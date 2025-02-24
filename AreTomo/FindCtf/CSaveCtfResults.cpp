@@ -14,11 +14,12 @@ CSaveCtfResults::~CSaveCtfResults(void)
 {
 }
 
-void CSaveCtfResults::GenFileName(int iNthGpu, char* pcCtfFile)
+void CSaveCtfResults::GenFileName(int iNthGpu, bool bInDir, char* pcCtfFile)
 {
 	CInput* pInput = CInput::GetInstance();
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(iNthGpu);
-	strcpy(pcCtfFile, pInput->m_acOutDir);
+	if(bInDir) strcpy(pcCtfFile, pInput->m_acInDir);
+	else strcpy(pcCtfFile, pInput->m_acOutDir);
 	strcat(pcCtfFile, pTsPackage->m_acMrcMain);
 	strcat(pcCtfFile, "_CTF");
 }
@@ -28,7 +29,7 @@ void CSaveCtfResults::DoIt(int iNthGpu)
 	m_iNthGpu = iNthGpu;
 	//-----------------
 	char acCtfFile[256] = {'\0'};
-	CSaveCtfResults::GenFileName(m_iNthGpu, acCtfFile);
+	CSaveCtfResults::GenFileName(m_iNthGpu, false, acCtfFile);
 	//-----------------
 	mSaveImages(acCtfFile);
 	mSaveFittings(acCtfFile);
@@ -39,7 +40,7 @@ void CSaveCtfResults::DoFittings(int iNthGpu)
 {
 	m_iNthGpu = iNthGpu;
 	char acCtfFile[256] = {'\0'};
-	CSaveCtfResults::GenFileName(m_iNthGpu, acCtfFile);
+	CSaveCtfResults::GenFileName(m_iNthGpu, false, acCtfFile);
 	mSaveFittings(acCtfFile);
 }
 
@@ -84,7 +85,7 @@ void CSaveCtfResults::mSaveFittings(const char* pcCtfFile)
 	   "fit successfully; "
 	   "#8 - dfHand\n");
 	for(int i=0; i<pCtfResults->m_iNumImgs; i++)
-	{	fprintf(pFile, "%4d   %8.2f  %8.2f  %8.2f  %8.2f  "
+	{	fprintf(pFile, "%4d   %8.2f  %8.2f  %8.2f  %9.4f  "
 		   "%8.4f  %8.4f  %3d\n", i+1,
 		   pCtfResults->GetDfMax(i),
 		   pCtfResults->GetDfMin(i),

@@ -64,6 +64,7 @@ void CTiltSeries::Create(int* piImgSize, int iNumTilts)
 	m_piAcqIndices = new int[iNumTilts * 2];
 	m_piSecIndices = &m_piAcqIndices[iNumTilts];
 	memset(m_piAcqIndices, 0, sizeof(int) * iNumTilts * 2);
+	this->ResetSecIndices();
 	//----------------
 	m_ppfCenters = new float*[m_aiStkSize[2]];
 	for(int i=0; i<m_aiStkSize[2]; i++)
@@ -133,7 +134,7 @@ void CTiltSeries::SetAcqs(int* piAcqIndices)
 	memcpy(m_piAcqIndices, piAcqIndices, iBytes);
 }
 
-void CTiltSeries::SetSecs(int* piSecIndices)
+void CTiltSeries::SetSecIndices(int* piSecIndices)
 {
 	int iBytes = sizeof(int) * m_aiStkSize[2];
 	if(iBytes <= 0) return;
@@ -210,6 +211,63 @@ void CTiltSeries::RemoveFrame(int iFrame)
 	m_aiStkSize[2] = iLast;
 }
 
+
+void CTiltSeries::RemoveFrames(int* piIndices, int iRemFrms)
+{
+	if(piIndices == 0L || iRemFrms <= 0) return;
+	//---------------------------
+	int iNewSize = m_aiStkSize[2] - iRemFrms;
+	float* pfTilts = new float[iNewSize];
+	float* pfDoses = new float[iNewSize];
+	int* piAcqIndices = new int[iNewSize];
+	int* piSecIndices = new int[iNewSize];
+	float** ppfCenters = new float*[iNewSize];
+	float** ppfImages = new float*[iNewSize];
+	//---------------------------
+	int k = 0;
+	for(int i=0; i<m_aiStkSize[2]; i++)
+	{	bool bDark = false;
+		for(int j=0; j<iRemFrms; j++)
+		{	if(i == piIndices[j])
+			{	bDark = true; 
+				break;
+			}
+		}
+		//-------------------
+		if(bDark)
+		{	if(m_ppfCenters[i] != 0L)
+			{	delete[] m_ppfCenters[i];
+				m_ppfCenters[i] = 0L;
+			}
+		}
+		else
+		{	ppfCenters[k] = m_ppfCenters[i];
+			m_ppfCenters[i] = 0L;
+			ppfImages[k] = m_ppfImages[i];
+			m_ppfImages[i] = 0L;
+			pfTilts[k] = m_pfTilts[i];
+			pfDoses[k] = m_pfDoses[i];
+			piAcqIndices[k] = m_piAcqIndices[i];
+			piSecIndices[k] = m_piSecIndices[i];
+			k += 1;
+		}
+	}
+	//---------------------------
+	mCleanCenters();
+	m_ppfCenters = ppfCenters;
+	if(m_ppfImages != 0L) delete[] m_ppfImages;
+	m_ppfImages = ppfImages;
+	if(m_pfTilts != 0L) delete[] m_pfTilts;
+	m_pfTilts = pfTilts;
+	if(m_pfDoses != 0L) delete[] m_pfDoses;
+	m_pfDoses = pfDoses;
+	if(m_piAcqIndices != 0L) delete[] m_piAcqIndices;
+	m_piAcqIndices = piAcqIndices;
+	if(m_piSecIndices != 0L) delete[] m_piSecIndices;
+	m_piSecIndices = piSecIndices;
+	m_aiStkSize[2] = iNewSize;
+}
+
 void CTiltSeries::GetAlignedSize(float fTiltAxis, int* piAlnSize)
 {
 	memcpy(piAlnSize, m_aiStkSize, sizeof(int) * 2);
@@ -258,7 +316,7 @@ float** CTiltSeries::GetImages(void)
 void CTiltSeries::ResetSecIndices(void)
 {
 	for(int i=0; i<m_aiStkSize[2]; i++)
-	{	m_piSecIndices[i] = i;
+	{	m_piSecIndices[i] = i + 1;
 	}
 }
 

@@ -94,7 +94,6 @@ class CMotionCorMain
 {
 public:
 	static void LoadRefs(void);
-	static void LoadFmIntFile(void);
 	//-----------------
 	CMotionCorMain(void);
 	~CMotionCorMain(void);

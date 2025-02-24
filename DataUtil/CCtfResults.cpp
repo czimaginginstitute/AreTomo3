@@ -305,7 +305,7 @@ void CCtfResults::Display(int iNthCtf, char* pcLog)
 {
 	char acBuf[128] = {'\0'};
 	sprintf(acBuf, "%4d  %7.2f  %8.2f  %8.2f  %6.2f "
-	   "%6.2f %6.2f %9.5f %3d\n", 
+	   "%9.4f %6.2f %9.5f %3d\n", 
 	   iNthCtf+1, this->GetTilt(iNthCtf),
 	   this->GetDfMin(iNthCtf),   this->GetDfMax(iNthCtf), 
 	   this->GetAzimuth(iNthCtf), this->GetExtPhase(iNthCtf),
@@ -363,15 +363,31 @@ CCtfParam* CCtfResults::GetCtfParamFromTilt(float fTilt)
 void CCtfResults::RemoveDarkCTFs(void)
 {
 	if(!bHasCTF()) return;
-	//-----------------
+	//---------------------------
 	MAM::CDarkFrames* pDarkFrames = 
 	   MAM::CDarkFrames::GetInstance(m_iNthGpu);
 	if(pDarkFrames->m_iNumDarks <= 0) return;
-	//-----------------
-	for(int i=pDarkFrames->m_iNumDarks-1; i>=0; i--)
-	{	int iDark = pDarkFrames->GetDarkIdx(i);
-		mRemoveEntry(i);
+	//---------------------------
+	int iNumAlnTilts = pDarkFrames->GetNumAlnTilts();
+	CCtfParam** ppCtfParams = new CCtfParam*[iNumAlnTilts];	
+	//---------------------------
+	int iCount = 0;
+	for(int i=0; i<m_iNumImgs; i++)
+	{	if(pDarkFrames->IsDarkFrame(i)) 
+		{	if(m_ppCtfParams[i] != 0L)
+			{	delete m_ppCtfParams[i];
+				m_ppCtfParams[i] = 0L;
+			}
+		}
+		else
+		{	ppCtfParams[iCount] = m_ppCtfParams[i];
+			m_ppCtfParams[i] = 0L;
+			iCount += 1;
+		}
 	}
+	if(m_ppCtfParams != 0L) delete[] m_ppCtfParams;
+	m_ppCtfParams = ppCtfParams;
+	m_iNumImgs = iCount;
 }
 
 void CCtfResults::mRemoveEntry(int iEntry)

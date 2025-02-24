@@ -68,12 +68,8 @@ void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory)
 
 void CFindCtfBase::SetPhase(float fInitPhase, float fPhaseRange)
 {
-	m_fExtPhase = fInitPhase;
-	float fMin = fInitPhase - fPhaseRange * 0.5f;
-	float fMax = fInitPhase + fPhaseRange * 0.5f;
-	//-----------------
-	m_afPhaseRange[0] = fmax(fMin, 0.0f);
-	m_afPhaseRange[1] = fmin(fMax, 180.0f);
+	m_afPhaseRange[0] = fInitPhase;
+	m_afPhaseRange[1] = fPhaseRange;
 }
 
 void CFindCtfBase::SetDefocus(float fInitDF, float fDfRange)
@@ -128,24 +124,6 @@ void CFindCtfBase::GenHalfSpectrum
 	//-----------------
 	mRemoveBackground();
 }
-/*
-float* CFindCtfBase::GenFullSpectrum(void)
-{
-	float fAstRad = m_fAstAng * 0.017453f;
-        m_pCtfTheory->SetDefocus(m_fDfMin, m_fDfMax, fAstRad);
-	m_pCtfTheory->SetExtPhase(m_fExtPhase, true);
-	//-------------------------------------------
-	CSpectrumImage spectrumImage;
-	spectrumImage.DoIt(m_gfCtfSpect, m_gfRawSpect, m_aiCmpSize,
-	   m_pCtfTheory, m_afResRange, m_gfFullSpect);
-	//--------------------------------------------
-	int iPixels = (m_aiCmpSize[0] - 1) * 2 * m_aiCmpSize[1];
-	float* pfFullSpect = new float[iPixels];
-	cudaMemcpy(pfFullSpect, m_gfFullSpect, iPixels * sizeof(float),
-	   cudaMemcpyDefault);
-	return pfFullSpect;
-}
-*/
 
 void CFindCtfBase::GenFullSpectrum(float* pfFullSpect)
 {

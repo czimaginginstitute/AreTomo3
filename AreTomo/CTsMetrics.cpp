@@ -162,13 +162,22 @@ void CTsMetrics::mOpenFile(void)
 	{	m_pFile = fopen(acFile, "w");
 		bFirst = true;
 	}
-	else 
-	{	m_pFile = fopen(acFile, "a");
-		if(m_pFile == 0L) 
-		{	m_pFile = fopen(acFile, "w");
-			bFirst = true;
+	else
+        {       m_pFile = fopen(acFile, "r");
+                if(m_pFile == 0L)
+                {       m_pFile = fopen(acFile, "w");
+                        bFirst = true;
+                }
+                else
+                {       fclose(m_pFile);
+                        m_pFile = fopen(acFile, "a");
+                        if(m_pFile == 0L)
+                        {       m_pFile = fopen(acFile, "w");
+                                bFirst = true;
+                        }
+                        else bFirst = false;
 		}
-	}
+        }
 	//-----------------
 	if(m_pFile == 0L)
 	{	printf("Warning: metrics file cannot be created, "

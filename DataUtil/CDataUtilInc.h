@@ -46,7 +46,7 @@ public:
 	void SetTilts(float* pfTilts);
 	void SetDoses(float* pfDoses);
 	void SetAcqs(int* piAcqIndices);
-	void SetSecs(int* piSecIndices);
+	void SetSecIndices(int* piSecIndices);
 	//-----------------
 	void SetImage(int iTilt, void* pvImage);
 	void SetCenter(int iFrame, float* pfCent);
@@ -56,6 +56,8 @@ public:
 	//-----------------
 	CTiltSeries* GetSubSeries(int* piStart, int* piSize);
 	void RemoveFrame(int iFrame);
+	void RemoveFrames(int* piIndices, int iNumFrms);
+	//-----------------
 	void GetAlignedSize(float fTiltAxis, int* piAlnSize);
 	float** GetImages(void); // do not free;
 	//-----------------
@@ -313,6 +315,7 @@ public:
 	int m_iAcqIdx;
 	float m_fTilt;
 	float m_fPixSize;
+	float m_fTotalDose; // from mdoc file
 	int m_iNthGpu;
 private:
 	CMcPackage(void);

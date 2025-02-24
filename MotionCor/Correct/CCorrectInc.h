@@ -59,8 +59,7 @@ public:
 	~CGenRealStack(void);
 	void Setup
 	( int iBuffer,
-	  bool bCorrectBilinear,
-	  bool bMotionDecon,
+	  bool bGenReal,
 	  int iNthGpu
 	);
 	void DoIt(MMD::CStackShift* pStackShift);
@@ -68,11 +67,8 @@ private:
 	void mDoGpuFrames(void);
 	void mDoCpuFrames(void);
 	void mAlignFrame(cufftComplex* gCmpFrm);
-        void mCorrectBilinear(cufftComplex* gCmpFrm);
-	void mMotionDecon(cufftComplex* gCmpFrm);
 	//-----------------
-	bool m_bCorrBilinear;
-	bool m_bMotionDecon;
+	bool m_bGenReal;
 	int m_iNthGpu;
 	MMD::CStackShift* m_pStackShift;
 	//-----------------
@@ -131,17 +127,24 @@ public:
 	  int iNthGpu
 	);
 protected:
+	void mClean(void);
 	void mDoIt(void);
 	void mCorrectCpuFrames(void);
 	void mCorrectGpuFrames(void);
 	virtual void mAlignFrame(cufftComplex* gCmpFrm);
 	void mCalcMeanShift(int iStream);
-	virtual void mMotionDecon(cufftComplex* gCmpFrm);
+	void mSetupUpSample(void);
+	void mUpSample(cufftComplex* gCmpFrm);
 	//-----------------
 	MMD::CPatchShifts* m_pPatchShifts;
 	float* m_gfPatShifts;
 	bool* m_gbBadShifts;
 	float* m_gfPatCenters;
+	//-----------------
+	cufftComplex* m_gCmpUpsampled;
+	int m_aiUpCmpSize[2];
+	int m_iUpsample;
+	//-----------------
 	dim3 m_aBlockDim;
 	dim3 m_aGridDim;
 	int m_iNthGpu;

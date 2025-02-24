@@ -87,11 +87,6 @@ void CAreTomo3Json::mGenInput(void)
 	MU::UseFullPath(acBuf);
 	mAddKeyValPair(pInput->m_acInPrefixTag + 1, acBuf, 10, !bList, !bEnd);
 	//-----------------
-	strcpy(acBuf, pMcInput->m_acFmIntFile);
-	MU::UseFullPath(acBuf);
-	mAddKeyValPair(pMcInput->m_acFmIntFileTag + 1, acBuf, 
-	   10, !bList, !bEnd);
-	//-----------------
 	strcpy(acBuf, pMcInput->m_acGainFile);
 	MU::UseFullPath(acBuf);
         mAddKeyValPair(pMcInput->m_acGainFileTag + 1, acBuf, 
@@ -205,6 +200,9 @@ void CAreTomo3Json::mAddMcInput(void)
 	//-----------------
 	mAddKeyFloatPair(pMcInput->m_acMcBinTag + 1, 
 	   &(pMcInput->m_fMcBin), 1, 10, !bList, !bEnd);
+	//-----------------
+	mAddKeyIntPair(pMcInput->m_acFmIntTag + 1,
+	   &(pMcInput->m_iFmInt), 1, 10, !bList, !bEnd);
 	//-----------------
 	mAddKeyIntPair(pMcInput->m_acGroupTag + 1, 
 	   pMcInput->m_aiGroup, 2, 10, bList, !bEnd);

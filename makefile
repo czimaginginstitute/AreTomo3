@@ -121,7 +121,6 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./MotionCor/DataUtil/CFmGroupParam.cpp \
 	./MotionCor/DataUtil/CFmIntParam.cpp \
 	./MotionCor/DataUtil/CPatchShifts.cpp \
-	./MotionCor/DataUtil/CReadFmIntFile.cpp \
 	./MotionCor/DataUtil/CStackShift.cpp \
 	./MotionCor/BadPixel/CCorrectMain.cpp \
 	./MotionCor/BadPixel/CDetectMain.cpp \
@@ -133,11 +132,9 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./MotionCor/Align/CAlignParam.cpp \
 	./MotionCor/Align/CAlignStack.cpp \
 	./MotionCor/Align/CDetectFeatures.cpp \
-	./MotionCor/Align/CEarlyMotion.cpp \
 	./MotionCor/Align/CExtractPatch.cpp \
 	./MotionCor/Align/CFullAlign.cpp \
 	./MotionCor/Align/CGenXcfStack.cpp \
-	./MotionCor/Align/CInterpolateShift.cpp \
 	./MotionCor/Align/CIterativeAlign.cpp \
 	./MotionCor/Align/CMeasurePatches.cpp \
 	./MotionCor/Align/CPatchAlign.cpp \
@@ -207,6 +204,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/FindCtf/CCoreTile.cpp \
 	./AreTomo/FindCtf/CTsTiles.cpp \
 	./AreTomo/FindCtf/CExtractTiles.cpp \
+	./AreTomo/FindCtf/CTiltInducedZ.cpp \
 	./AreTomo/FindCtf/CCorrImgCtf.cpp \
 	./AreTomo/FindCtf/CGenAvgSpectrum.cpp \
 	./AreTomo/FindCtf/CSaveCtfResults.cpp \

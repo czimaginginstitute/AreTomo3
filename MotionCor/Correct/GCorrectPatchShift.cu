@@ -20,9 +20,11 @@ static __global__ void mGCorrect3D
 	float* gfPatCenters,
 	float* gfPatShifts,
 	bool* gbBadShifts,
+	int iUpSample,
 	float* gfPadFrmOut
 )
-{	int y = blockIdx.y * blockDim.y + threadIdx.y;
+{	int x = 0;
+	int y = blockIdx.y * blockDim.y + threadIdx.y;
         if(y >= giSizes[1]) return;
 	int iOut = y * giSizes[0] + blockIdx.x;
 	//-------------------------------------
@@ -43,55 +45,74 @@ static __global__ void mGCorrect3D
 		fSx += gfPatShifts[p * 2] * afXYZ[0];
 		fSy += gfPatShifts[p * 2 + 1] * afXYZ[0];
 	}
-	fW += (float)1e-20;	
-	int x = (int)(blockIdx.x - fSx / fW);
-	y = (int)(y - fSy / fW);
-	//----------------------
-	if(x < 0 || y < 0 || x >= gridDim.x || y >= giSizes[1])
+	if(fW > 0)
+	{	fSx = fSx / fW;
+		fSy = fSy / fW;
+	}
+	//---------------------------
+	x = (int)((blockIdx.x - fSx) * iUpSample);
+	y = (int)((y - fSy) * iUpSample);
+	int iSizeX = gridDim.x * iUpSample;
+	int iSizeY = giSizes[1] * iUpSample;
+	//---------------------------
+	if(x < 0 || y < 0 || x >= iSizeX || y >= iSizeY)
 	{	x = (x < 0) ? -x : x;
 		y = (y < 0) ? -y : y;
-		x = (811 * x) % gridDim.x;
-		y = (811 * y) % giSizes[1];
+		x = (811 * x) % iSizeX;
+		y = (811 * y) % iSizeY;
 	}
-	//---------------------------------
-	gfPadFrmOut[iOut] = gfPadFrmIn[y * giSizes[0] + x];
+	//---------------------------
+	iSizeX = (iSizeX / 2 + 1) * 2;
+	gfPadFrmOut[iOut] = gfPadFrmIn[y * iSizeX + x];
 }
 
 GCorrectPatchShift::GCorrectPatchShift(void)
 {
 	m_aBlockDim.x = 1;
 	m_aBlockDim.y = 64;
+	m_iUpsample = 1;
+	//---------------------------
+	m_gCmpUpsampled = 0L;
 }
 
 GCorrectPatchShift::~GCorrectPatchShift(void)
 {
+	mClean();
+}
+
+void GCorrectPatchShift::mClean(void)
+{
+	if(m_gCmpUpsampled != 0L) 
+	{	cudaFree(m_gCmpUpsampled);
+		m_gCmpUpsampled = 0L;
+	}
 }
 
 void GCorrectPatchShift::DoIt
 (	MMD::CPatchShifts* pPatchShifts,
 	int iNthGpu
 )
-{	nvtxRangePushA("GCorrectPatchShift::DoIt");
-	Util_Time utilTime; utilTime.Measure();
-	//-----------------
+{	Util_Time utilTime; utilTime.Measure();
+	//---------------------------
 	m_pPatchShifts = pPatchShifts;
 	CCorrectFullShift::Setup(m_pPatchShifts->m_pFullShift, iNthGpu);
-	//-----------------
+	//---------------------------
 	size_t tBytes = m_pFrmBuffer->m_tFmBytes;
         for(int i=0; i<m_pSumBuffer->m_iNumFrames; i++)
         {       cufftComplex* gCmpSum = m_pSumBuffer->GetFrame(i);
                 cudaMemsetAsync(gCmpSum, 0, tBytes, m_streams[0]);
         }
-	//-----------------
+	mSetupUpSample();
+	//---------------------------
 	mDoIt();
 	mCorrectMag();
 	mUnpadSums();
 	cudaStreamSynchronize(m_streams[0]);
 	cudaStreamSynchronize(m_streams[1]);
-	//-----------------
+	//---------------------------
+	mClean();
 	float fSecs = utilTime.GetElapsedSeconds();
 	printf("Correction of local motion: %f sec\n\n", fSecs); 
-	nvtxRangePop();
 }
 
 void GCorrectPatchShift::mDoIt(void)
@@ -124,6 +145,8 @@ void GCorrectPatchShift::mDoIt(void)
 	//-----------------
 	mCorrectCpuFrames();
 	mCorrectGpuFrames();
+	cudaStreamSynchronize(m_streams[0]);
+	cudaStreamSynchronize(m_streams[1]);
 	//------------------
 	if(m_gfPatShifts != 0L) cudaFree(m_gfPatShifts);
 	if(m_gfPatCenters != 0L) cudaFree(m_gfPatCenters);
@@ -167,10 +190,10 @@ void GCorrectPatchShift::mCorrectGpuFrames(void)
 		mGenSums(gCmpAln);	
 	}
 }
-
+/*
 void GCorrectPatchShift::mAlignFrame(cufftComplex* gCmpFrm)
 {
-	float fBFactor = 10.0f;
+	float fBFactor = 100.0f;
 	float* gfPadFrm = reinterpret_cast<float*>(gCmpFrm);
 	//------------------
 	MD::CBufferPool* pBufferPool = MD::CBufferPool::GetInstance(m_iNthGpu);
@@ -181,12 +204,66 @@ void GCorrectPatchShift::mAlignFrame(cufftComplex* gCmpFrm)
 	bool* gbBadShifts = m_gbBadShifts + iOffset;
 	//------------------
 	mGCorrect3D<<<m_aGridDim, m_aBlockDim, 0, m_streams[0]>>>(fBFactor,
-	   gfPadFrm, m_gfPatCenters, gfPatShifts, gbBadShifts, gfPadAln);
+	   gfPadFrm, m_gfPatCenters, gfPatShifts, 
+	   gbBadShifts, m_iUpsample, gfPadAln);
 	//------------------
 	bool bNorm = true;
 	m_pForwardFFT->Forward(gfPadAln, bNorm, m_streams[0]);
 }
+*/
 
-void GCorrectPatchShift::mMotionDecon(cufftComplex* gCmpFrm)
-{	
+void GCorrectPatchShift::mAlignFrame(cufftComplex* gCmpFrm)
+{
+	float fBFactor = 100.0f;
+	mUpSample(gCmpFrm);
+	float* gfUpsampled = reinterpret_cast<float*>(m_gCmpUpsampled);
+        //--------------------
+        MD::CBufferPool* pBufferPool = MD::CBufferPool::GetInstance(m_iNthGpu);
+        float* gfPadAln = (float*)m_pTmpBuffer->GetFrame(1);
+        //------------------
+        int iOffset = m_iFrame * m_pPatchShifts->m_iNumPatches;
+        float* gfPatShifts = m_gfPatShifts + iOffset * 2;
+        bool* gbBadShifts = m_gbBadShifts + iOffset;
+        //------------------
+        mGCorrect3D<<<m_aGridDim, m_aBlockDim, 0, m_streams[0]>>>(fBFactor,
+           gfUpsampled, m_gfPatCenters, gfPatShifts,
+           gbBadShifts, m_iUpsample, gfPadAln);
+        //------------------
+        bool bNorm = true;
+        m_pForwardFFT->Forward(gfPadAln, bNorm, m_streams[0]);
 }
+
+//--------------------------------------------------------------------
+// Upsample the input frame if the motioncor binning is 1 and the
+// frame size does not exceed 8K x 8k.
+//--------------------------------------------------------------------
+void GCorrectPatchShift::mSetupUpSample(void)
+{
+	m_iUpsample = 2;
+	CMcInput* pMcInput = CMcInput::GetInstance();
+	if(pMcInput->m_fMcBin >= 1.5f) m_iUpsample = 1;
+	//---------------------------
+	int iImgSize = (m_aiInCmpSize[0] - 1) * 2;
+	if(iImgSize > m_aiInCmpSize[1]) iImgSize = m_aiInCmpSize[1];
+	if(iImgSize >= 8192) m_iUpsample = 1;
+	//---------------------------
+	m_aiUpCmpSize[0] = (m_aiInCmpSize[0] - 1) * m_iUpsample + 1;
+	m_aiUpCmpSize[1] = m_aiInCmpSize[1] * m_iUpsample;
+	//---------------------------
+	size_t tBytes = sizeof(cufftComplex) * m_aiUpCmpSize[0] 
+	   * m_aiUpCmpSize[1];
+	cudaMalloc(&m_gCmpUpsampled, tBytes);
+	//---------------------------
+	m_pInverseFFT->CreateInversePlan(m_aiUpCmpSize, true);
+}
+
+void GCorrectPatchShift::mUpSample(cufftComplex* gCmpFrm)
+{
+	MU::GFtResize2D ftResize2D;
+	ftResize2D.UpSample(gCmpFrm, m_aiInCmpSize,
+	   m_gCmpUpsampled, m_aiUpCmpSize, m_streams[0]);
+	//---------------------------
+	m_pInverseFFT->Inverse(m_gCmpUpsampled, m_streams[0]);
+}
+
+

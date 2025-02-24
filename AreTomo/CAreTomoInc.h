@@ -106,6 +106,8 @@ private:
 	void mCorrectCTF(void);
 	void mAlignCTF(void);
 	//-----------------
+	bool mCheckTiltSeries(void);
+	//-----------------
 	MD::CTiltSeries* mBinAlnSeries(float fBin);
 	void mRecon2nd(void);
 	void mRecon(void);

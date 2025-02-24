@@ -58,7 +58,7 @@ void CLoadTiffMain::mLoadHeader(void)
 	MD::CMcPackage* pPackage = MD::CMcPackage::GetInstance(m_iNthGpu);
 	MMD::CFmIntParam* pFmIntParam = 
 	   MMD::CFmIntParam::GetInstance(m_iNthGpu);
-	pFmIntParam->Setup(m_aiStkSize[2], m_iMode);
+	pFmIntParam->Setup(m_aiStkSize[2], m_iMode, pPackage->m_fTotalDose);
 	m_aiStkSize[2] = pFmIntParam->m_iNumIntFms;
 	//------------------------------------------------------------
 	// Calculate group parameters for global and local alignments

@@ -15,7 +15,7 @@ CLoadCtfResults::~CLoadCtfResults(void)
 {
 }
  
-bool CLoadCtfResults::DoIt(int iNthGpu)
+bool CLoadCtfResults::DoIt(int iNthGpu, bool bFromInput)
 {
 	m_iNthGpu = iNthGpu;
 	m_bLoaded = false;
@@ -35,7 +35,8 @@ bool CLoadCtfResults::DoIt(int iNthGpu)
 	pCtfResults->Setup(pTiltSeries->m_aiStkSize[2], aiTileSize, &ctfParam);
 	//-----------------
 	char acCtfFile[256] = {'\0'};
-	CSaveCtfResults::GenFileName(m_iNthGpu, acCtfFile);
+	bool bInDir = true;
+	CSaveCtfResults::GenFileName(m_iNthGpu, bInDir, acCtfFile);
 	strcat(acCtfFile, ".txt");
 	m_bLoaded = mLoadFittings(acCtfFile);
 	//-----------------
@@ -65,6 +66,8 @@ bool CLoadCtfResults::mLoadFittings(const char* pcCtfFile)
 	char acLine[512] = {'\0'};
 	int iDfHand = 0;
 	//-----------------
+	const char* pcFormat7 = "%d %f %f %f %f %f %f";
+	const char* pcFormat8 = "%d %f %f %f %f %f %f %d";
 	while(!feof(pFile))
 	{	memset(acLine, 0, sizeof(acLine));
 		char* pcRet = fgets(acLine, 512, pFile);
@@ -72,11 +75,11 @@ bool CLoadCtfResults::mLoadFittings(const char* pcCtfFile)
 		if(acLine[0] == '#') continue;
 		//----------------
 		int j = iNumReads * iNumCols;
-		int iItems = sscanf(&acLine[1], "%d %f %f %f %f "
-		   "%f  %f  %d", &piTilts[iNumReads], &pfRes[j], 
+		int iItems = sscanf(&acLine[1], pcFormat8,
+		   &piTilts[iNumReads], &pfRes[j], 
 		   &pfRes[j+1], &pfRes[j+2], &pfRes[j+3], 
 		   &pfRes[j+4], &pfRes[j+5], &iDfHand);
-		if(iItems < 6) continue;
+		if(iItems == 7) iDfHand = 0;
 		//----------------
 		if(piTilts[iNumReads] < iMinIdx) 
 		{	iMinIdx = piTilts[iNumReads];

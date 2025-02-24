@@ -744,7 +744,7 @@ public:
 	//-----------------
 	void DoIt
 	( float* gfSpect,
-	  float* pfPhaseRange
+	  float fPhaseRange
 	);
 	void Refine
 	( float* gfSpect, float fDfMeanRange,
@@ -893,7 +893,7 @@ class CSaveCtfResults
 public:
 	CSaveCtfResults(void);
 	~CSaveCtfResults(void);
-	static void GenFileName(int iNthGpu, char* pcCtfFile);
+	static void GenFileName(int iNthGpu, bool bInDir, char* pcCtfFile);
 	void DoIt(int iNthGpu);
 	void DoFittings(int iNthGpu);
 private:
@@ -908,7 +908,7 @@ class CLoadCtfResults
 public:
 	CLoadCtfResults(void);
 	~CLoadCtfResults(void);
-	bool DoIt(int iNthGpu);
+	bool DoIt(int iNthGpu, bool bInputDir);
 	//-----------------
 	bool m_bLoaded;
 	int m_iNthGpu;
@@ -943,6 +943,7 @@ protected:
 	  float fBetaOffset, 
 	  float fMaxTilt
 	);
+	void mCleanSpects(void);
 	//-----------------
 	void mSaveSpectFile(void);
 	float mGetResults(int iTilt);

@@ -70,12 +70,15 @@ public:
 	void ResetShift(void);
 	void SortByTilt(void);
 	void SortBySecIndex(void);
-	void RemoveFrame(int iFrame);
+	void RemoveDarkFrames(void);
 	//-----------------
 	CAlignParam* GetCopy(void);
 	CAlignParam* GetCopy(int iStartFm, int iNumFms);
 	CAlignParam* GetCopy(float fStartTilt, float fEndTilt);
 	void Set(CAlignParam* pAlignParam);
+	//-----------------
+	bool bZeroBased(void);
+	void ToOneBased(void);
 	//-----------------
 	void LogShift(char* pcLogFile);
 	//-----------------
@@ -228,20 +231,28 @@ public:
 	);                         // hence frame idx is angle idx
 	void Setup(int iNthGpu);
 	//-----------------
-	void AddDark(int iFrmIdx);
 	void AddDark(int iFrmIdx, int iSecIdx, float fTilt);
-	void AddTiltOffset(float fTiltOffset); // seems not necessary since
-					       // dark images are removed
-					       // from raw tilt series.
+	void AddTiltOffset(float fTiltOffset); 
 	//-----------------
 	int GetAcqIdx(int iFrame);
 	int GetSecIdx(int iFrame);
 	float GetTilt(int iFrame);
+	//-----------------
 	int GetDarkIdx(int iDark); // iDark in [0, m_iNumDarks)
+	int GetDarkSec(int iDark);
+	float GetDarkTilt(int iDark);
 	int GetNumAlnTilts(void);
 	//-----------------
 	bool IsDarkFrame(int iFrame);
 	void GenImodExcludeList(char* pcLine, int iSize);
+	//-----------------
+	bool bZeroBased(void);
+	void ToOneBased(void);
+	//-----------------
+	int* m_piDarkIdxs;
+	int* m_piDarkSecs;
+	float* m_pfDarkTilts;
+	//-----------------
 	int m_aiRawStkSize[3];
 	int m_iNumDarks;
 	int m_iNthGpu;
@@ -252,7 +263,6 @@ private:
 	int* m_piSecIdxs; // indices of images in MRC files
 	float* m_pfTilts; // tilt angles of all images
 	bool* m_pbDarkImgs; // flag of dark images
-	int* m_piDarkIdxs;
 	static CDarkFrames* m_pInstances;
 	static int m_iNumGpus;
 };
@@ -314,6 +324,8 @@ private:
 	void mLoadGlobal(void);
 	void mLoadLocal(void);
 	void mClean(void);
+	//-----------------
+	void mToOneBased(void);
 	//-----------------
 	int m_aiRawSize[3];
 	int m_iNumPatches;

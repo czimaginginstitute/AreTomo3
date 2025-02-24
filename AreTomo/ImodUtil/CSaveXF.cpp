@@ -112,7 +112,8 @@ void CSaveXF::mSaveForRelion(void)
 		yshift_imod = a21 * (-afShift[0]) + a22 * (-afShift[1]);
 		//----------------
 		int iSecIdx = pAlnParam->GetSecIndex(i);
-		char* pcLine = pcOrderedList + iSecIdx * m_iLineSize;
+		int iImgIdx = iSecIdx - 1;
+		char* pcLine = pcOrderedList + iImgIdx * m_iLineSize;
 		//----------------
 		sprintf(pcLine, "%9.3f %9.3f %9.3f %9.3f %9.2f %9.2f",
 		   a11, a12, a21, a22, xshift_imod, yshift_imod);
@@ -124,8 +125,9 @@ void CSaveXF::mSaveForRelion(void)
 	for(int i=0; i<pDarkFrames->m_iNumDarks; i++)
 	{	int iDarkFrm = pDarkFrames->GetDarkIdx(i);
 		int iSecIdx = pDarkFrames->GetSecIdx(iDarkFrm);
+		int iImgIdx = iSecIdx - 1;
 		//----------------
-		char* pcLine = pcOrderedList + iSecIdx * m_iLineSize;
+		char* pcLine = pcOrderedList + iImgIdx * m_iLineSize;
 		sprintf(pcLine, "%9.3f %9.3f %9.3f %9.3f %9.2f %9.2f",
 		   1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 	}

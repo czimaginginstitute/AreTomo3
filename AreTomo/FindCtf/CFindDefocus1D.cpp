@@ -82,22 +82,25 @@ void CFindDefocus1D::mBrutalForceSearch(float afResult[3])
 	iDfSteps = (int)(fDfRange / fDfStep) / 2 * 2 + 1;
 	//-----------------
 	int iPsSteps = 37;
-	float fPsRange = m_afPhaseRange[1] - m_afPhaseRange[0];
-	float fPsStep = fPsRange / (iPsSteps - 1);
+	float fPsStep = m_afPhaseRange[1] / (iPsSteps - 1);
 	if(fPsStep < 2) fPsStep = 2.0f;
-	iPsSteps = (int)(fPsRange / fPsStep) / 2 * 2 + 1;
+	iPsSteps = (int)(m_afPhaseRange[1] / fPsStep) / 2 * 2 + 1;
 	//-----------------
 	int iPoints = iDfSteps * iPsSteps;
 	float* pfCCs = new float[iPoints];
 	//-----------------
+	float fDefocus, fPhase;
 	int iFocus = 0, iPhase = 0;
 	afResult[2] = (float)-1e20;
 	//-----------------
 	for(int i=0; i<iPoints; i++)
 	{	iFocus = i % iDfSteps;
 		iPhase = i / iDfSteps;
-		float fDefocus = m_afDfRange[0] + iFocus * fDfStep;
-		float fPhase = m_afPhaseRange[0] + iPhase * fPsStep;
+		fDefocus = m_afDfRange[0] + iFocus * fDfStep;
+		fPhase = m_afPhaseRange[0] + (iPhase - iPsSteps / 2) * fPsStep;
+		if(fPhase < 0) fPhase = 0.0f;
+		else if(fPhase > 150.0f) fPhase = 150.0f;
+		//----------------
 		mCalcCTF(fDefocus, fPhase);
 		pfCCs[i] = mCorrelate();
 		if(pfCCs[i] > afResult[2])
