@@ -110,9 +110,9 @@ void CRefineCtfMain::mRefineOffset(float fStep, bool bBeta)
 	int iKind = bBeta ? 2 : 1;
 	float fMaxTilt = m_fLowTilt + 1.0f;
 	//-----------------
-	for(int i=-3; i<=3; i++)
+	for(int i=-6; i<=6; i++)
 	{	float fOffset = fInitOffset + i * fStep;
-		if(fabs(fOffset) > 16) continue;
+		if(fabs(fOffset) > 32) continue;
 		//----------------
 		if(bBeta) mGenAvgSpects(m_fTiltOffset, fOffset, fMaxTilt);
 		else mGenAvgSpects(fOffset, m_fBetaOffset, fMaxTilt);
