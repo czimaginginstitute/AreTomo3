@@ -14,6 +14,7 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./MaUtil/GFFTUtil2D.cu \
 	./MaUtil/GFindMinMax2D.cu \
 	./MaUtil/GFourierResize2D.cu \
+	./MaUtil/GFtResize2D.cu \
 	./MaUtil/GNormalize2D.cu \
 	./MaUtil/GPad2D.cu \
 	./MaUtil/GPartialCopy.cu \
@@ -118,6 +119,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./DataUtil/CTsPackage.cpp \
 	./DataUtil/CCtfParam.cpp \
 	./DataUtil/CLogFiles.cpp \
+	./DataUtil/CTimeStamp.cpp \
 	./MotionCor/DataUtil/CFmGroupParam.cpp \
 	./MotionCor/DataUtil/CFmIntParam.cpp \
 	./MotionCor/DataUtil/CPatchShifts.cpp \

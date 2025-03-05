@@ -94,7 +94,6 @@ private:
 	void mStretchAlign(void);
 	void mRotAlign(float fAngRange, int iNumSteps);
 	void mRotAlign(void);
-	void mFindTiltOffset(void);
 	void mProjAlign(void);
 	void mPatchAlign(void);
 	void mCalcThickness(void);

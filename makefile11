@@ -119,6 +119,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./DataUtil/CTsPackage.cpp \
 	./DataUtil/CCtfParam.cpp \
 	./DataUtil/CLogFiles.cpp \
+	./DataUtil/CTimeStamp.cpp \
 	./MotionCor/DataUtil/CFmGroupParam.cpp \
 	./MotionCor/DataUtil/CFmIntParam.cpp \
 	./MotionCor/DataUtil/CPatchShifts.cpp \

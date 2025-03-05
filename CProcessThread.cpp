@@ -155,6 +155,9 @@ void CProcessThread::ThreadMain(void)
 	pSaveMdocDone->DoIt(pReadMdoc->m_acMdocFile);
 	//-----------------
 	printf("GPU %d: process thread exiting.\n\n", m_iNthGpu);
+	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
+	pTimeStamp->Record("ProcessExit");
+	pTimeStamp->Save();
 }
 
 void CProcessThread::mProcessTsPackage(void)
@@ -185,22 +188,28 @@ void CProcessThread::mProcessTsPackage(void)
 
 void CProcessThread::mProcessMovies(void)
 {
+	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
+	pTimeStamp->Record("ProcessMovies:Start");
+	//---------------------------
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
-	//-----------------
+	//---------------------------
 	for(int i=0; i<pReadMdoc->m_iNumTilts; i++)
 	{	mProcessMovie(i);
 		mAssembleTiltSeries(i);
 	}
 	pTsPackage->SetLoaded(true);
+	pTimeStamp->Record("ProcessMovies:End");
 	//--------------------------------------------------
 	// 1) Tilt series are sorted by tilt angle and then
 	// saved into MRC file.
 	// 2) The subsequent processing is done on the
 	// tilt-angle sorted tilt series.
 	//--------------------------------------------------
+	pTimeStamp->Record("SaveTiltSeries:Start");
 	pTsPackage->SortTiltSeries(0);
 	pTsPackage->SaveTiltSeries();
+	pTimeStamp->Record("SaveTiltSeries:End");
 	//--------------------------------------------------
 	// 1) Resetting section indices makes the section
 	// index array in ascending order. 
@@ -213,8 +222,11 @@ void CProcessThread::mProcessMovies(void)
 
 bool CProcessThread::mLoadTiltSeries(void)
 {
-	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);	
+	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
+	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
+	pTimeStamp->Record("LoadTiltSeries:Start");	
 	bool bLoaded = pTsPackage->LoadTiltSeries();
+	pTimeStamp->Record("LoadTiltSeries:End");
 	if(!bLoaded) return false;
 	//---------------------------------------------------------
 	// 1) Create buffer pool since there are several classes
