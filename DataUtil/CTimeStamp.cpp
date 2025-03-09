@@ -105,6 +105,7 @@ void CTimeStamp::Save(void)
 		return;
 	}
 	//---------------------------
+	int iSize = m_aTimeStampQ.size();
 	while(!m_aTimeStampQ.empty())
 	{	char* pcLine = m_aTimeStampQ.front();
 		m_aTimeStampQ.pop();
@@ -113,7 +114,7 @@ void CTimeStamp::Save(void)
 			delete[] pcLine;
 		}
 	}
-	fflush(m_pFile);
+	if(iSize > 0) fflush(m_pFile);
 	pthread_mutex_unlock(m_pMutex);
 }
 

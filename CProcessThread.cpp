@@ -142,6 +142,10 @@ int CProcessThread::DoIt(void)
 
 void CProcessThread::ThreadMain(void)
 {
+	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
+	pTimeStamp->Record("ProcessStart");
+        pTimeStamp->Save();
+	//---------------------------
 	CInput* pInput = CInput::GetInstance();
 	cudaSetDevice(pInput->m_piGpuIDs[m_iNthGpu]);
 	//-----------------
@@ -155,7 +159,6 @@ void CProcessThread::ThreadMain(void)
 	pSaveMdocDone->DoIt(pReadMdoc->m_acMdocFile);
 	//-----------------
 	printf("GPU %d: process thread exiting.\n\n", m_iNthGpu);
-	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
 	pTimeStamp->Record("ProcessExit");
 	pTimeStamp->Save();
 }

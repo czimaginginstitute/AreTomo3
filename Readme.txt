@@ -477,3 +477,10 @@ AreTomo3 2.1.1 [Mar-03-03-2025]
    1) Added CTimeStamp.cpp in DataUtil to measure the time stamp at different
       points of execution. This is a global timer. The time stamp is relative
       to the begining of the execution.
+
+AreTomo3 2.1.2 [Mar-03-07-2025]
+-------------------------------
+1. Bug fix
+2. Improvement:
+   1) Adjustment in DataUtil/CTimeStamp.cpp. Record and save when a thread
+      starts the processing. This helps detect if the processing is stuck.
