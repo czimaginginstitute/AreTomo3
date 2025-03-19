@@ -484,3 +484,13 @@ AreTomo3 2.1.2 [Mar-03-07-2025]
 2. Improvement:
    1) Adjustment in DataUtil/CTimeStamp.cpp. Record and save when a thread
       starts the processing. This helps detect if the processing is stuck.
+
+AreTomo3 2.1.2a [Mar-11-2025]
+-----------------------------
+1. Bug fix
+2. Improvement:
+   1) FindCtf/CRefineCtfMain.cpp: refine alpha offset to higher tilt range.
+
+AreTomo3 2.1.3 [Mar-19-2025]
+----------------------------
+1. Renamed 2.1.2a to 2.1.3
