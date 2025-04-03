@@ -469,3 +469,28 @@ AreTomo3 2.1.0 [Feb-18-2025]
    2) Using fixed frame integration instead since per-tilt dose is so
       small.
    3) Using sliding window to avoid shift interpolation.
+
+AreTomo3 2.1.1 [Mar-03-03-2025]
+-------------------------------
+1. Bug Fix:
+2. Improvement:
+   1) Added CTimeStamp.cpp in DataUtil to measure the time stamp at different
+      points of execution. This is a global timer. The time stamp is relative
+      to the begining of the execution.
+
+AreTomo3 2.1.2 [Mar-03-07-2025]
+-------------------------------
+1. Bug fix
+2. Improvement:
+   1) Adjustment in DataUtil/CTimeStamp.cpp. Record and save when a thread
+      starts the processing. This helps detect if the processing is stuck.
+
+AreTomo3 2.1.2a [Mar-11-2025]
+-----------------------------
+1. Bug fix
+2. Improvement:
+   1) FindCtf/CRefineCtfMain.cpp: refine alpha offset to higher tilt range.
+
+AreTomo3 2.1.3 [Mar-19-2025]
+----------------------------
+1. Renamed 2.1.2a to 2.1.3

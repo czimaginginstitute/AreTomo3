@@ -1,6 +1,7 @@
 #pragma once
 #include "../MaUtil/CMaUtilFwd.h"
 #include <Util/Util_Thread.h>
+#include <Util/Util_Time.h>
 #include <Mrcfile/CMrcFileInc.h>
 #include <queue>
 #include <unordered_map>
@@ -537,6 +538,28 @@ private:
 	//-----------------
 	static CLogFiles* m_pInstances;
 	static int m_iNumGpus;
+};
+
+class CTimeStamp
+{
+public:
+	static void CreateInstances(void);
+	static void DeleteInstances(void);
+	static CTimeStamp* GetInstance(int iNthGpu);
+	~CTimeStamp(void);
+	void Record(const char* pcAction);
+	void Save(void);
+private:
+	CTimeStamp(void);
+	std::queue<char*> m_aTimeStampQ;
+	int m_iNthGpu;
+	//---------------------------
+	static void mOpenFile(void);
+	static int m_iNumGpus;
+	static FILE* m_pFile;
+	static Util_Time* m_pTimer;
+	static pthread_mutex_t* m_pMutex;
+	static CTimeStamp* m_pInstances;
 };
 
 class CDuInstances

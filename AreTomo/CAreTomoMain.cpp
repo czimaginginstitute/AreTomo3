@@ -324,19 +324,25 @@ void CAreTomoMain::mGenCtfTiles(void)
 void CAreTomoMain::mFindCtf(bool bRefine)
 {
 	if(!FindCtf::CFindCtfMain::bCheckInput()) return;
+	//---------------------------
+	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
 	if(!bRefine)
-	{	FindCtf::CFindCtfMain findCtfMain;
+	{	pTimeStamp->Record("CTFestInit:Start");
+		FindCtf::CFindCtfMain findCtfMain;
 		findCtfMain.DoIt(m_iNthGpu);
+		pTimeStamp->Record("CTFestInit:End");
 	}
 	else 
-	{	FindCtf::CRefineCtfMain refineCtfMain;
+	{	pTimeStamp->Record("CTFestRefine:Start");
+		FindCtf::CRefineCtfMain refineCtfMain;
 		refineCtfMain.DoIt(m_iNthGpu);
-		//----------------
+		pTimeStamp->Record("CTFestRefine:End");
+		//--------------------------
 		MD::CCtfResults* pCtfResults =
 		   MD::CCtfResults::GetInstance(m_iNthGpu);
 		MAM::CAlignParam* pAlnParam = sGetAlignParam(m_iNthGpu);
 		float fTiltAxis = pAlnParam->GetTiltAxis(0);
-		//----------------
+		//--------------------------
 		if(pCtfResults->m_iDfHand == -1)
 		{	fTiltAxis = mRotAxis180(fTiltAxis);
 		}
@@ -399,6 +405,8 @@ void CAreTomoMain::mAlign(void)
 
 void CAreTomoMain::mCoarseAlign(void)
 {
+	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
+	pTimeStamp->Record("TomoAlignCoarse:Start");
 	MAS::CStreAlignMain streAlignMain;
 	streAlignMain.Setup(m_iNthGpu);
 	//---------------------------------------------------------
@@ -416,7 +424,7 @@ void CAreTomoMain::mCoarseAlign(void)
 		{	float fRange = fmax(50.0f / i, 10);
 			mRotAlign(fRange, 100);
 		}
-		mFindTiltOffset();
+		pTimeStamp->Record("TomoAlignCoarse:End");
 		return;
 	}
 	//---------------------------------------------------------
@@ -443,11 +451,14 @@ void CAreTomoMain::mCoarseAlign(void)
 			mRotAlign(10.0f / i, 100);
 		}
 	}	
-        mFindTiltOffset();
+	pTimeStamp->Record("TomoAlignCoarse:End");
 }
 
 void CAreTomoMain::mProjAlign(void)
 {
+	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
+        pTimeStamp->Record("TomoAlignRefine:Start");
+	//---------------------------
 	CAtInput* pInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
         pParam->m_afMaskSize[0] = 0.7f;
@@ -479,6 +490,7 @@ void CAreTomoMain::mProjAlign(void)
 		}
 	}
 	delete pLastParam;
+	pTimeStamp->Record("TomoAlignRefine:End");
 }
 
 void CAreTomoMain::mRotAlign(float fAngRange, int iNumSteps)
@@ -494,48 +506,24 @@ void CAreTomoMain::mRotAlign(void)
 	printf("Rotation align score: %f\n\n", m_fRotScore);
 }
 
-void CAreTomoMain::mFindTiltOffset(void)
-{
-	//-----------------------------------------------
-	// 1) This function is deprecated and replaced
-	// by FindCtf/CRefineCtfMain.cpp to estimate
-	// the tilt angle offset. 2) Do not delete util
-	// CRefineCtfMain is tested with more cases.
-	//-----------------------------------------------
-	/*
-	float fTiltOffset = 0.0f;
-	CAtInput* pInput = CAtInput::GetInstance();
-	if(pInput->m_afTiltCor[0] < 0) return;
-	//-----------------
-	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
-	if(fabs(pInput->m_afTiltCor[1]) > 0.1)
-        {       fTiltOffset = pInput->m_afTiltCor[1];
-                pAlignParam->AddAlphaOffset(fTiltOffset);
-		return;
-        }
-	//-----------------
-	TiltOffset::CTiltOffsetMain aTiltOffsetMain;
-	aTiltOffsetMain.Setup(4, m_iNthGpu);
-	fTiltOffset = aTiltOffsetMain.DoIt();
-	pAlignParam->AddAlphaOffset(fTiltOffset);
-	//-----------------
-	printf("Stretching based tilt offset: %f\n\n", fTiltOffset);
-	*/
-}
-
 void CAreTomoMain::mPatchAlign(void)
 {
 	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->GetNumPatches() == 0) return;
-	//-----------------
+	//---------------------------
 	MAP::CPatchTargets* pPatchTgts = 
      	   MAP::CPatchTargets::GetInstance(m_iNthGpu);
 	pPatchTgts->Detect();
 	if(pPatchTgts->m_iNumTgts < 4) return;
 	//-----------------
+	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
+	pTimeStamp->Record("TomoAlignPatch:Start");
+	//---------------------------
 	MAP::CPatchAlignMain* pPatchAlignMain = 
 	   MAP::CPatchAlignMain::GetInstance(m_iNthGpu);
-	pPatchAlignMain->DoIt(); 
+	pPatchAlignMain->DoIt();
+	//---------------------------
+	pTimeStamp->Record("TomoAlignPatch:End");
 }
 
 void CAreTomoMain::mCalcThickness(void)
@@ -586,16 +574,20 @@ void CAreTomoMain::mCorrectCTF(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	if(pAtInput->m_aiCorrCTF[0] == 0) return;
-	//-----------------
+	//---------------------------
 	MD::CCtfResults* pCtfResults = 
 	   MD::CCtfResults::GetInstance(m_iNthGpu);
 	if(!pCtfResults->bHasCTF()) return;
-	//-----------------
+	//---------------------------
 	bool bPhaseFlip = false;
 	if(pAtInput->m_aiCorrCTF[0] == 2) bPhaseFlip = true;
-	//-----------------
+	//---------------------------
+	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
+	pTimeStamp->Record("CorrectCTF:Start");
+	//---------------------------
 	MAF::CCorrCtfMain corrCtfMain;
 	corrCtfMain.DoIt(m_iNthGpu, bPhaseFlip, pAtInput->m_aiCorrCTF[1]);
+	pTimeStamp->Record("CorrectCTF:End");
 }
 
 void CAreTomoMain::mSetupTsCorrection(void)
@@ -729,6 +721,9 @@ MD::CTiltSeries* CAreTomoMain::mBinAlnSeries(float fBin)
 
 void CAreTomoMain::mRecon(void)
 {
+	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
+	pTimeStamp->Record("TomoRecon:Start");
+	//---------------------------
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	int iVolZ = pAtInput->m_iVolZ;
 	//-----------------
@@ -755,9 +750,11 @@ void CAreTomoMain::mRecon(void)
 		mReconVol(pBinnedSeries, iVolZ, i, bWbp);
 		if(pBinnedSeries != 0L) delete pBinnedSeries;
 	}
-	//-----------------
+	//---------------------------
 	if(m_pCorrTomoStack != 0L) delete m_pCorrTomoStack;
 	m_pCorrTomoStack = 0L;
+	//---------------------------
+	pTimeStamp->Record("TomoRecon:End");
 }
 
 void CAreTomoMain::mRecon2nd(void)
