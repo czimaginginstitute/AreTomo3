@@ -182,9 +182,11 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	// respectively.
 	//-----------------------------------------------
 	int iHalfZ = iSize / 2;
+	int iOffset = (int)(iSize * 0.2f);
 	float afMinCCs[] = {100.0f, 100.0f};
 	int aiMinLocs[] = {-1, -1};
-	for(int i=0; i<iHalfZ; i++)
+	//---------------------------
+	for(int i=iOffset; i<iHalfZ; i++)
 	{	if(pfCCs[i] < afMinCCs[0])
 		{	afMinCCs[0] = pfCCs[i];
 			aiMinLocs[0] = i;

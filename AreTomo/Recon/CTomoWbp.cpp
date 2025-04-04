@@ -29,7 +29,10 @@ void CTomoWbp::Setup
 )
 {	this->Clean();
 	CTomoBase::Setup(iVolX, iVolZ, pTiltSeries, pAlignParam);
-        m_aGRWeight.SetSize(m_iPadProjX, m_iNumProjs);
+	int aiPadProjSize[] = {m_iPadProjX, m_iNumProjs};
+        m_aGBackProj.SetSize(aiPadProjSize, m_aiVolSize);
+	//---------------------------
+	m_aGRWeight.SetSize(m_iPadProjX, m_iNumProjs);
 }
 
 void CTomoWbp::DoIt(float* gfPadSinogram, float* gfVolXZ, cudaStream_t stream)
@@ -47,7 +50,7 @@ void CTomoWbp::DoIt(float* gfPadSinogram, float* gfVolXZ, cudaStream_t stream)
 	//-----------------
 	bool bSart = true;
 	m_aGBackProj.DoIt(m_gfPadSinogram, m_gfCosSin, m_gbNoProjs, 
-	   !bSart, 1.0f, m_gfVolXZ, m_stream);
+	    !bSart, 1.0f, m_gfVolXZ, m_stream);
 	cudaStreamSynchronize(m_stream);
 }
 

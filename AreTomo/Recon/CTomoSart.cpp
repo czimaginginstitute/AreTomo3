@@ -36,6 +36,8 @@ void CTomoSart::Setup
 )
 {	this->Clean();
 	CTomoBase::Setup(iVolX, iVolZ, pTiltSeries, pAlignParam);
+	int aiPadProjSize[] = {m_iPadProjX, m_iNumProjs};
+        m_aGBackProj.SetSize(aiPadProjSize, m_aiVolSize);
 	//-----------------
 	m_iNumSubsets = iNumSubsets;
 	m_iNumIters = iNumIters;

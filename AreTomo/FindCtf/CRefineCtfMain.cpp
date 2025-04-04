@@ -34,28 +34,27 @@ void CRefineCtfMain::Clean(void)
 
 void CRefineCtfMain::DoIt(int iNthGpu)
 {
-	const char* pcMsg = "local CTF estimation, please wait ......";
+	const char* pcMsg1 = "Find defocus handedness, please wait ......";
+	const char* pcMsg2 = "Local CTF estimation, please wait ......";
 	//-----------------
 	this->Clean();
 	m_iNthGpu = iNthGpu;
 	//-----------------
 	mInit(true);
 	bool bBeta = true;
-	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
+	printf("GPU %d: %s\n\n", iNthGpu, pcMsg1);
 	mFindHandedness();
 	//-----------------
-	mRefineOffset(4.1f, !bBeta);
-	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
-	mRefineOffset(3.1f, !bBeta);
-	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
-	mRefineOffset(1.1f, !bBeta);
+	mRefineOffset(3.1f, 15, !bBeta);
+	printf("GPU %d: %s\n\n", iNthGpu, pcMsg2);
+	mRefineOffset(1.1f, 9, !bBeta);
 	//-----------------
-	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
-	mRefineOffset(3.0f, bBeta);
-	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
-	mRefineOffset(1.1f, bBeta);
+	printf("GPU %d: %s\n\n", iNthGpu, pcMsg2);
+	mRefineOffset(3.0f, 7, bBeta);
+	printf("GPU %d: %s\n\n", iNthGpu, pcMsg2);
+	mRefineOffset(1.1f, 7, bBeta);
 	//-----------------
-	printf("GPU %d: %s\n\n", iNthGpu, pcMsg);
+	printf("GPU %d: %s\n\n", iNthGpu, pcMsg2);
 	mGenAvgSpects(m_fTiltOffset, m_fBetaOffset, 100.0f);
 	mRefineCTF(3);
 	//-----------------
@@ -67,10 +66,8 @@ void CRefineCtfMain::DoIt(int iNthGpu)
 	//-----------------
 	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
 	printf("GPU %d: CTF refined tilt offsets\n"
-	   "     tilt and beta offsets: %8.2f  %8.2f\n"
-	   "     reference offsets:     %8.2f  %8.2f\n\n",
-	   m_iNthGpu, m_fTiltOffset, m_fBetaOffset,
-	   pAlnParam->m_fAlphaOffset, pAlnParam->m_fBetaOffset);
+	   "     tilt and beta offsets: %8.2f  %8.2f\n\n",
+	   m_iNthGpu, m_fTiltOffset, m_fBetaOffset);
 	//-----------------
 	pCtfRes->m_fAlphaOffset = m_fTiltOffset;
 	pCtfRes->m_fBetaOffset = m_fBetaOffset;
@@ -101,19 +98,20 @@ void CRefineCtfMain::mFindHandedness(void)
 	   m_iNthGpu, fScore1, fScore2);
 }
 
-void CRefineCtfMain::mRefineOffset(float fStep, bool bBeta)
+void CRefineCtfMain::mRefineOffset(float fStep, int iNumSteps, bool bBeta)
 {
 	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
 	m_fBestScore = pCtfRes->GetLowTiltScore(m_fLowTilt);
         m_pBestCtfRes = pCtfRes->GetCopy();
-	//-----------------
+	//---------------------------
 	float fInitOffset = m_fTiltOffset;
 	if(bBeta) fInitOffset = m_fBetaOffset;
 	int iKind = bBeta ? 2 : 1;
 	float fMaxTilt = m_fLowTilt + 1.0f;
-	//-----------------
-	for(int i=-3; i<=3; i++)
-	{	float fOffset = fInitOffset + i * fStep;
+	//---------------------------
+	for(int s=0; s<iNumSteps; s++)
+	{	int i = s - iNumSteps / 2;
+		float fOffset = fInitOffset + i * fStep;
 		if(fabs(fOffset) > 22) continue;
 		//----------------
 		if(bBeta) mGenAvgSpects(m_fTiltOffset, fOffset, fMaxTilt);

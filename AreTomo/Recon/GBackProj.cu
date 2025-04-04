@@ -21,22 +21,27 @@ static __global__ void mGBackProj
 )
 {	int iX = blockIdx.x * blockDim.x + threadIdx.x;
 	if(iX >= giSize[3]) return;
-	//-----------------
+	//---------------------------
 	float fX = iX + 0.5f - giSize[3] * 0.5f;
 	float fZ = blockIdx.y + 0.5f - gridDim.y * 0.5f;
 	float fProjCentX = giSize[0] / 2.0f;
-	int iProjEndX = giSize[0] - 2.0f;
-	//-----------------
+	int iProjEndX = giSize[0] - 2;
+	//---------------------------
         float fInt = 0.0f;
 	int i, iCount = 0;
 	for(i=iStartProj; i<iEndProj; i++)
 	{	if(gbNoProjs[i]) continue;
-		//----------------
+		//--------------------------
 		float fXp = fX * gfCosSin[2 * i] + fZ * gfCosSin[2 * i + 1] 
 		   + fProjCentX;
 		if(fXp < 0 || fXp > iProjEndX) continue;
-		//----------------
-		fXp = gfPadSinogram[i * giSize[1] + (int)fXp];
+		//--------------------------
+		int iXp = (int)fXp;
+		fXp = fXp - iXp;
+		int j = i * giSize[1] + iXp;
+		//--------------------------
+		fXp = gfPadSinogram[j] * (1 - fXp)
+		   + gfPadSinogram[j+1] * fXp;
 		if(fXp <= (float)-1e10) continue;
 		//----------------
 		fInt += fXp;

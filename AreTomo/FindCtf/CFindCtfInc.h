@@ -968,17 +968,17 @@ class CRefineCtfMain : public CFindCtfMain
 public:
 	CRefineCtfMain(void);
 	virtual ~CRefineCtfMain(void);
-	//-----------------
+	//---------------------------
 	void Clean(void);
 	void DoIt(int iNthGpu);
 private:
 	void mFindHandedness(void);
-	void mRefineOffset(float fStep, bool bBeta);
+	void mRefineOffset(float fStep, int iNumSteps, bool bBeta);
 	float mRefineCTF(int iKind);
-	//-----------------
+	//---------------------------
 	float m_fTiltOffset;
 	float m_fBetaOffset;
-	//-----------------
+	//---------------------------
 	float m_fBestScore;
 	MD::CCtfResults* m_pBestCtfRes;
 	float m_fLowTilt;

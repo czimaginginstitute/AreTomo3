@@ -62,8 +62,8 @@ void CTomoBase::Setup
 	cudaMemcpy(m_gfCosSin, pfCosSin, tBytes, cudaMemcpyDefault);
 	delete[] pfCosSin;
 	//-----------------
-	int aiPadProjSize[] = {m_iPadProjX, m_iNumProjs};
-        m_aGBackProj.SetSize(aiPadProjSize, m_aiVolSize);
+	//int aiPadProjSize[] = {m_iPadProjX, m_iNumProjs};
+        //m_aGBackProj.SetSize(aiPadProjSize, m_aiVolSize);
 }
 
 void CTomoBase::ExcludeTilts(float* pfTilts, int iNumTilts)

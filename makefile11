@@ -88,6 +88,7 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/ProjAlign/GProjXcf.cu \
 	./AreTomo/ProjAlign/GReproj.cu \
 	./AreTomo/Recon/GBackProj.cu \
+	./AreTomo/Recon/GBackProjWbp.cu \
 	./AreTomo/Recon/GCalcRFactor.cu \
 	./AreTomo/Recon/GDiffProj.cu \
 	./AreTomo/Recon/GForProj.cu \

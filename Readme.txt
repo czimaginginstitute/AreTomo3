@@ -494,3 +494,12 @@ AreTomo3 2.1.2a [Mar-11-2025]
 AreTomo3 2.1.3 [Mar-19-2025]
 ----------------------------
 1. Renamed 2.1.2a to 2.1.3
+
+AreTomo3 2.1.4 [Apr-04-2025]
+----------------------------
+1. Big fix
+2. Improvement:
+   1) GBackProj.cu: switched to bilinear interpolation to reduce aliasing.
+   2) GForProj.cu:  the same as above
+   2) DataUtil/CCalcThick.cpp: Searching is done within an interior z range by
+      removing 20% on top and bottom.
