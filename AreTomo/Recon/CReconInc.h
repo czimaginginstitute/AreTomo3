@@ -188,7 +188,7 @@ public:
 	  cudaStream_t stream
 	);
 private:
-	GBackProj m_aGBackProj;
+	GBackProjWbp m_aGBackProj;
 	GRWeight m_aGRWeight;
 };
 
