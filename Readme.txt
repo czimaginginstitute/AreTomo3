@@ -503,3 +503,10 @@ AreTomo3 2.1.4 [Apr-04-2025]
    2) GForProj.cu:  the same as above
    2) DataUtil/CCalcThick.cpp: Searching is done within an interior z range by
       removing 20% on top and bottom.
+
+AreTomo3 2.1.5 [Apr-09-2025]
+----------------------------
+1. Bug fix
+2. Improvement
+   1) Added GBackProjWbp.cu to do weighted back projection on 2x expanded
+      grid and Fourier-crop it back to original size to remove aliasing.
