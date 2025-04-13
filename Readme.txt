@@ -510,3 +510,9 @@ AreTomo3 2.1.5 [Apr-09-2025]
 2. Improvement
    1) Added GBackProjWbp.cu to do weighted back projection on 2x expanded
       grid and Fourier-crop it back to original size to remove aliasing.
+
+AreTomo3 2.1.6 [Apr-12-2025]
+----------------------------
+1. Bug fix
+   1) When the SubFramePath in a mdoc file contains the white space, AreTomo3
+      cannot load the movie file. Fixed.
