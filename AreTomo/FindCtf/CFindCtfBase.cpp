@@ -53,7 +53,7 @@ void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory)
 	m_aiCmpSize[0] = m_aiCmpSize[1] / 2 + 1;
 	//-----------------
 	float fPixSize = m_pCtfTheory->GetPixelSize();
-        m_afResRange[0] = 15.0f * fPixSize;
+        m_afResRange[0] = 20.0f * fPixSize;
         m_afResRange[1] = 3.5f * fPixSize;
 	//-----------------
 	float fPixSize2 = fPixSize * fPixSize;

@@ -516,3 +516,14 @@ AreTomo3 2.1.6 [Apr-12-2025]
 1. Bug fix
    1) When the SubFramePath in a mdoc file contains the white space, AreTomo3
       cannot load the movie file. Fixed.
+2. Changes:
+   1) AreTomo/FindCtf/CFindCtfBase.cpp: m_afResRange is set from 20.0 to 3.5 to be
+      consistence with GCtfFind and MotionCor3
+
+AreTomo3 2.1.7 [Apr-18-2025]
+----------------------------
+1. Bug fix:
+   1) FindCtf/GCalcCTF2D: The theoretical CTF mismatch with the averaged power
+      power spectrum. Corrected.
+   2) FindCtf/GCalcCTF2D: iY should be (iCmpY - y) % iCmpy when mapping the
+      negative x frequency to positive x frequency.

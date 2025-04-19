@@ -66,9 +66,10 @@ static __global__ void mGEmbedCtf
 	//----------------------------------------------
 	// fX is negative frequency, apply symmetry here
 	//----------------------------------------------
-	int x = gridDim.x - blockIdx.x;
-	fY = gfCtf2D[(iCmpY - 1 - y) * (gridDim.x + 1) + x];
-	fY = (fY * fY - 0.5f) * fGain - fMean;
+	int iX = gridDim.x - blockIdx.x;
+	int iY = (iCmpY - y) % iCmpY;
+	fY = gfCtf2D[iY * (gridDim.x + 1) + iX];
+	fY = (fY * fY - 0.5f) * fGain + fMean;
 	//--------------------------------------------------------
 	// CTF is embededd on the right half of the full spectrum.
 	// Therefore, there is a (gridDim.x = iNx / 2) offset in

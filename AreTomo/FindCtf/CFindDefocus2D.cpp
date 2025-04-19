@@ -339,7 +339,7 @@ float CFindDefocus2D::mRefinePhase(float fPhaseRange)
 	float fMinPhase = m_afPhaseRange[0] - m_afPhaseRange[1] * 0.5f;
 	float fMaxPhase = m_afPhaseRange[1] + m_afPhaseRange[1] * 0.5f;
 	if(fMinPhase < 0) fMinPhase = 0.0f;
-	if(fMaxPhase > 150) fMaxPhase = 180.0f;
+	if(fMaxPhase > 150) fMaxPhase = 150.0f;
 	//-----------------
 	float fCCMax = (float)-1e20, fPhaseMax = 0.0f, fPhase = 0.0f;
 	for(int i=0; i<iSteps; i++)
