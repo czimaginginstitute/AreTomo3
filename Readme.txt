@@ -527,3 +527,10 @@ AreTomo3 2.1.7 [Apr-18-2025]
       power spectrum. Corrected.
    2) FindCtf/GCalcCTF2D: iY should be (iCmpY - y) % iCmpy when mapping the
       negative x frequency to positive x frequency.
+
+AreTomo3 2.1.8 [Apr-18-2025]
+----------------------------
+1. Bug fix
+2. Improvement
+   1) Find FindCtf/CGenAvgSpectrum.cpp: implemented two cudaStreams based
+      spectral rescaling to improve the processing speed.

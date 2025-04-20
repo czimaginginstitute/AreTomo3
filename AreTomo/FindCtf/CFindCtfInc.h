@@ -659,7 +659,7 @@ private:
 	void mDoScaling(void);
 	void mScaleTile(int iTile, float* gfScaled);
 	void mCalcTileCentZs(void);
-	//-----------------
+	//---------------------------
 	int m_iTilt;
 	float m_fTiltOffset;
 	float m_fBetaOffset;
@@ -668,6 +668,8 @@ private:
 	int m_iHandedness;
 	float* m_gfAvgSpect;
 	int m_iNthGpu;
+	//---------------------------
+	cudaStream_t m_aStreams[2];
 };
 
 class CSpectrumImage
