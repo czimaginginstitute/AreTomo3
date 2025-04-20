@@ -131,6 +131,8 @@ void CGenAvgSpectrum::mScaleTile(int iTile, float* gfScaled)
 	int iTileSize = piTileSize[0] * piTileSize[1];
 	float* qfTile = pTile->GetTile();
 	float* gfTile = &gfScaled[(iStream + 1) * iTileSize];
+	//---------------------------
+	if(iStream == 1) cudaStreamSynchronize(m_aStreams[0]);
 	cudaMemcpyAsync(gfTile, qfTile, iTileSize * sizeof(float),
 	   cudaMemcpyDefault, m_aStreams[iStream]);
 	if(iStream == 1) cudaStreamSynchronize(m_aStreams[1]);
