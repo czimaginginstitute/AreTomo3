@@ -534,3 +534,15 @@ AreTomo3 2.1.8 [Apr-18-2025]
 2. Improvement
    1) Find FindCtf/CGenAvgSpectrum.cpp: implemented two cudaStreams based
       spectral rescaling to improve the processing speed.
+
+AreTomo3 2.1.9 [May-06-2025]
+----------------------------
+Bug Fix:
+  1) FindCTF/GCC1D and GCC2D: GCalcCTF1D and 2D calculates the CTF functions 
+     and GCalcSpectrum calculates the amplitude spectrum. However the 
+     correlation compares the power spectrum and CTF^2. Now we can compare 
+     amplitude.
+Changes:
+  1) CFindCtfBase::mRemoveBacground: change from 1.0f/30 to 1.0/15.
+  2) Expanded the defocus search range for higher tilt images. Some tilt
+     series of phantom data set should ~2um jump from one tilt to the next.

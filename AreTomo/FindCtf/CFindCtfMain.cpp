@@ -190,8 +190,14 @@ void CFindCtfMain::mDoHighTilts(void)
 	float afAstAngle[2], afExtPhase[2];
 	//-----------------
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
-	afDfRange[0] = m_fDfMean; 
-	afDfRange[1] = fmaxf(m_fDfStd * 2.0f, 30000.0f);
+	float fPixSize2 = pTsTiles->GetPixSize() * pTsTiles->GetPixSize();
+	float fDfRange = fmaxf(m_fDfStd * 2.0f, 20000 * fPixSize2);
+	float fMin = m_fDfMean - fDfRange * 0.5f;
+	float fMax = m_fDfMean + fDfRange * 0.5f;
+	fMin = fmaxf(fMin, 3000 * fPixSize2);
+	fMax = fminf(fMax, 30000 * fPixSize2);
+	afDfRange[0] = (fMin + fMax) * 0.5f;
+	afDfRange[1] = fMax - fMin;
 	//-----------------
 	MD::CCtfParam* pCtfParam = pCtfResults->GetCtfParam(iZeroTilt);
 	afAstRatio[0] = pCtfParam->GetDfSigma(false) / 

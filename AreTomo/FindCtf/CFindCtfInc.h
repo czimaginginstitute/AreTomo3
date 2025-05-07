@@ -390,7 +390,7 @@ public:
 	int* GetSize(void) { return m_aiTileSize; }
 	int GetSizeX(void) { return m_aiTileSize[0]; }
 	int GetSizeY(void) { return m_aiTileSize[1]; }
-	int GetPixels(void) { return m_aiTileSize[0] * m_aiTileSize[1]; };
+	int GetPixels(void) { return m_aiTileSize[0] * m_aiTileSize[1]; }
 	//-----------------
 	float* GetCenter(void) { return m_afCenter; }
 	float GetCentX(void) { return m_afCenter[0]; }
@@ -464,6 +464,7 @@ public:
 	int GetNumTilts(void) { return m_iNumTilts; }
 	float GetTilt(int iTilt);
 	int GetTiltIdx(float fTilt);
+	float GetPixSize(void) { return m_fPixSize; }
 private:
 	CTsTiles(void);
 	void mSetSize(void);
