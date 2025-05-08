@@ -546,3 +546,11 @@ Changes:
   1) CFindCtfBase::mRemoveBacground: change from 1.0f/30 to 1.0/15.
   2) Expanded the defocus search range for higher tilt images. Some tilt
      series of phantom data set should ~2um jump from one tilt to the next.
+
+AreTomo3 2.1.10 [May-08-2025]
+-----------------------------
+Bug Fix:
+Changes:
+   1) FindCtf/CFindDefoucs2: Reduced the B-factor from 100 to 10. This has
+      improved estimation of alpha and beta offsets by including more higher
+      Thon ring information in the optimization. 

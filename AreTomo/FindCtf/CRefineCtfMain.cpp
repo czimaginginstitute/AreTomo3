@@ -45,7 +45,7 @@ void CRefineCtfMain::DoIt(int iNthGpu)
 	printf("GPU %d: %s\n\n", iNthGpu, pcMsg1);
 	mFindHandedness();
 	//-----------------
-	mRefineOffset(3.1f, 15, !bBeta);
+	mRefineOffset(3.1f, 22, !bBeta);
 	printf("GPU %d: %s\n\n", iNthGpu, pcMsg2);
 	mRefineOffset(1.1f, 9, !bBeta);
 	//-----------------
@@ -112,7 +112,7 @@ void CRefineCtfMain::mRefineOffset(float fStep, int iNumSteps, bool bBeta)
 	for(int s=0; s<iNumSteps; s++)
 	{	int i = s - iNumSteps / 2;
 		float fOffset = fInitOffset + i * fStep;
-		if(fabs(fOffset) > 22) continue;
+		if(fabs(fOffset) > 30) continue;
 		//----------------
 		if(bBeta) mGenAvgSpects(m_fTiltOffset, fOffset, fMaxTilt);
 		else mGenAvgSpects(fOffset, m_fBetaOffset, fMaxTilt);
