@@ -390,7 +390,7 @@ public:
 	int* GetSize(void) { return m_aiTileSize; }
 	int GetSizeX(void) { return m_aiTileSize[0]; }
 	int GetSizeY(void) { return m_aiTileSize[1]; }
-	int GetPixels(void) { return m_aiTileSize[0] * m_aiTileSize[1]; };
+	int GetPixels(void) { return m_aiTileSize[0] * m_aiTileSize[1]; }
 	//-----------------
 	float* GetCenter(void) { return m_afCenter; }
 	float GetCentX(void) { return m_afCenter[0]; }
@@ -464,6 +464,7 @@ public:
 	int GetNumTilts(void) { return m_iNumTilts; }
 	float GetTilt(int iTilt);
 	int GetTiltIdx(float fTilt);
+	float GetPixSize(void) { return m_fPixSize; }
 private:
 	CTsTiles(void);
 	void mSetSize(void);
@@ -659,7 +660,7 @@ private:
 	void mDoScaling(void);
 	void mScaleTile(int iTile, float* gfScaled);
 	void mCalcTileCentZs(void);
-	//-----------------
+	//---------------------------
 	int m_iTilt;
 	float m_fTiltOffset;
 	float m_fBetaOffset;
@@ -668,6 +669,8 @@ private:
 	int m_iHandedness;
 	float* m_gfAvgSpect;
 	int m_iNthGpu;
+	//---------------------------
+	cudaStream_t m_aStreams[2];
 };
 
 class CSpectrumImage
@@ -968,17 +971,17 @@ class CRefineCtfMain : public CFindCtfMain
 public:
 	CRefineCtfMain(void);
 	virtual ~CRefineCtfMain(void);
-	//-----------------
+	//---------------------------
 	void Clean(void);
 	void DoIt(int iNthGpu);
 private:
 	void mFindHandedness(void);
-	void mRefineOffset(float fStep, bool bBeta);
+	void mRefineOffset(float fStep, int iNumSteps, bool bBeta);
 	float mRefineCTF(int iKind);
-	//-----------------
+	//---------------------------
 	float m_fTiltOffset;
 	float m_fBetaOffset;
-	//-----------------
+	//---------------------------
 	float m_fBestScore;
 	MD::CCtfResults* m_pBestCtfRes;
 	float m_fLowTilt;

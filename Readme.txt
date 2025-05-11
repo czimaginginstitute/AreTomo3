@@ -494,3 +494,63 @@ AreTomo3 2.1.2a [Mar-11-2025]
 AreTomo3 2.1.3 [Mar-19-2025]
 ----------------------------
 1. Renamed 2.1.2a to 2.1.3
+
+AreTomo3 2.1.4 [Apr-04-2025]
+----------------------------
+1. Big fix
+2. Improvement:
+   1) GBackProj.cu: switched to bilinear interpolation to reduce aliasing.
+   2) GForProj.cu:  the same as above
+   2) DataUtil/CCalcThick.cpp: Searching is done within an interior z range by
+      removing 20% on top and bottom.
+
+AreTomo3 2.1.5 [Apr-09-2025]
+----------------------------
+1. Bug fix
+2. Improvement
+   1) Added GBackProjWbp.cu to do weighted back projection on 2x expanded
+      grid and Fourier-crop it back to original size to remove aliasing.
+
+AreTomo3 2.1.6 [Apr-12-2025]
+----------------------------
+1. Bug fix
+   1) When the SubFramePath in a mdoc file contains the white space, AreTomo3
+      cannot load the movie file. Fixed.
+2. Changes:
+   1) AreTomo/FindCtf/CFindCtfBase.cpp: m_afResRange is set from 20.0 to 3.5 to be
+      consistence with GCtfFind and MotionCor3
+
+AreTomo3 2.1.7 [Apr-18-2025]
+----------------------------
+1. Bug fix:
+   1) FindCtf/GCalcCTF2D: The theoretical CTF mismatch with the averaged power
+      power spectrum. Corrected.
+   2) FindCtf/GCalcCTF2D: iY should be (iCmpY - y) % iCmpy when mapping the
+      negative x frequency to positive x frequency.
+
+AreTomo3 2.1.8 [Apr-18-2025]
+----------------------------
+1. Bug fix
+2. Improvement
+   1) Find FindCtf/CGenAvgSpectrum.cpp: implemented two cudaStreams based
+      spectral rescaling to improve the processing speed.
+
+AreTomo3 2.1.9 [May-06-2025]
+----------------------------
+Bug Fix:
+  1) FindCTF/GCC1D and GCC2D: GCalcCTF1D and 2D calculates the CTF functions 
+     and GCalcSpectrum calculates the amplitude spectrum. However the 
+     correlation compares the power spectrum and CTF^2. Now we can compare 
+     amplitude.
+Changes:
+  1) CFindCtfBase::mRemoveBacground: change from 1.0f/30 to 1.0/15.
+  2) Expanded the defocus search range for higher tilt images. Some tilt
+     series of phantom data set should ~2um jump from one tilt to the next.
+
+AreTomo3 2.1.10 [May-08-2025]
+-----------------------------
+Bug Fix:
+Changes:
+   1) FindCtf/CFindDefoucs2: Reduced the B-factor from 100 to 10. This has
+      improved estimation of alpha and beta offsets by including more higher
+      Thon ring information in the optimization. 

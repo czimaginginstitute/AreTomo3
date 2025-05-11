@@ -90,24 +90,33 @@ void CGenAvgSpectrum::mDoScaling(void)
 	cudaMemset(m_gfAvgSpect, 0, sizeof(float) * iTileSize); 
 	//-----------------
 	float* gfScaled = 0L;
-	int iBytes = piTileSize[0] * piTileSize[1] * sizeof(float);
-	cudaMalloc(&gfScaled, iBytes);
-	//-----------------
+	int iBytes = iTileSize * sizeof(float);
+	cudaMalloc(&gfScaled, iBytes * 3);
+	//---------------------------
+	cudaStreamCreate(&m_aStreams[0]);
+	cudaStreamCreate(&m_aStreams[1]);
+	//---------------------------
 	for(int i=0; i<iImgTiles; i++)
 	{	pTile = pTsTiles->GetTile(m_iTilt, i);
 		if(!pTile->IsGood()) continue;
+		//-------------------
+		int j = i % 2;
 		mScaleTile(i, gfScaled);
-		addFrames.DoIt(m_gfAvgSpect, 1.0f, gfScaled,
-		   fFactor2, m_gfAvgSpect, piTileSize);
+		addFrames.DoIt(m_gfAvgSpect, 1.0f, gfScaled, fFactor2,
+		   m_gfAvgSpect, piTileSize, m_aStreams[0]);
 	}
-	//-----------------
+	cudaStreamSynchronize(m_aStreams[0]);
+	//---------------------------
 	if(gfScaled != 0L) cudaFree(gfScaled);
+	cudaStreamDestroy(m_aStreams[0]);
+	cudaStreamDestroy(m_aStreams[1]);
 }
 
 void CGenAvgSpectrum::mScaleTile(int iTile, float* gfScaled)
 {
 	GScaleSpect2D scaleSpect2D;
-	//-----------------
+	int iStream = iTile % 2;
+	//---------------------------
 	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
 	CTile* pTile = pTsTiles->GetTile(m_iTilt, iTile);
 	float fCentZ = pTile->GetCentZ();
@@ -116,13 +125,20 @@ void CGenAvgSpectrum::mScaleTile(int iTile, float* gfScaled)
 	// This depends on defocus handedness
 	//-------------------------------------
 	float fTileDF = m_fCentDF + fCentZ * fPixSize * m_iHandedness;
-	//-----------------
 	float fScale = sqrtf(m_fCentDF / fTileDF);
-	//-----------------
+	//---------------------------
 	int* piTileSize = pTile->GetSize();
+	int iTileSize = piTileSize[0] * piTileSize[1];
 	float* qfTile = pTile->GetTile();
-	//-----------------
-	scaleSpect2D.DoIt(qfTile, gfScaled, fScale, piTileSize);
+	float* gfTile = &gfScaled[(iStream + 1) * iTileSize];
+	//---------------------------
+	if(iStream == 1) cudaStreamSynchronize(m_aStreams[0]);
+	cudaMemcpyAsync(gfTile, qfTile, iTileSize * sizeof(float),
+	   cudaMemcpyDefault, m_aStreams[iStream]);
+	if(iStream == 1) cudaStreamSynchronize(m_aStreams[1]);
+	//---------------------------
+	scaleSpect2D.DoIt(gfTile, gfScaled, fScale, 
+	   piTileSize, m_aStreams[0]);
 }
 
 void CGenAvgSpectrum::mCalcTileCentZs(void)

@@ -5,7 +5,7 @@
 using namespace McAreTomo::AreTomo::FindCtf;
 
 //-----------------------------------------------------------------------------
-// 1. Calculate the logrithmic amplitude spectrum given gComp, the Fourier
+// 1. Calculate amplitude spectrum given gComp, the Fourier
 //    transform.
 // 2. The spectrum is the half spectrum with x frequency ranging from 0 to
 //    0.5 and y frequency form -0.5 to +0.5.

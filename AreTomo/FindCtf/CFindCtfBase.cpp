@@ -53,8 +53,9 @@ void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory)
 	m_aiCmpSize[0] = m_aiCmpSize[1] / 2 + 1;
 	//-----------------
 	float fPixSize = m_pCtfTheory->GetPixelSize();
-        m_afResRange[0] = 15.0f * fPixSize;
-        m_afResRange[1] = 3.5f * fPixSize;
+        m_afResRange[0] = 20.0f * fPixSize;
+	m_afResRange[1] = (2.0f * fPixSize) / 0.75f;
+        if(m_afResRange[1] < 3.5f) m_afResRange[1] = 3.5f;
 	//-----------------
 	float fPixSize2 = fPixSize * fPixSize;
 	m_afDfRange[0] = 3000.0f * fPixSize2;
@@ -151,7 +152,7 @@ void CFindCtfBase::ShowResult(void)
 
 void CFindCtfBase::mRemoveBackground(void)
 {
-	float fMinRes = 1.0f / 30.0f;
+	float fMinRes = 1.0f / 15.0f;
 	GRmBackground2D rmBackground;
 	rmBackground.DoIt(m_gfRawSpect, m_gfCtfSpect, m_aiCmpSize, fMinRes);
 	//-----------------
@@ -173,7 +174,7 @@ void CFindCtfBase::mLowpass(void)
 	MU::GFFTUtil2D fftUtil2D;
         cufftComplex* gCmpFullSpect = (cufftComplex*)m_gfFullSpect;
         fftUtil2D.Lowpass(gCmpFullSpect, gCmpFullSpect,
-           m_aiCmpSize, 36.0f);
+           m_aiCmpSize, 10.0f);
         //-----------------
         cufft2D.CreateInversePlan(aiFFTSize, false);
         cufft2D.Inverse(gCmpFullSpect);

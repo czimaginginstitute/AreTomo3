@@ -190,16 +190,34 @@ char* CReadMdoc::mExtractFramePath(char* pcLine)
 	if(pcPath == 0L) return 0L;
 	//-----------------
 	char* pcEqual = strrchr(pcLine, '=');
-	pcPath = new char[256];
-	if(pcEqual[1] == ' ') strcpy(pcPath, &pcEqual[2]);
-	else strcpy(pcPath, &pcEqual[1]);
+	char acPath[256] = {'\0'};
+	strcpy(acPath, &pcEqual[1]);
 	//-----------------
-	char* pcRetN = strrchr(pcPath, '\n');
+	char* pcRetN = strrchr(acPath, '\n');
 	if(pcRetN != 0L) pcRetN[0] = '\0';
 	//-----------------
-	char* pcRetR = strrchr(pcPath, '\r');
+	char* pcRetR = strrchr(acPath, '\r');
 	if(pcRetR != 0L) pcRetR[0] = '\0';
 	//-----------------
+	int iSize = strlen(acPath);
+	int iStart = 0;
+	for(int i=0; i<iSize; i++)
+	{	if(acPath[i] != ' ') break;
+		else iStart = i;
+	}
+	//-------------------------------------
+	// remove leading white space.
+	//-------------------------------------
+	pcPath = new char[256];
+	strcpy(pcPath, &acPath[iStart]);
+	//-------------------------------------
+	// remove trailing white space
+	//-------------------------------------
+	iSize = strlen(pcPath);
+	for(int i=iSize-1; i>=0; i--)
+	{	if(pcPath[i] == ' ') pcPath[i] = '\0';
+		else break;
+	}
 	return pcPath;
 }
 

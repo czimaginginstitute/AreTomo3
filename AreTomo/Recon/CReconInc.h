@@ -49,6 +49,30 @@ private:
 	int m_iEndProj;
 };
 
+class GBackProjWbp
+{
+public:
+	GBackProjWbp(void);
+	~GBackProjWbp(void);
+	void Clean(void);
+	void SetSize(int* piPadProjSize, int* piVolSize);
+	void DoIt
+	( float* gfPadSinogram,
+  	  float* gfCosSin,
+	  bool* gbNoProjs,
+	  float* gfVolXZ,
+	  cudaStream_t stream
+	);
+private:
+	float* m_gfPadVol;
+	float* m_gfPadVol2;
+	MU::CCufft2D* m_pForwardFFT;
+	MU::CCufft2D* m_pInverseFFT;
+	int m_aiVolSize[2];
+	int m_aiVolSize2[2];
+	dim3 m_aBlockDim, m_aGridDim;	
+};
+
 class GForProj 
 {
 public:
@@ -142,8 +166,8 @@ protected:
 	MD::CTiltSeries* m_pTiltSeries;
 	MAM::CAlignParam* m_pAlignParam;
 	//-----------------
+	//GBackProj m_aGBackProj;
 	GWeightProjs m_aGWeightProjs;
-	GBackProj m_aGBackProj;
 	cudaStream_t m_stream;
 };
 
@@ -164,6 +188,7 @@ public:
 	  cudaStream_t stream
 	);
 private:
+	GBackProjWbp m_aGBackProj;
 	GRWeight m_aGRWeight;
 };
 
@@ -204,6 +229,7 @@ private:
 	int m_iNumSubsets;
 	int m_aiTiltRange[2]; // start and num tilts
 	//-----------------
+	GBackProj m_aGBackProj;
 	GForProj m_aGForProj;
 	GDiffProj m_aGDiffProj;
 	//-----------------
