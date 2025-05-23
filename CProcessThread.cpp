@@ -251,17 +251,18 @@ void CProcessThread::mProcessMovie(int iTilt)
 	CInput* pInput = CInput::GetInstance();
 	MD::CMcPackage* pMcPackage = MD::CMcPackage::GetInstance(m_iNthGpu);
         MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
-	//-----------------
+	//---------------------------
 	char* pcFileName = pReadMdoc->GetFrameFileName(iTilt);
 	pMcPackage->SetMovieName(pcFileName);
 	pMcPackage->m_iAcqIdx = pReadMdoc->GetAcqIdx(iTilt);
 	pMcPackage->m_fTilt = pReadMdoc->GetTilt(iTilt);
 	pMcPackage->m_fPixSize = pInput->m_fPixSize;
-	//-----------------
+	pMcPackage->m_fTotalDose = pReadMdoc->GetDose(iTilt);
+	//---------------------------
 	printf("GPU %d: Motion correct %s\n"
 	   "------------------\n\n", 
 	   m_iNthGpu, pcFileName);
-	//-----------------
+	//---------------------------
 	MotionCor::CMotionCorMain mcMain;
 	mcMain.DoIt(m_iNthGpu);
 }
@@ -271,11 +272,12 @@ void CProcessThread::mAssembleTiltSeries(int iTilt)
 	MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
 	MD::CMcPackage* pMcPackage = MD::CMcPackage::GetInstance(m_iNthGpu);
 	MD::CTsPackage* pTsPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
-	//-----------------
+	//---------------------------
 	if(iTilt == 0) pTsPackage->CreateTiltSeries();
-	//-----------------
+	//---------------------------
 	float fTilt = pReadMdoc->GetTilt(iTilt);
 	pTsPackage->SetTiltAngle(iTilt, fTilt);
+	pTsPackage->SetImgDose(iTilt, pMcPackage->m_fTotalDose);
 	//--------------------------------------------------
 	// 1) when processing starts with movies, section
 	// indices are the same as acquisition  indices. 
@@ -288,12 +290,8 @@ void CProcessThread::mAssembleTiltSeries(int iTilt)
 	int iAcqIdx = pReadMdoc->GetAcqIdx(iTilt);
 	pTsPackage->SetAcqIdx(iTilt, iAcqIdx);
 	pTsPackage->SetSecIdx(iTilt, iAcqIdx);
-	//-----------------
+	//---------------------------
 	pTsPackage->SetSums(iTilt, pMcPackage->m_pAlnSums);
-	//-----------------
-	float fImgDose = pReadMdoc->GetDose(iTilt);
-	if(fImgDose <= 0) fImgDose = pMcPackage->m_pRawStack->m_fStkDose;
-	pTsPackage->SetImgDose(iTilt, fImgDose);
 }
 
 void CProcessThread::mProcessTiltSeries(void)

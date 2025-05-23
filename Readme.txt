@@ -464,7 +464,7 @@ AreTomo3 2.1.0 [Feb-18-2025]
    1) Forgot to delete m_iUpsample = 1 (debugging code) in GCorrectPatchShift.
       Fixed (02-24-2025).
 2. Improvement:
-   1) Improved location motion correction. The iterative alignment stops
+   1) Improved local motion correction. The iterative alignment stops
       it gets worse.
    2) Using fixed frame integration instead since per-tilt dose is so
       small.
@@ -553,4 +553,21 @@ Bug Fix:
 Changes:
    1) FindCtf/CFindDefoucs2: Reduced the B-factor from 100 to 10. This has
       improved estimation of alpha and beta offsets by including more higher
-      Thon ring information in the optimization. 
+      Thon ring information in the optimization.
+
+AreTomo3 2.2.0 [May-15-2025]
+----------------------------
+Bug Fix:
+   1) FindCtf/GSpectralCC2D.cu: corretion should be between |CTF| - 0.5 and
+      background subtracted amplitude spectrum.
+   2) Fixed the logic in tilt axis refinement. When users disable the
+      tilt axis refinement by giving a negative 2nd parameter in -TiltAxis,
+      not refinement will be done including 180-degree rotation even if
+      AreTomo3 detects 180 degree error.
+Changes:
+   1) Enabled -FmDose in command line. If a non-zero value is provided,
+      AreTomo3 uses this value to calculate per-tilt dose, which is the
+      product of per-frame dose and number of raw frames in the tilted
+      movie. If -FmDose is not provided, AreTomo3 uses the value given
+      in the MDOC file.
+ 

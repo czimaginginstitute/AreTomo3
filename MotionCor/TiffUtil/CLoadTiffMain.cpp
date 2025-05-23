@@ -51,11 +51,19 @@ void CLoadTiffMain::mLoadHeader(void)
 	m_iMode = aLoadHeader.GetMode();
 	printf("TIFF file size & mode: %d  %d  %d  %d\n",
 	   m_aiStkSize[0], m_aiStkSize[1], m_aiStkSize[2], m_iMode);
+	//---------------------------------------------------------
+	// 1. If we have per-frame dose, we should use it since it
+	//    is more accurate than the MDOC's result.
+	// 2. If not, we use MDOC's result for better than nothing.
+	//---------------------------------------------------------
+	CInput* pInput = CInput::GetInstance();
+	float fImgDose = pInput->m_fFmDose * m_aiStkSize[2];
+	MD::CMcPackage* pPackage = MD::CMcPackage::GetInstance(m_iNthGpu);
+	if(fImgDose > 0) pPackage->m_fTotalDose = fImgDose;
 	//----------------------------------------------------
 	// If s_pPackage does not have m_pFmIntParam, this is
 	// a new package amd we create an object
 	//----------------------------------------------------
-	MD::CMcPackage* pPackage = MD::CMcPackage::GetInstance(m_iNthGpu);
 	MMD::CFmIntParam* pFmIntParam = 
 	   MMD::CFmIntParam::GetInstance(m_iNthGpu);
 	pFmIntParam->Setup(m_aiStkSize[2], m_iMode, pPackage->m_fTotalDose);

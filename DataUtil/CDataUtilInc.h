@@ -26,7 +26,6 @@ public:
 	int m_iMode;
 	size_t m_tFmBytes;
 	float m_fPixSize;
-	float m_fStkDose;
 protected:
 	void mExpandBuf(int iNumFrms);
 	void mCleanFrames(void);

@@ -67,7 +67,7 @@ bool CMotionCorMain::mLoadStack(void)
 	//-----------------
 	MMD::CFmIntParam* pFmIntParam = 
 	   MMD::CFmIntParam::GetInstance(m_iNthGpu);
-	pMcPackage->m_pRawStack->m_fStkDose = pFmIntParam->GetTotalDose();
+	pMcPackage->m_fTotalDose = pFmIntParam->GetTotalDose();
 	//-----------------
 	return bStatus;
 }

@@ -342,8 +342,14 @@ void CAreTomoMain::mFindCtf(bool bRefine)
 		   MD::CCtfResults::GetInstance(m_iNthGpu);
 		MAM::CAlignParam* pAlnParam = sGetAlignParam(m_iNthGpu);
 		float fTiltAxis = pAlnParam->GetTiltAxis(0);
-		//--------------------------
-		if(pCtfResults->m_iDfHand == -1)
+		//----------------------------------------------
+		// 1. We rotate tilt axis 180 degree only when
+		//    users allow. (pAtInput->m_afTiltAxis[1]
+		//    is 0 or positive)
+		//----------------------------------------------
+		CAtInput* pAtInput = CAtInput::GetInstance();
+		if(pCtfResults->m_iDfHand == -1 &&
+		   pAtInput->m_afTiltAxis[1] >= 0)
 		{	fTiltAxis = mRotAxis180(fTiltAxis);
 		}
 		pAlnParam->SetTiltAxisAll(fTiltAxis);
@@ -375,14 +381,17 @@ void CAreTomoMain::mAlign(void)
 	mFindCtf(true);
 	mCalcThickness();
 	mCorrAngOffset();
-	//-----------------
+	//---------------------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->ResetShift();
-	//-----------------
+	//---------------------------
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	pParam->m_fXcfSize = 2048.0f;
 	mProjAlign();
-	//-----------------
+	//---------------------------------------------------------
+	// 1. When pInput->m_afTiltAxis[1] is negative, do not
+	//    refine user provided tilt axis.
+	//---------------------------------------------------------
 	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->m_afTiltAxis[1] >= 0)
 	{	float fRange = (pInput->m_afTiltAxis[0] == 0) ? 20.0f : 6.0f;
@@ -393,9 +402,9 @@ void CAreTomoMain::mAlign(void)
 		}
 		mProjAlign();
 	}
-	//-----------------
+	//---------------------------
 	mPatchAlign();
-	//-----------------
+	//---------------------------
 	CTsMetrics* pTsMetrics = CTsMetrics::GetInstance(m_iNthGpu);
 	pTsMetrics->BuildMetrics();
 	//-----------------
