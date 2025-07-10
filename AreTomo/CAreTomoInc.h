@@ -170,6 +170,7 @@ private:
 	float m_fGlobalShift;
 	float m_fBadPatchLow;
 	float m_fBadPatchAll;
+	float m_fDfMean;
 	float m_fCtfRes;
 	float m_fCtfScore;
 	float m_fAlphaOffset;

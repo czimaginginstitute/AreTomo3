@@ -1,6 +1,5 @@
 PRJHOME = $(shell pwd)
-CONDA = $(HOME)/miniconda3
-CUDAHOME = $(HOME)/nvidia/cuda-10.1
+CUDAHOME = $(HOME)/nvidia/cuda-12.1
 CUDAINC = $(CUDAHOME)/include
 CUDALIB = $(CUDAHOME)/lib64
 PRJINC = $(PRJHOME)/LibSrc/Include
@@ -275,7 +274,6 @@ exe: $(OBJS)
 	@$(NVCC) -g -G -m64 $(OBJS) \
 	$(PRJLIB)/libmrcfile.a $(PRJLIB)/libutil.a \
 	-L$(CUDALIB) -L$(CUDALIB)/stubs\
-	-L$(CONDA)/lib \
 	-L/usr/lib64 \
 	-lcufft -lcudart -lcuda -lnvToolsExt -ltiff -lc -lm -lpthread \
 	-o AreTomo3
@@ -285,13 +283,12 @@ exe: $(OBJS)
 	@echo "-----------------------------------------------"
 	@$(NVCC) -cuda -cudart shared \
 		$(CUFLAG) -I$(PRJINC) \
-		-I$(CONDA)/include $< -o $@
+		$< -o $@
 	@echo $< has been compiled.
 
 %.o: %.cpp
 	@echo "------------------------------------------------"
 	@$(CC) $(CFLAG) -I$(PRJINC) -I$(CUDAINC) \
-		-I$(CONDA)/include \
 		$< -o $@
 	@echo $< has been compiled.
 

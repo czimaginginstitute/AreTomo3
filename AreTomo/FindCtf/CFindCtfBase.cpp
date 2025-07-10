@@ -58,7 +58,7 @@ void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory)
         if(m_afResRange[1] < 3.5f) m_afResRange[1] = 3.5f;
 	//-----------------
 	float fPixSize2 = fPixSize * fPixSize;
-	m_afDfRange[0] = 3000.0f * fPixSize2;
+	m_afDfRange[0] =  3000.0f * fPixSize2;
 	m_afDfRange[1] = 40000.0f * fPixSize2;
 	//-----------------
 	int iCmpSize = m_aiCmpSize[0] * m_aiCmpSize[1];

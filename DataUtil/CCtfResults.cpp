@@ -180,17 +180,20 @@ void CCtfResults::SetSpect(int iImage, float* pfSpect)
 
 float CCtfResults::GetTilt(int iImage)
 {
+	if(m_ppCtfParams == 0L) return 0.0f;
 	return m_ppCtfParams[iImage]->m_fTilt;
 }
 
 float CCtfResults::GetDfMin(int iImage)
 {
+	if(m_ppCtfParams == 0L) return 0.0f;
 	return m_ppCtfParams[iImage]->m_fDefocusMin *
 	   m_ppCtfParams[iImage]->m_fPixelSize;
 }
 
 float CCtfResults::GetDfMax(int iImage)
 {
+	if(m_ppCtfParams == 0L) return 0.0f;
 	return m_ppCtfParams[iImage]->m_fDefocusMax *
 	   m_ppCtfParams[iImage]->m_fPixelSize;
 }
@@ -211,21 +214,25 @@ float CCtfResults::GetAstMag(int iImage)
 
 float CCtfResults::GetAzimuth(int iImage)
 {
+	if(m_ppCtfParams == 0L) return 0.0f;
 	return m_ppCtfParams[iImage]->m_fAstAzimuth / s_fD2R;
 }
 
 float CCtfResults::GetExtPhase(int iImage)
 {
+	if(m_ppCtfParams == 0L) return 0.0f;
 	return m_ppCtfParams[iImage]->m_fExtPhase / s_fD2R;
 }
 
 float CCtfResults::GetPixSize(int iImage)
 {
+	if(m_ppCtfParams == 0L) return 0.0f;
 	return m_ppCtfParams[iImage]->m_fPixelSize;
 }
 
 float CCtfResults::GetScore(int iImage)
 {
+	if(m_ppCtfParams == 0L) return 0.0f;
 	return m_ppCtfParams[iImage]->m_fScore;
 }
 
@@ -255,11 +262,13 @@ float CCtfResults::GetLowTiltScore(float fLowTilt)
 
 float CCtfResults::GetCtfRes(int iImage)
 {
+	if(m_ppCtfParams == 0L) return 0.0f;
 	return m_ppCtfParams[iImage]->m_fCtfRes;
 }
 
 float* CCtfResults::GetSpect(int iImage, bool bClean)
 {
+	if(m_ppCtfParams == 0L) return 0L;
 	float* pfSpect = m_ppfSpects[iImage];
 	if(bClean) m_ppfSpects[iImage] = 0L;
 	return pfSpect;

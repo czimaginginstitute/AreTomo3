@@ -180,40 +180,45 @@ void CFindCtfMain::mDoLowTilts(void)
 void CFindCtfMain::mDoHighTilts(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
-        float fPhaseRange = fmaxf(pAtInput->m_afExtPhase[1], 0.0f);
-	if(fPhaseRange > 0.0f) fPhaseRange = 5.0f;
-	//-----------------
 	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
-	int iZeroTilt = pTsTiles->GetTiltIdx(0.0f);
-	//-----------------	
-	float afDfRange[2], afAstRatio[2];
-	float afAstAngle[2], afExtPhase[2];
-	//-----------------
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
-	float fPixSize2 = pTsTiles->GetPixSize() * pTsTiles->GetPixSize();
+	//---------------------------
+	int iZeroTilt = pTsTiles->GetTiltIdx(0.0f);
+	float fPixSize = pTsTiles->GetPixSize();
+	//---------------------------
+	float afExtPhase[2] = {0.0f};
+	afExtPhase[0] = pCtfResults->GetExtPhase(iZeroTilt);
+        afExtPhase[1] = pAtInput->m_afExtPhase[1];
+	if(afExtPhase[1] > 0)
+	{	afExtPhase[1] *= 0.25f;
+		if(afExtPhase[1] > 5) afExtPhase[1] = 5.0f;
+	}
+	//---------------------------
+	float afDfRange[2] = {0.0f};
+	float fPixSize2 = fPixSize * fPixSize;
 	float fDfRange = fmaxf(m_fDfStd * 2.0f, 20000 * fPixSize2);
 	float fMin = m_fDfMean - fDfRange * 0.5f;
 	float fMax = m_fDfMean + fDfRange * 0.5f;
-	fMin = fmaxf(fMin, 3000 * fPixSize2);
-	fMax = fminf(fMax, 30000 * fPixSize2);
-	afDfRange[0] = (fMin + fMax) * 0.5f;
-	afDfRange[1] = fMax - fMin;
-	//-----------------
+	afDfRange[0] = fmaxf(fMin, 3000 * fPixSize2);
+	afDfRange[1] = fminf(fMax, 30000 * fPixSize2);
+	//---------------------------
+	float afAstRatio[2] = {0.0f};
 	MD::CCtfParam* pCtfParam = pCtfResults->GetCtfParam(iZeroTilt);
 	afAstRatio[0] = pCtfParam->GetDfSigma(false) / 
 	   (pCtfParam->GetDfMean(false) + 0.001f);
 	afAstRatio[1] = 0.0f;
-	//-----------------
+	//---------------------------
+	float afAstAngle[2] = {0.0f};
 	afAstAngle[0] = pCtfResults->GetAzimuth(iZeroTilt);
 	afAstAngle[1] = 10.0f;
-	//-----------------
-	afExtPhase[0] = pCtfResults->GetExtPhase(iZeroTilt);
+	//---------------------------
 	int iNumTilts = pTsTiles->GetNumTilts();
-	//-----------------
+	float fPhaseRange = afExtPhase[1];
+	//---------------------------
 	for(int i=0; i<iNumTilts; i++)
 	{	float fTilt = pTsTiles->GetTilt(i);
-		afExtPhase[1] = fPhaseRange * (float)cos(fTilt * 0.01744);
-		//----------------
+		afExtPhase[1] =  fPhaseRange * (float)cos(fTilt * 0.01744);
+		//--------------------------
 		m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
 		m_pFindCtf2D->Refine(afDfRange, afAstRatio, 
 		   afAstAngle, afExtPhase);

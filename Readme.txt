@@ -570,4 +570,21 @@ Changes:
       product of per-frame dose and number of raw frames in the tilted
       movie. If -FmDose is not provided, AreTomo3 uses the value given
       in the MDOC file.
- 
+
+AreTomo3 2.2.1 [Jun-10-2025]
+----------------------------
+Plan:
+   1) Add defocus in the metrics file.
+   2) Improve CTF estimation at low defocus settings.
+Bug Fix:
+   1) AreTomo/FindCtf/CFindCtfMain::mDoHighTilts: afDfRange should be
+      [min, max], not [center value, range]. Fixed. 
+   2) Even if users do not provide pixel size, AreTomo3 still performs
+      CTF estimation. This is because it uses the default values.
+      Fix: if users does not set -Kv, this will disable the cTF
+      estimation and correction.
+Changes:
+   1) AreTomo/FindCtf/CTile.cpp: allocate tile on GPU if there are more
+      than 5GB available. Otherwise, allocate it on the pinned memory. 
+   2) AreTomo/FindCtf/GCC1D and GCC2D.cu: the mean values are subtracted
+      from the calculation of the cross correlation coefficients. 

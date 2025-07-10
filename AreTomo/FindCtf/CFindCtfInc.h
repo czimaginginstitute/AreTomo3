@@ -409,6 +409,7 @@ protected:
 	float m_fTilt;
 	float m_fPixSize;
 	bool m_bGood;
+	bool m_bGpuMem;
 };
 
 class CCoreTile : public CTile

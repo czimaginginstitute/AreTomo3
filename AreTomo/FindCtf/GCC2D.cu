@@ -20,17 +20,16 @@ static __global__ void mGCalc2D
 	float fBFactor,
 	float* gfRes
 )
-{	extern __shared__ float s_afShared[];
-	float* s_afSumStd1 = &s_afShared[blockDim.x];
-	float* s_afSumStd2 = &s_afSumStd1[blockDim.x];
-	//--------------------------------------------
-	float fSumCC = 0.0f, fSumStd1 = 0.0f, fSumStd2 = 0.0f;
+{	extern __shared__ float s_afSums[];
+	//---------------------------
+	int i = 0, iOffset = 0, x=0, y=0;
+	float afSums[5] = {0.0f};
 	float fX = 0.0f, fY = 0.0f;
-	int iOffset = 0, i = 0;
-	for(int y=blockIdx.x; y<iCmpY; y+=gridDim.x)
+	//---------------------------
+	for(y=blockIdx.x; y<iCmpY; y+=gridDim.x)
 	{	fY = (y - iCmpY * 0.5f) / iCmpY;
 		iOffset = y * iCmpX;
-		for(int x=threadIdx.x; x<iCmpX; x+=blockDim.x)
+		for(x=threadIdx.x; x<iCmpX; x+=blockDim.x)
 		{	fX = (0.5f * x) / (iCmpX - 1);
 			fX = fX * fX + fY * fY;
 			if(fX <fFreqLow2 || fX > fFreqHigh2) continue;
@@ -39,63 +38,68 @@ static __global__ void mGCalc2D
 			float fC = (fabsf(gfCTF2D[i]) - 0.5f) 
 			   * expf(-fBFactor * fX);
 			float fS = gfSpectrum[i];
-			fSumCC += (fC * fS);
-			fSumStd1 += (fC * fC);
-			fSumStd2 += (fS * fS);
+			afSums[0] += (fC * fS);
+			afSums[1] += fC;
+			afSums[2] += fS;
+			afSums[3] += (fC * fC);
+			afSums[4] += (fS * fS);
 		}
 	}
-	s_afShared[threadIdx.x] = fSumCC;
-	s_afSumStd1[threadIdx.x] = fSumStd1;
-	s_afSumStd2[threadIdx.x] = fSumStd2;
+	//---------------------------
+	fX = 1.0f / (iCmpX * iCmpY);
+	for(i=0; i<5; i++)
+	{	iOffset = i * blockDim.x + threadIdx.x;
+		s_afSums[iOffset] = afSums[i] * fX;
+	}
 	__syncthreads();
-	//----------------------------------		
+	//---------------------------
 	iOffset = blockDim.x / 2;
 	while(iOffset > 0)
 	{	if(threadIdx.x < iOffset)
-		{	i = iOffset + threadIdx.x;
-			s_afShared[threadIdx.x] += s_afShared[i];
-			s_afSumStd1[threadIdx.x] += s_afSumStd1[i];
-			s_afSumStd2[threadIdx.x] += s_afSumStd2[i];
+		{	for(i=0; i<5; i++)
+			{	x = i * blockDim.x + threadIdx.x;
+				s_afSums[x] += s_afSums[x+iOffset];
+			}
 		}
 		__syncthreads();
 		iOffset /= 2;
 	}
-	//-------------------
 	if(threadIdx.x != 0) return;
-	i = blockIdx.x * 3;
-	gfRes[i] = s_afShared[0];
-	gfRes[i+1] = s_afSumStd1[0];
-	gfRes[i+2] = s_afSumStd2[0];
+	//---------------------------
+	x = blockIdx.x * 5;	
+	for(i=0; i<5; i++)
+	{	y = i * blockDim.x;
+		gfRes[x+i] = s_afSums[i*blockDim.x];
+	}
 }
 
 static __global__ void mGCalc1D(float* gfSum)
 {
-	extern __shared__ float s_afShared[];
-	float* s_afSumStd1 = &s_afShared[blockDim.x];
-	float* s_afSumStd2 = &s_afSumStd1[blockDim.x];
-	//--------------------------------------------
-	int i = threadIdx.x * 3;
-	s_afShared[threadIdx.x] = gfSum[i];
-	s_afSumStd1[threadIdx.x] = gfSum[i+1];
-	s_afSumStd2[threadIdx.x] = gfSum[i+2];
+	extern __shared__ float s_afSums[];
+	//---------------------------
+	int i = 0, iOffset = 0;
+	iOffset = threadIdx.x * 5;
+	for(i=0; i<5; i++)
+	{	s_afSums[i * blockDim.x + threadIdx.x] = gfSum[iOffset + i];
+	}
 	__syncthreads();
-	//------------------------------------
-	int iOffset = blockDim.x / 2;
+	//---------------------------
+	iOffset = blockDim.x / 2;
 	while(iOffset > 0)
 	{	if(threadIdx.x < iOffset)
-		{	i = threadIdx.x + iOffset;
-			s_afShared[threadIdx.x] += s_afShared[i];
-			s_afSumStd1[threadIdx.x] += s_afSumStd1[i];
-			s_afSumStd2[threadIdx.x] += s_afSumStd2[i];
+		{	for(i=0; i<5; i++)
+			{	int j = i * blockDim.x + threadIdx.x;
+				s_afSums[j] += s_afSums[j+iOffset];
+			}
 		}
 		__syncthreads();
 		iOffset /= 2;
 	}
-	//---------------------
 	if(threadIdx.x != 0) return;
-	float fStd = sqrtf(s_afSumStd1[0] * s_afSumStd2[0]);
-	if(fStd == 0) gfSum[0] = 0.0f;
-	else gfSum[0] = s_afShared[0] / fStd;
+	//---------------------------
+	for(i=0; i<5; i++)
+	{	gfSum[i] = s_afSums[blockDim.x * i];
+	}
 }
 
 GCC2D::GCC2D(void)
@@ -127,8 +131,7 @@ void GCC2D::SetSize(int* piCmpSize)
 	//----------------------------------
 	int iSize = m_aiCmpSize[0] * m_aiCmpSize[1];
 	double dSize = sqrtf(iSize);
-	if(dSize > 512) m_iBlockDimX = 512;
-	else if(dSize > 256) m_iBlockDimX = 256;
+	if(dSize > 256) m_iBlockDimX = 256;
 	else if(dSize > 128) m_iBlockDimX = 128;
 	else m_iBlockDimX = 64;
 	//---------------------------------------
@@ -138,7 +141,7 @@ void GCC2D::SetSize(int* piCmpSize)
 	else if(m_iGridDimX > 128) m_iGridDimX = 128;
 	else m_iGridDimX = 64;
 	//-------------------------------------------
-	cudaMalloc(&m_gfRes, 3 * m_iGridDimX * sizeof(float));
+	cudaMalloc(&m_gfRes, 5 * m_iGridDimX * sizeof(float));
 }
 
 float GCC2D::DoIt
@@ -147,25 +150,34 @@ float GCC2D::DoIt
 )
 {	dim3 aBlockDim(m_iBlockDimX, 1);
 	dim3 aGridDim(m_iGridDimX, 1);
-	size_t tSmBytes = sizeof(float) * aBlockDim.x * 3;
-	//------------------------------------------------
+	size_t tSmBytes = sizeof(float) * aBlockDim.x * 5;
+	//---------------------------
 	float fFreqLow2 = m_fFreqLow / m_aiCmpSize[1];
 	float fFreqHigh2 = m_fFreqHigh / m_aiCmpSize[1];
 	if(fFreqHigh2 > 0.75f) fFreqHigh2 = 0.75f;
 	fFreqLow2 *= fFreqLow2;
 	fFreqHigh2 *= fFreqHigh2;
-	//-----------------------
+	//---------------------------
 	mGCalc2D<<<aGridDim, aBlockDim, tSmBytes>>>(gfCTF, gfSpectrum, 
 	   m_aiCmpSize[0], m_aiCmpSize[1], fFreqLow2, fFreqHigh2, 
 	   m_fBFactor, m_gfRes);
-        //-------------------------------------------------------
+        //---------------------------
 	aBlockDim.x = aGridDim.x; aBlockDim.y = 1;
 	aGridDim.x = 1; aGridDim.y = 1;
-	tSmBytes = sizeof(float) * aBlockDim.x * 3;
+	tSmBytes = sizeof(float) * aBlockDim.x * 5;
 	mGCalc1D<<<aGridDim, aBlockDim, tSmBytes>>>(m_gfRes);
-	//---------------------------------------------------
-	float fCC = 0.0f;
-	cudaMemcpy(&fCC, m_gfRes, sizeof(float), cudaMemcpyDefault);
+	//---------------------------
+	float afStats[5] = {0.0f};
+	cudaMemcpy(afStats, m_gfRes, sizeof(afStats), cudaMemcpyDefault);
+	float fCC   = afStats[0] - afStats[1] * afStats[2];
+	float fStd1 = afStats[3] - afStats[1] * afStats[1];
+	float fStd2 = afStats[4] - afStats[2] * afStats[2];
+	if(fStd1 < 0) fStd1 = 0.0f;
+	else fStd1 = (float)sqrt(fStd1);
+	if(fStd2 < 0) fStd2 = 0.0f;
+	else fStd2 = (float)sqrt(fStd2);
+	if(fStd1 == 0 || fStd2 == 0) fCC = 0.0f;
+	else fCC = fCC / (fStd1 * fStd2);
 	return fCC;
 }
 

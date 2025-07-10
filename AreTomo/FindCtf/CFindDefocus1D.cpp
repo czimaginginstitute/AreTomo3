@@ -75,16 +75,16 @@ void CFindDefocus1D::DoIt
 //--------------------------------------------------------------------
 void CFindDefocus1D::mBrutalForceSearch(float afResult[3])
 {	
+	float fTiny = (float)1e-30;
 	int iDfSteps = 501;
 	float fDfRange = m_afDfRange[1] - m_afDfRange[0];
 	float fDfStep = fDfRange / (iDfSteps - 1);
 	if(fDfStep < 50) fDfStep = 50.0f;
-	iDfSteps = (int)(fDfRange / fDfStep) / 2 * 2 + 1;
-	//-----------------
+	iDfSteps = (int)(fDfRange / (fDfStep + fTiny)) / 2 * 2 + 1;
+	//---------------------------
 	int iPsSteps = 37;
 	float fPsStep = m_afPhaseRange[1] / (iPsSteps - 1);
-	if(fPsStep < 2) fPsStep = 2.0f;
-	iPsSteps = (int)(m_afPhaseRange[1] / fPsStep) / 2 * 2 + 1;
+	iPsSteps = (int)(m_afPhaseRange[1] / (fPsStep + fTiny)) / 2 * 2 + 1;
 	//-----------------
 	int iPoints = iDfSteps * iPsSteps;
 	float* pfCCs = new float[iPoints];
