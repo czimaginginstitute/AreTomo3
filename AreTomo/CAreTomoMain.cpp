@@ -376,15 +376,17 @@ void CAreTomoMain::mMassNorm(void)
 
 void CAreTomoMain::mAlign(void)
 {
+	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
+	pAlignParam->m_fAlphaOffset = 0.0f;
+	pAlignParam->m_fBetaOffset = 0.0f;
+	//---------------------------
 	m_fRotScore = 0.0f;
 	mCoarseAlign();
 	mFindCtf(true);
 	mCalcThickness();
 	mCorrAngOffset();
 	//---------------------------
-	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->ResetShift();
-	//---------------------------
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	pParam->m_fXcfSize = 2048.0f;
 	mProjAlign();

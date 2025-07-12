@@ -108,7 +108,7 @@ void CFindDefocus1D::mBrutalForceSearch(float afResult[3])
 			afResult[1] = fPhase;
 			afResult[2] = pfCCs[i];
 		}
-		/*		
+		/*				
 		printf("%3d  %8.2f  %8.2f  %8.4f  %8.2f %8.2f  %8.4f\n", i,
 		   fDefocus, fPhase, pfCCs[i],
 		   afResult[0], afResult[1], afResult[2]);

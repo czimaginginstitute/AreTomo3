@@ -23,7 +23,7 @@ static __global__ void mGCalc2D
 {	extern __shared__ float s_afSums[];
 	//---------------------------
 	int i = 0, iOffset = 0, x=0, y=0;
-	float afSums[5] = {0.0f};
+	float afSums[6] = {0.0f};
 	float fX = 0.0f, fY = 0.0f;
 	//---------------------------
 	for(y=blockIdx.x; y<iCmpY; y+=gridDim.x)
@@ -43,20 +43,20 @@ static __global__ void mGCalc2D
 			afSums[2] += fS;
 			afSums[3] += (fC * fC);
 			afSums[4] += (fS * fS);
+			afSums[5] += 1.0f;
 		}
 	}
 	//---------------------------
-	fX = 1.0f / (iCmpX * iCmpY);
-	for(i=0; i<5; i++)
+	for(i=0; i<6; i++)
 	{	iOffset = i * blockDim.x + threadIdx.x;
-		s_afSums[iOffset] = afSums[i] * fX;
+		s_afSums[iOffset] = afSums[i];
 	}
 	__syncthreads();
 	//---------------------------
 	iOffset = blockDim.x / 2;
 	while(iOffset > 0)
 	{	if(threadIdx.x < iOffset)
-		{	for(i=0; i<5; i++)
+		{	for(i=0; i<6; i++)
 			{	x = i * blockDim.x + threadIdx.x;
 				s_afSums[x] += s_afSums[x+iOffset];
 			}
@@ -66,8 +66,8 @@ static __global__ void mGCalc2D
 	}
 	if(threadIdx.x != 0) return;
 	//---------------------------
-	x = blockIdx.x * 5;	
-	for(i=0; i<5; i++)
+	x = blockIdx.x * 6;	
+	for(i=0; i<6; i++)
 	{	y = i * blockDim.x;
 		gfRes[x+i] = s_afSums[i*blockDim.x];
 	}
@@ -78,8 +78,8 @@ static __global__ void mGCalc1D(float* gfSum)
 	extern __shared__ float s_afSums[];
 	//---------------------------
 	int i = 0, iOffset = 0;
-	iOffset = threadIdx.x * 5;
-	for(i=0; i<5; i++)
+	iOffset = threadIdx.x * 6;
+	for(i=0; i<6; i++)
 	{	s_afSums[i * blockDim.x + threadIdx.x] = gfSum[iOffset + i];
 	}
 	__syncthreads();
@@ -87,7 +87,7 @@ static __global__ void mGCalc1D(float* gfSum)
 	iOffset = blockDim.x / 2;
 	while(iOffset > 0)
 	{	if(threadIdx.x < iOffset)
-		{	for(i=0; i<5; i++)
+		{	for(i=0; i<6; i++)
 			{	int j = i * blockDim.x + threadIdx.x;
 				s_afSums[j] += s_afSums[j+iOffset];
 			}
@@ -97,7 +97,7 @@ static __global__ void mGCalc1D(float* gfSum)
 	}
 	if(threadIdx.x != 0) return;
 	//---------------------------
-	for(i=0; i<5; i++)
+	for(i=0; i<6; i++)
 	{	gfSum[i] = s_afSums[blockDim.x * i];
 	}
 }
@@ -141,7 +141,7 @@ void GCC2D::SetSize(int* piCmpSize)
 	else if(m_iGridDimX > 128) m_iGridDimX = 128;
 	else m_iGridDimX = 64;
 	//-------------------------------------------
-	cudaMalloc(&m_gfRes, 5 * m_iGridDimX * sizeof(float));
+	cudaMalloc(&m_gfRes, 6 * m_iGridDimX * sizeof(float));
 }
 
 float GCC2D::DoIt
@@ -150,7 +150,7 @@ float GCC2D::DoIt
 )
 {	dim3 aBlockDim(m_iBlockDimX, 1);
 	dim3 aGridDim(m_iGridDimX, 1);
-	size_t tSmBytes = sizeof(float) * aBlockDim.x * 5;
+	size_t tSmBytes = sizeof(float) * aBlockDim.x * 6;
 	//---------------------------
 	float fFreqLow2 = m_fFreqLow / m_aiCmpSize[1];
 	float fFreqHigh2 = m_fFreqHigh / m_aiCmpSize[1];
@@ -164,11 +164,15 @@ float GCC2D::DoIt
         //---------------------------
 	aBlockDim.x = aGridDim.x; aBlockDim.y = 1;
 	aGridDim.x = 1; aGridDim.y = 1;
-	tSmBytes = sizeof(float) * aBlockDim.x * 5;
+	tSmBytes = sizeof(float) * aBlockDim.x * 6;
 	mGCalc1D<<<aGridDim, aBlockDim, tSmBytes>>>(m_gfRes);
 	//---------------------------
-	float afStats[5] = {0.0f};
+	float afStats[6] = {0.0f};
 	cudaMemcpy(afStats, m_gfRes, sizeof(afStats), cudaMemcpyDefault);
+	//---------------------------
+	for(int i=0; i<5; i++)
+	{	afStats[i] /= (afStats[5] + 1e-30);
+	}	
 	float fCC   = afStats[0] - afStats[1] * afStats[2];
 	float fStd1 = afStats[3] - afStats[1] * afStats[1];
 	float fStd2 = afStats[4] - afStats[2] * afStats[2];

@@ -959,12 +959,9 @@ protected:
         //-----------------
         int m_iNthGpu;
 private:
-	void mDoLowTilts(void);
-	void mDoHighTilts(void);
-	//-----------------
-	float m_fLowTilt;
-	float m_fDfMean;
-	float m_fDfStd;
+	void mDoTilts(void);
+	void mRefineTilts(void);
+	void mRefineTilt(int iTilt, int iRefTilt);
 };
 
 class CRefineCtfMain : public CFindCtfMain

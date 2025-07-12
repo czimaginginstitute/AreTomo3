@@ -587,4 +587,15 @@ Changes:
    1) AreTomo/FindCtf/CTile.cpp: allocate tile on GPU if there are more
       than 5GB available. Otherwise, allocate it on the pinned memory. 
    2) AreTomo/FindCtf/GCC1D and GCC2D.cu: the mean values are subtracted
-      from the calculation of the cross correlation coefficients. 
+      from the calculation of the cross correlation coefficients.
+
+AreTomo3 2.2.2 [July-11-2025]
+Bug fix:
+   1) 2.2.1 has a bug in AreTomo/FindCtf/GCC1D and GCC2D: The correlation value
+      is zero due to the mistake in the CUDA kernel. Fixed.
+Changes:
+   1) AreTomo/FindCtf/CFindCtfMain.cpp: Instead of doing CTF estimation in low
+      -tilt range and then high-tilt range, this version does the estimation
+      in full-tilt range, then identifies the failed estimation, and finally
+      refines with the nearest good estimation as the initial guess at those
+      tilts. 
