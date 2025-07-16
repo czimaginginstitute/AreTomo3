@@ -48,7 +48,7 @@ CInput::CInput(void)
 	m_iNumGpus = 0;
 	m_piGpuIDs = 0L;
 	//-----------------
-	m_iKv = 300;
+	m_iKv = 0.0f;
 	m_fCs = 2.7f;
 	m_fPixSize = 1.0f;
 	//-----------------

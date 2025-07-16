@@ -409,6 +409,7 @@ protected:
 	float m_fTilt;
 	float m_fPixSize;
 	bool m_bGood;
+	bool m_bGpuMem;
 };
 
 class CCoreTile : public CTile
@@ -958,12 +959,9 @@ protected:
         //-----------------
         int m_iNthGpu;
 private:
-	void mDoLowTilts(void);
-	void mDoHighTilts(void);
-	//-----------------
-	float m_fLowTilt;
-	float m_fDfMean;
-	float m_fDfStd;
+	void mDoTilts(void);
+	void mRefineTilts(void);
+	void mRefineTilt(int iTilt, int iRefTilt);
 };
 
 class CRefineCtfMain : public CFindCtfMain

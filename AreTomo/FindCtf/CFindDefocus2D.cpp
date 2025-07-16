@@ -324,17 +324,11 @@ float CFindDefocus2D::mRefineDfMean(float fDfRange)
 float CFindDefocus2D::mRefinePhase(float fPhaseRange)
 {
 	float fTiny = (float)1e-30;
-	if(fPhaseRange < fTiny) return 0.0f;
-	//-----------------
 	int iSteps = 61;
 	float fStep = fPhaseRange / iSteps;
-	if(fStep < 0.03f) return 0.0f;
-	//-----------------
-	if(fStep > 1.0f)
-	{	fStep = 1.0f;
-		iSteps = (int)(fPhaseRange / fStep);
-		iSteps = iSteps / 2 * 2 + 1;
-	}
+	if(fStep > 1.0f) fStep = 1.0f;
+	iSteps = (int)(fPhaseRange / (fStep + fTiny));
+	iSteps = iSteps / 2 * 2 + 1;
 	//-----------------
 	float fMinPhase = m_afPhaseRange[0] - m_afPhaseRange[1] * 0.5f;
 	float fMaxPhase = m_afPhaseRange[1] + m_afPhaseRange[1] * 0.5f;

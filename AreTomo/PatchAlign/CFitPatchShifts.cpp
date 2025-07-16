@@ -141,7 +141,7 @@ float CFitPatchShifts::mRefineTiltAxis(void)
 {
 	CAtInput* pInput = CAtInput::GetInstance();
 	if(pInput->m_afTiltAxis[1] < 0) return 0.0f;	
-	//-----------------
+	//---------------------------
 	float fMinDelta = 0.0f;
 	float fMinErr = (float)1e30;
 	for(int i=-100; i<=100; i++)
@@ -151,13 +151,12 @@ float CFitPatchShifts::mRefineTiltAxis(void)
 		{	fMinErr = fErr;
 			fMinDelta = fDelta;
 		}
-		//printf(" %3d  %8.2f  %9.4e\n", i, fDelta, fErr);
 	}
-	//------------------------------------------------------
+	//---------------------------
 	float fOldTiltAxis = m_pFullParam->GetTiltAxis(0);
 	float fNewTiltAxis = fOldTiltAxis + fMinDelta;
 	m_pFullParam->SetTiltAxisAll(fNewTiltAxis);
-	//-----------------------------------------
+	//---------------------------
 	for(int i=0; i<m_iNumPatches; i++)
 	{	MAM::CAlignParam* pAlignParam = 
 		   m_pPatchShifts->GetAlignParam(i);

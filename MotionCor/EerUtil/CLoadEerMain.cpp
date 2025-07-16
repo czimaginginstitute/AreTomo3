@@ -47,11 +47,19 @@ bool CLoadEerMain::DoIt(int iNthGpu)
 
 void CLoadEerMain::mLoadHeader(void)
 {
-	CMcInput* pInput = CMcInput::GetInstance();
-	m_bLoaded = m_pLoadHeader->DoIt(m_iFile, pInput->m_iEerSampling);
+	CMcInput* pMcInput = CMcInput::GetInstance();
+	m_bLoaded = m_pLoadHeader->DoIt(m_iFile, pMcInput->m_iEerSampling);
 	if(!m_bLoaded) return;
-	//-----------------
+	//---------------------------------------------------------
+	// 1. If we know per-frame dose, we should use it since it
+	//    is more accurate than the dose reported in MDOC.
+	// 2. If not, we use MDOC's result in CProcessThread.cpp.
+	//---------------------------------------------------------
+	CInput* pInput = CInput::GetInstance();
+	float fImgDose = pInput->m_fFmDose * m_pLoadHeader->m_iNumFrames;
 	MD::CMcPackage* pPackage = MD::CMcPackage::GetInstance(m_iNthGpu);
+	if(fImgDose > 0) pPackage->m_fTotalDose = fImgDose;
+	//---------------------------
 	MMD::CFmIntParam* pFmIntParam = 
 	   MMD::CFmIntParam::GetInstance(m_iNthGpu);
 	pFmIntParam->Setup(m_pLoadHeader->m_iNumFrames, Mrc::eMrcUChar,
@@ -61,10 +69,10 @@ void CLoadEerMain::mLoadHeader(void)
 	//----------------------------------------------------------------
 	MMD::CFmGroupParam* pFmGroupParam = 0L;
 	pFmGroupParam = MMD::CFmGroupParam::GetInstance(m_iNthGpu, false);
-        pFmGroupParam->Setup(pInput->m_aiGroup[0]);
+        pFmGroupParam->Setup(pMcInput->m_aiGroup[0]);
 	//-----------------
 	pFmGroupParam = MMD::CFmGroupParam::GetInstance(m_iNthGpu, true);
-	pFmGroupParam->Setup(pInput->m_aiGroup[1]);
+	pFmGroupParam->Setup(pMcInput->m_aiGroup[1]);
 	//-------------------------------------------------
 	// Create a MRC stack to store the rendered frames
 	//-------------------------------------------------

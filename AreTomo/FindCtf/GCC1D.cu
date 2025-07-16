@@ -21,45 +21,49 @@ static __global__ void mGCalculate
 	float fBFactor,
 	float* gfRes
 )
-{	extern __shared__ char s_cArray[];
-	float* s_gfCC = (float*)&s_cArray[0];
-	float* s_gfStd1 = &s_gfCC[blockDim.x];
-	float* s_gfStd2 = &s_gfStd1[blockDim.x];
-	s_gfCC[threadIdx.x] = 0.0f;
-	s_gfStd1[threadIdx.x] = 0.0f;
-	s_gfStd2[threadIdx.x] = 0.0f;
+{	extern __shared__ float s_gfSums[];
+	int i = 0, iOffset = 0, x=0;
+	//---------------------------
+	for(i=0; i<6; i++)
+	{	iOffset = i * blockDim.x;
+		s_gfSums[iOffset + threadIdx.x] = 0.0f;
+	}
 	__syncthreads();
-	//--------------
-	int x = blockIdx.x * blockDim.x + threadIdx.x;
+	//---------------------------
+	x = blockIdx.x * blockDim.x + threadIdx.x;
 	if(x >= iSize) return;
-	//--------------------
+	//---------------------------
 	if(x >= fFreqLow && x < fFreqHigh)
 	{	float fCTF = x * 0.5f / (iSize - 1);
 		float fSpec = gfSpectrum[x]; 
 		fCTF = (fabsf(gfCTF[x]) - 0.5f) * expf(-fBFactor * fCTF * fCTF);
-		s_gfCC[threadIdx.x] = fCTF * fSpec;
-		s_gfStd1[threadIdx.x] = fCTF * fCTF;
-		s_gfStd2[threadIdx.x] = fSpec * fSpec;
+		//--------------------------
+		s_gfSums[threadIdx.x] = fCTF * fSpec;
+		s_gfSums[blockDim.x + threadIdx.x] = fCTF;
+		s_gfSums[2 * blockDim.x + threadIdx.x] = fSpec;
+		s_gfSums[3 * blockDim.x + threadIdx.x] = fCTF * fCTF;
+		s_gfSums[4 * blockDim.x + threadIdx.x] = fSpec * fSpec;
+		s_gfSums[5 * blockDim.x + threadIdx.x] = 1.0f;
 	}
 	__syncthreads();
-	//--------------
-	x = blockDim.x / 2;
-	while(x > 0)
-	{	if(threadIdx.x < x)
-		{	int j = x + threadIdx.x;
-			s_gfCC[threadIdx.x] += s_gfCC[j];
-			s_gfStd1[threadIdx.x] += s_gfStd1[j];
-			s_gfStd2[threadIdx.x] += s_gfStd2[j];
+	//---------------------------
+	iOffset = blockDim.x / 2;
+	while(iOffset > 0)
+	{	if(threadIdx.x < iOffset)
+		{	for(i=0; i<6; i++)
+			{	int k = i * blockDim.x + threadIdx.x;
+				s_gfSums[k] += s_gfSums[k + iOffset];
+			}
 		}
 		__syncthreads();
-		x /= 2;
+		iOffset /= 2;
 	}
-	//-------------
+	//---------------------------
 	if(threadIdx.x == 0)
-	{	x = 3 * blockIdx.x;
-		gfRes[x] = s_gfCC[0];
-		gfRes[x+1] = s_gfStd1[0];
-		gfRes[x+2] = s_gfStd2[0];
+	{	iOffset = 6 * blockIdx.x;
+		for(i=0; i<6; i++)
+		{	gfRes[iOffset + i] = s_gfSums[i * blockDim.x];
+		}
 	}
 }
 
@@ -98,27 +102,35 @@ float GCC1D::DoIt(float* gfCTF, float* gfSpectrum)
 	dim3 aGridDim(1, 1);
 	aGridDim.x = (m_iSize + aBlockDim.x - 1) / aBlockDim.x;
 	//-----------------------------------------------------
-	size_t tBytes = sizeof(float) * aGridDim.x * 3;
+	size_t tBytes = sizeof(float) * m_iSize;
 	cudaMemset(m_gfRes, 0, tBytes);
 	//----------------------------
-	tBytes = sizeof(float) * aBlockDim.x * 3;
+	tBytes = sizeof(float) * aBlockDim.x * 6;
 	mGCalculate<<<aGridDim, aBlockDim, tBytes>>>(gfCTF, gfSpectrum, 
 	   m_iSize, m_fFreqLow, m_fFreqHigh, m_fBFactor, m_gfRes);
      	//-----------------------------------------------
-	float* pfRes = new float[aGridDim.x * 3];
-	tBytes = sizeof(float) * aGridDim.x * 3;
+	float* pfRes = new float[aGridDim.x * 6];
+	tBytes = sizeof(float) * aGridDim.x * 6;
 	cudaMemcpy(pfRes, m_gfRes, tBytes, cudaMemcpyDefault);
 	//----------------------------------------------------
-	double dCC = 0.0, dStd1 = 0.0, dStd2 = 0.0;
+	double adVals[6] = {0.0};
 	for(int i=0; i<aGridDim.x; i++)
-	{	int j = 3 * i;
-		dCC += pfRes[j];
-		dStd1 += pfRes[j+1];
-		dStd2 += pfRes[j+2];
+	{	int j = 6 * i;
+		for(int k=0; k<6; k++)
+		{	adVals[k] += pfRes[j + k];
+		}
+	}
+	for(int i=0; i<5; i++)
+	{	adVals[i] /= (adVals[5] + 1e-30);
 	}
 	if(pfRes != 0L) delete[] pfRes;
 	//-----------------------------
-	if(dStd1 > 0 && dStd2 > 0) dCC /= sqrt(dStd1 * dStd2);
+	double dCC = adVals[0] - adVals[1] * adVals[2];
+	double dStd1 = adVals[3] - adVals[1] * adVals[1];
+	double dStd2 = adVals[4] - adVals[2] * adVals[2];
+	if(dStd1 > 0) dStd1 = sqrt(dStd1);
+	if(dStd2 > 0) dStd2 = sqrt(dStd2);
+	if(dStd1 > 0 && dStd2 > 0) dCC /= (dStd1 * dStd2);
 	else dCC = 0.0;
 	return (float)dCC;
 }

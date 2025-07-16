@@ -464,7 +464,7 @@ AreTomo3 2.1.0 [Feb-18-2025]
    1) Forgot to delete m_iUpsample = 1 (debugging code) in GCorrectPatchShift.
       Fixed (02-24-2025).
 2. Improvement:
-   1) Improved location motion correction. The iterative alignment stops
+   1) Improved local motion correction. The iterative alignment stops
       it gets worse.
    2) Using fixed frame integration instead since per-tilt dose is so
       small.
@@ -553,4 +553,49 @@ Bug Fix:
 Changes:
    1) FindCtf/CFindDefoucs2: Reduced the B-factor from 100 to 10. This has
       improved estimation of alpha and beta offsets by including more higher
-      Thon ring information in the optimization. 
+      Thon ring information in the optimization.
+
+AreTomo3 2.2.0 [May-15-2025]
+----------------------------
+Bug Fix:
+   1) FindCtf/GSpectralCC2D.cu: corretion should be between |CTF| - 0.5 and
+      background subtracted amplitude spectrum.
+   2) Fixed the logic in tilt axis refinement. When users disable the
+      tilt axis refinement by giving a negative 2nd parameter in -TiltAxis,
+      not refinement will be done including 180-degree rotation even if
+      AreTomo3 detects 180 degree error.
+Changes:
+   1) Enabled -FmDose in command line. If a non-zero value is provided,
+      AreTomo3 uses this value to calculate per-tilt dose, which is the
+      product of per-frame dose and number of raw frames in the tilted
+      movie. If -FmDose is not provided, AreTomo3 uses the value given
+      in the MDOC file.
+
+AreTomo3 2.2.1 [Jun-10-2025]
+----------------------------
+Plan:
+   1) Add defocus in the metrics file.
+   2) Improve CTF estimation at low defocus settings.
+Bug Fix:
+   1) AreTomo/FindCtf/CFindCtfMain::mDoHighTilts: afDfRange should be
+      [min, max], not [center value, range]. Fixed. 
+   2) Even if users do not provide pixel size, AreTomo3 still performs
+      CTF estimation. This is because it uses the default values.
+      Fix: if users does not set -Kv, this will disable the cTF
+      estimation and correction.
+Changes:
+   1) AreTomo/FindCtf/CTile.cpp: allocate tile on GPU if there are more
+      than 5GB available. Otherwise, allocate it on the pinned memory. 
+   2) AreTomo/FindCtf/GCC1D and GCC2D.cu: the mean values are subtracted
+      from the calculation of the cross correlation coefficients.
+
+AreTomo3 2.2.2 [July-11-2025]
+Bug fix:
+   1) 2.2.1 has a bug in AreTomo/FindCtf/GCC1D and GCC2D: The correlation value
+      is zero due to the mistake in the CUDA kernel. Fixed.
+Changes:
+   1) AreTomo/FindCtf/CFindCtfMain.cpp: Instead of doing CTF estimation in low
+      -tilt range and then high-tilt range, this version does the estimation
+      in full-tilt range, then identifies the failed estimation, and finally
+      refines with the nearest good estimation as the initial guess at those
+      tilts. 

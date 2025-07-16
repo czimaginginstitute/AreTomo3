@@ -33,6 +33,15 @@ void MU::PrintGpuMemoryUsage(const char* pcInfo)
 	printf("  used GPU memory: %8.2f%%\n\n", dUsed);
 }
 
+size_t MU::GetGpuFreeMemory(void)
+{
+	size_t tTotal = 0;
+	size_t tFree = 0;
+	cudaError_t cuErr = cudaMemGetInfo(&tFree, &tTotal);
+	if(cuErr == cudaSuccess) return tFree;
+	else return 0;
+}
+
 float MU::GetGpuMemoryUsage(void)
 {
 	size_t tTotal = 0, tFree = 0;
