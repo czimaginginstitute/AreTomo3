@@ -32,6 +32,7 @@ CMcInput::CMcInput(void)
 	strcpy(m_acIterTag, "-McIter");
 	strcpy(m_acTolTag, "-McTol");
 	strcpy(m_acMcBinTag, "-McBin");
+	strcpy(m_acThrowTag, "-Throw");
 	strcpy(m_acFmIntTag, "-FmInt");
 	strcpy(m_acGroupTag, "-Group");
 	strcpy(m_acFmRefTag, "-FmRef");
@@ -48,6 +49,8 @@ CMcInput::CMcInput(void)
 	m_iMcIter = 15;
 	m_fMcTol = 0.1f;
 	m_fMcBin = 1.0f;
+	m_aiThrow[0] = 0;
+	m_aiThrow[1] = 0;
 	m_iFmRef = -1;
 	m_iFmInt = 10;
 	m_aiGroup[0] = 1; 
@@ -108,6 +111,11 @@ void CMcInput::ShowTags(void)
 	printf("%-15s\n", m_acMcBinTag);
 	printf("   Binning performed in Fourier space, default 1.0.\n\n");
 	//-----------------
+	printf("%-15s\n", m_acThrowTag);
+	printf("   1. specify two numbers, one of initial frames and one\n");
+	printf("      for trailing rendered framed to be excluded from\n");
+	printf("      motion correction and downstream processing.\n\n");
+	//---------------------------
 	printf("%-15s\n", m_acGroupTag);
 	printf("   1. Group every specified number of frames by adding\n");
 	printf("      them together. The alignment is then performed\n");
@@ -115,33 +123,33 @@ void CMcInput::ShowTags(void)
 	printf("      interpolated to each raw frame.\n");
 	printf("   2. The 1st integer is for gobal alignment and the\n");
 	printf("      2nd is for patch alignment.\n\n");
-	//-----------------------------------------------
+	//---------------------------
 	printf("%-15s\n", m_acFmRefTag);
 	printf("   Specify a frame in the input movie stack to be the\n");
 	printf("   reference to which all other frames are aligned. The\n");
 	printf("   reference is 1-based index in the input movie stack\n");
 	printf("   regardless how many frames will be thrown. By default\n");
 	printf("   the reference is set to be the central frame.\n\n");
-	//-------------------------------------------------------------
+	//---------------------------
 	printf("%-15s\n", m_acRotGainTag);
 	printf("   Rotate gain reference counter-clockwise.\n");
 	printf("   0 - no rotation, default,\n");
 	printf("   1 - rotate 90 degree,\n");
 	printf("   2 - rotate 180 degree,\n");
 	printf("   3 - rotate 270 degree.\n\n");
-	//--------------------------------------
+	//---------------------------
 	printf("%-15s\n", m_acFlipGainTag);
 	printf("   Flip gain reference after gain rotation.\n");
 	printf("   0 - no flipping, default,\n");
 	printf("   1 - flip upside down, \n");
 	printf("   2 - flip left right.\n\n");
-	//------------------------------------
+	//---------------------------
 	printf("%-15s\n", m_acInvGainTag);
 	printf("   Inverse gain value at each pixel (1/f). If a orginal\n");
 	printf("   value is zero, the inversed value is set zero.\n");
 	printf("   This option can be used together with flip and\n");
 	printf("   rotate gain reference.\n\n");
-	//--------------------------------------
+	//---------------------------
 	printf("%-15s\n", m_acMagTag);
 	printf("   1. Correct anisotropic magnification by stretching\n");
 	printf("      image along the major axis, the axis where the\n");
@@ -150,7 +158,7 @@ void CMcInput::ShowTags(void)
 	printf("      along major and minor axes and the angle of the\n");
 	printf("      major axis relative to the image x-axis in degree.\n");
 	printf("   3. By default no correction is performed.\n\n");
-	//---------------------------------------------------------
+	//---------------------------
 	printf("%-15s\n", m_acInFmMotionTag);
 	printf("   1. 1 - Account for in-frame motion.\n");
 	printf("      0 - Do not account for in-frame motion.\n\n");
@@ -200,6 +208,10 @@ void CMcInput::Parse(int argc, char* argv[])
 	aParseArgs.FindVals(m_acMcBinTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_fMcBin);
+	//-----------------
+	aParseArgs.FindVals(m_acThrowTag, aiRange);
+	if(aiRange[1] > 2) aiRange[1] = 2;
+	aParseArgs.GetVals(aiRange, m_aiThrow);
 	//-----------------
 	aParseArgs.FindVals(m_acFmIntTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
@@ -293,6 +305,7 @@ void CMcInput::mPrint(void)
 	printf("%-15s  %d\n", m_acIterTag, m_iMcIter);
 	printf("%-15s  %.2f\n", m_acTolTag, m_fMcTol);
 	printf("%-15s  %.2f\n", m_acMcBinTag, m_fMcBin);
+	printf("%-15s  %d  %d\n", m_acThrowTag, m_aiThrow[0], m_aiThrow[1]);
 	printf("%-15s  %d\n", m_acFmIntTag, m_iFmInt);
 	printf("%-15s  %d  %d\n", m_acGroupTag, m_aiGroup[0], m_aiGroup[1]);
 	printf("%-15s  %d\n", m_acFmRefTag, m_iFmRef);

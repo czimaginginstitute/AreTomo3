@@ -204,6 +204,9 @@ void CAreTomo3Json::mAddMcInput(void)
 	mAddKeyIntPair(pMcInput->m_acFmIntTag + 1,
 	   &(pMcInput->m_iFmInt), 1, 10, !bList, !bEnd);
 	//-----------------
+	mAddKeyIntPair(pMcInput->m_acThrowTag + 1,
+	   pMcInput->m_aiThrow, 2, 10, bList, !bEnd);
+	//-----------------
 	mAddKeyIntPair(pMcInput->m_acGroupTag + 1, 
 	   pMcInput->m_aiGroup, 2, 10, bList, !bEnd);
 	//-----------------

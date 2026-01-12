@@ -472,8 +472,8 @@ void CAreTomoMain::mProjAlign(void)
 	//---------------------------
 	CAtInput* pInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
-        pParam->m_afMaskSize[0] = 0.7f;
-        pParam->m_afMaskSize[1] = 0.7f;
+        pParam->m_afMaskSize[0] = 0.8f;
+        pParam->m_afMaskSize[1] = 0.8f;
 	//-----------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);	
 	ProjAlign::CProjAlignMain aProjAlign;
@@ -555,15 +555,11 @@ void CAreTomoMain::mCalcThickness(void)
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	iThickness = iThickness * 8 / 20 * 2;
-	if(iThickness < 100) iThickness = 100;
-	else if(iThickness > 1200) iThickness = 1200;
+	if(iThickness < 200) iThickness = 200;
 	//-----------------------------------------------
 	// If users specify the AlignZ value, use it.
 	//-----------------------------------------------
-	if(pAtInput->m_iAlignZ <= 0) 
-	{	pParam->m_iAlignZ = iThickness;
-		if(pParam->m_iAlignZ < 200) pParam->m_iAlignZ = 200;
-	}
+	if(pAtInput->m_iAlignZ <= 0) pParam->m_iAlignZ = iThickness;
 	else pParam->m_iAlignZ = pAtInput->m_iAlignZ;
 }
 
@@ -590,14 +586,15 @@ void CAreTomoMain::mCorrectCTF(void)
 	   MD::CCtfResults::GetInstance(m_iNthGpu);
 	if(!pCtfResults->bHasCTF()) return;
 	//---------------------------
-	bool bPhaseFlip = false;
-	if(pAtInput->m_aiCorrCTF[0] == 2) bPhaseFlip = true;
+	int iMode = 1; // WienerSZ
+	if(pAtInput->m_aiCorrCTF[0] == 2) iMode = 2; // phaseFlip
+	else if(pAtInput->m_aiCorrCTF[0] == 3) iMode = 3; // MultiplyCTF
 	//---------------------------
 	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
 	pTimeStamp->Record("CorrectCTF:Start");
 	//---------------------------
 	MAF::CCorrCtfMain corrCtfMain;
-	corrCtfMain.DoIt(m_iNthGpu, bPhaseFlip, pAtInput->m_aiCorrCTF[1]);
+	corrCtfMain.DoIt(m_iNthGpu, iMode, pAtInput->m_aiCorrCTF[1]);
 	pTimeStamp->Record("CorrectCTF:End");
 }
 

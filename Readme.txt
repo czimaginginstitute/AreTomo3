@@ -598,4 +598,21 @@ Changes:
       -tilt range and then high-tilt range, this version does the estimation
       in full-tilt range, then identifies the failed estimation, and finally
       refines with the nearest good estimation as the initial guess at those
-      tilts. 
+      tilts.
+
+AreTomo3 2.2.3 [Dec-17-2025]
+----------------------------
+Bug fix:
+Changes:
+   1) Added -CorrCTF 3, a function that performs local CTF multiplication
+      for template matching.
+   2) In measuring the tomogram thickness, a smaller central region is used
+      to avoid carbon film presence, which deteriorates the thickness
+      measurement.
+   3) Increased the patch size in local tilt series alignment. The gold
+      fiducials show more symmetric shapes.
+   4) Restored -Throw a b function in motion correction. a and b refer to
+      initial and trailing number of frames. These frames are excluded for
+      downstream processing.
+   5) Forward projection in AreTomo/ProjAlign and AreTomo/Recon is made
+      consisten.

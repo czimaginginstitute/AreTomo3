@@ -115,7 +115,7 @@ public:
           float fBFactor,
 	  float fPower
         );
-        float SearchPeak(void);
+	float SearchPeak(int* piSeaRange);
         void GetShift
         ( float* pfShift,
           float fXcfBin

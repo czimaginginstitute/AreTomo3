@@ -72,32 +72,39 @@ static __global__ void mGForProj
 )
 {	float* sfSum = (float*)&s_cArray[0];
 	int*  siCount = (int*)&sfSum[blockDim.y];
-	//---------------------------
-	float fXp = blockIdx.x + 0.5f - gridDim.x * 0.5f;
-	float fTempX = giVolSize[0] * 0.5f + iRayLength * 0.5f * fSin
-	   + fXp / fCos;
-	float fTempZ = giVolSize[1] * 0.5f - iRayLength * 0.5f * fCos;
-	//---------------------------
-	float fSum = 0.0f;
-	int iCount = 0;
-	for(int i=threadIdx.y; i<iRayLength; i+=blockDim.y)
-	{	float fX = fTempX - i * fSin;
-		float fZ = fTempZ + i * fCos;
-		//-------------------
-		if(fX < 0 || fX >= giVolSize[0]) continue;
-		if(fZ < 0 || fZ >= giVolSize[1]) continue;
-		//-------------------
-		fX = gfVol[giVolSize[0] * (int)fZ + (int)fX];
-		if(fX <= (float)-1e10) continue;
-		//-------------------
-		fSum += fX;
-		iCount += 1;
-	}
-	sfSum[threadIdx.y] = fSum;
-	siCount[threadIdx.y] = iCount;
+	sfSum[threadIdx.y] = 0.0f;
+	siCount[threadIdx.y] = 0;
 	__syncthreads();
-	//---------------------------
-	int i = blockDim.y / 2;
+	//--------------
+	float fXp = blockIdx.x + 0.5f - gridDim.x * 0.5f;
+	float fTempX = fXp * fCos + giVolSize[0] * 0.5f;
+	float fTempZ = fXp * fSin + giVolSize[1] * 0.5f;
+	float fZStartp = -fXp * fSin / fCos - 0.5f * iRayLength;
+	//------------------------------------------------------
+	int i = 0;
+	int iEndX = giVolSize[0] - 1;
+	int iEndZ = giVolSize[1] - 1;
+	float fX = 0.0f, fZ = 0.0f, fV = 0.0f;
+	int iSegments = iRayLength / blockDim.y + 1;
+	for(i=0; i<iSegments; i++)
+	{	fZ = i * blockDim.y + threadIdx.y;
+		if(fZ >= iRayLength) continue;
+		//----------------------------
+		fZ = fZ + fZStartp;
+		fX = fTempX - fZ * fSin;
+		fZ = fTempZ + fZ * fCos;
+		//----------------------
+		if(fX >= 0 && fX < iEndX && fZ >= 0 && fZ < iEndZ)
+		{	fV = gfVol[giVolSize[0] * (int)(fZ) + (int)(fX)];
+			if(fV >= (float)-1e10)
+			{	sfSum[threadIdx.y] += fV;
+				siCount[threadIdx.y] += 1;
+			}
+		}
+	}
+	__syncthreads();
+	//--------------
+	i = blockDim.y / 2;
 	while(i > 0)
 	{	if(threadIdx.y < i)
 		{	sfSum[threadIdx.y] += sfSum[threadIdx.y+i];

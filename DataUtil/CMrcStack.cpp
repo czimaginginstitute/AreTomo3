@@ -75,6 +75,40 @@ int CMrcStack::GetPixels(void)
 	return m_aiStkSize[0] * m_aiStkSize[1];
 }
 
+//--------------------------------------------------------------------
+// 1. Remove initial and trailing frames for downstream processing.
+// 2. However, these frames are not deleted from memory but simply
+//    moved to the end array.
+//--------------------------------------------------------------------
+void CMrcStack::RemoveFrames(int* piThrow)
+{
+	if(piThrow == 0L) return;
+	int iThrows = piThrow[0] + piThrow[1];
+	if(iThrows == 0) return;
+	//---------------------------
+	void** ppvFrames = new void*[m_iBufSize];
+	memset(ppvFrames, 0, sizeof(void*) * m_iBufSize);
+	//---------------------------
+	for(int i=piThrow[0]; i<m_aiStkSize[2]; i++)
+	{	int j = i - piThrow[0];
+		ppvFrames[j] = m_ppvFrames[i];
+		m_ppvFrames[i] = 0L;
+	}
+	//-----------------------------------------------
+	// 1) Move initial frames to the end of array,
+	//    but do not delete the memory.
+	//-----------------------------------------------
+	for(int i=0; i<piThrow[0]; i++)
+	{	int j = m_aiStkSize[2] - 1 - i;
+		ppvFrames[j] = m_ppvFrames[i];
+		m_ppvFrames[i] = 0L;
+	}
+	//---------------------------
+	m_aiStkSize[2] -= iThrows;
+	if(m_ppvFrames != 0L) delete[] m_ppvFrames;
+	m_ppvFrames = ppvFrames;
+}
+
 void CMrcStack::mCleanFrames(void)
 {
 	if(m_ppvFrames == 0L) return;

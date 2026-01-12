@@ -63,6 +63,7 @@ void CFmIntParam::Setup(int iNumRawFms, int iMrcMode, float fMdocDose)
 	//-----------------
 	m_fTotalDose = fMdocDose;
 	mCalcIntFms(); 
+	mRemoveFrames();
 }
 
 int CFmIntParam::GetIntFmStart(int iIntFrame)
@@ -126,6 +127,25 @@ void CFmIntParam::mCalcIntFms(void)
 	m_pfIntFmDoses[iLast] = m_piIntFmSizes[iLast] * fRawFmDose;
 	m_pfAccFmDoses[iLast] = m_fTotalDose;
 }
+
+void CFmIntParam::mRemoveFrames(void)
+{
+	CMcInput* pMcInput = CMcInput::GetInstance();
+	int* piThrow = pMcInput->m_aiThrow;
+	int iThrows = piThrow[0] + piThrow[1];
+	if(iThrows == 0 || iThrows >= m_iNumIntFms) return;
+	//---------------------------
+	int iNewFms = m_iNumIntFms - iThrows;
+	for(int i=0; i<iNewFms; i++)
+	{	int j = i + piThrow[0];
+		m_piIntFmStarts[i] = m_piIntFmStarts[j];
+		m_piIntFmSizes[i] = m_piIntFmSizes[j];
+		m_pfIntFmDoses[i] = m_pfIntFmDoses[j];
+		m_pfAccFmDoses[i] = m_pfAccFmDoses[j];
+	}
+	m_iNumIntFms = iNewFms;
+}
+
 
 void CFmIntParam::mClean(void)
 {

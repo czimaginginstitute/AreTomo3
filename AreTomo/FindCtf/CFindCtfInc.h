@@ -352,7 +352,7 @@ public:
 	GCorrCTF2D(void);
 	~GCorrCTF2D(void);
 	void SetParam(MD::CCtfParam* pCtfParam);
-	void SetPhaseFlip(bool bValue);
+	void SetMode(int iMode); // 1 - Wiener, 2 - PhaseFlip, 3-MultiplyCTF
 	void SetLowpass(int iBfactor);
 	void DoIt
 	( float fDfMin, float fDfMax, // pixel
@@ -367,7 +367,7 @@ public:
 	  cudaStream_t stream = 0
 	);
 private:
-	bool m_bPhaseFlip;
+	int m_iMode;
 	float m_fAmpPhase;
 	float* m_gfNoise2;
 	float m_fBFactor;
@@ -546,7 +546,7 @@ public:
 	( float* pfImage, 
 	  float fTilt, float fTiltAxis,
 	  float fAlpha0, float fBeta0,
-	  bool bPhaseFlip
+	  int iMode // 1 - WienerSZ, 2 - PhaseFlip, 3 - MultiplyCTF
 	);
 private:
 	void mTileToGpu(int iTile);
@@ -990,13 +990,13 @@ class CCorrCtfMain
 public:
 	CCorrCtfMain(void);
 	~CCorrCtfMain(void);
-	void DoIt(int iNthGpu, bool bPhaseFlip, int iLowpass);
+	void DoIt(int iNthGpu, int iMode, int iLowpass);
 private:
 	void mCorrTiltSeries(int iSeries);
 	//-----------------
 	CCorrImgCtf* m_pCorrImgCtf;
 	int m_iNthGpu;
-	bool m_bPhaseFlip;
+	int m_iMode;
 };
 
 }

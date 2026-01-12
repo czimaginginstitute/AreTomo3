@@ -79,7 +79,8 @@ bool CProcessThread::WaitExitAll(float fSeconds)
 }
 
 CProcessThread::CProcessThread(void)
-{
+{	
+	m_iCounter = 0;
 }
 
 CProcessThread::~CProcessThread(void)

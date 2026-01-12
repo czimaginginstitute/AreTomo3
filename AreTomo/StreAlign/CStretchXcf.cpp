@@ -139,7 +139,7 @@ void CStretchXcf::mRoundEdge(void)
 	//--------------------------------------------------------------
 	bool bPadded = true;
 	MU::GRoundEdge2D roundEdge;
-	float fPower = 4.0f;
+	float fPower = 3.0f;
 	roundEdge.SetMask(afCent, afSize);
 	roundEdge.DoIt((float*)m_gCmpRef, m_aiPadSize, bPadded, fPower);
 	roundEdge.DoIt((float*)m_gCmp, m_aiPadSize, bPadded, fPower);

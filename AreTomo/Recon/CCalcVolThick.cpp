@@ -50,6 +50,13 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	float fTiltAxis = pAlnParam->GetTiltAxis(0);
 	m_iNthGpu = iNthGpu;
 	//-------------------------------------------------
+	// 1) Measure sample thickness within 15A volume
+	//-------------------------------------------------
+	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
+	MD::CTiltSeries* pSeries = pTsPkg->GetSeries(0);
+	m_fBinning = 15.0f / pSeries->m_fPixSize;
+	m_fBinning = fmaxf(m_fBinning, 10.0f);
+	//-------------------------------------------------
 	// 1) align tilt series 0 and then 2) reconstruct.
 	//-------------------------------------------------
 	MAC::CCorrTomoStack* pCorrTomoStack = 
@@ -152,8 +159,8 @@ float CCalcVolThick::mMeasure(int iZ, int* piStart)
 
 void CCalcVolThick::mSetup(void)
 {
-	m_aiTileSize[0] = (int)(m_pVolSeries->m_aiStkSize[0] * 3.5) / 8 * 2;
-	m_aiTileSize[1] = (int)(m_pVolSeries->m_aiStkSize[1] * 3.5) / 8 * 2;
+	m_aiTileSize[0] = (int)(m_pVolSeries->m_aiStkSize[0] * 0.8f) / 2 * 2;
+	m_aiTileSize[1] = (int)(m_pVolSeries->m_aiStkSize[1] * 0.8f) / 2 * 2;
 	//-----------------`
 	int iPixels = m_pVolSeries->GetPixels();
 	size_t tBytes = sizeof(float) * iPixels * 2;
