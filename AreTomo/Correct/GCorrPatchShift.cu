@@ -46,7 +46,7 @@ static __device__ void mGCalcLocalShift
 		afLS[1] = 0.0f;
 	}
 }
-
+/*
 static __device__ float mGRandom
 (	int x, int y, 
 	int iInImgX,
@@ -72,6 +72,7 @@ static __device__ float mGRandom
 	}
 	return gfInImg[y * giInSize[0] + x];
 }
+*/
 //-----------------------------------------------------------------------------
 // Imod coordinate system: [0, Nx] where 0 is the left edge of the image and
 //    Nx the right edge. The origin is at Nx * 0.5. The leftmost pixel is at
@@ -121,17 +122,20 @@ static __global__ void mGCorrect
 		return;
 	}
 	//-------------
-	if(bRandomFill) gfOutImg[i] = mGRandom(x, y, iInImgX, gfInImg);
-	else gfOutImg[i] = (float)(-1e30);
+	//if(bRandomFill) gfOutImg[i] = mGRandom(x, y, iInImgX, gfInImg);
+	//else gfOutImg[i] = (float)(-1e30);
+	gfOutImg[i] = (float)(-1e30);
 }
 
 GCorrPatchShift::GCorrPatchShift(void)
 {
 	m_fD2R = 3.141592654f / 180.0f;
+	m_pFillEmpty2D = new MU::GFillEmpty2D;
 }
 
 GCorrPatchShift::~GCorrPatchShift(void)
 {
+	if(m_pFillEmpty2D != 0L) delete m_pFillEmpty2D;
 }
 
 void GCorrPatchShift::SetSizes
@@ -144,13 +148,15 @@ void GCorrPatchShift::SetSizes
 {	int aiInSize[] = {piInSize[0], piInSize[1], iNumPatches};
 	cudaMemcpyToSymbol(giInSize, aiInSize, sizeof(giInSize));
 	cudaMemcpyToSymbol(giOutSize, piOutSize, sizeof(giOutSize));
-	//----------------------------------------------------------
+	//---------------------------
 	m_iInImgX = piInSize[0];
 	if(bInPadded) m_iInImgX = (piInSize[0] / 2 - 1) * 2;
-	//--------------------------------------------------
+	//---------------------------
 	m_iOutImgY = piOutSize[1];
 	m_iOutImgX = piOutSize[0];
 	if(bOutPadded) m_iOutImgX = (piOutSize[0] / 2 - 1) * 2;
+	//---------------------------
+	m_pFillEmpty2D->SetSize(piOutSize, bOutPadded);
 }
 
 void GCorrPatchShift::DoIt
@@ -165,9 +171,13 @@ void GCorrPatchShift::DoIt
 	dim3 aBlockDim(1, 512);
 	dim3 aGridDim(m_iOutImgX, 1);
 	aGridDim.y = (m_iOutImgY + aBlockDim.y - 1) / aBlockDim.y;
-	//--------------------------------------------------------
+	//---------------------------
 	mGCorrect<<<aGridDim, aBlockDim>>>(gfInImg, m_iInImgX,
 	   pfGlobalShift[0], pfGlobalShift[1], fRotAngle,
 	   gfLocalAlnParams, bRandomFill, gfOutImg);
+	//---------------------------
+	if(!bRandomFill) return;
+	m_pFillEmpty2D->DoIt(gfOutImg, (cudaStream_t)0);
+	cudaStreamSynchronize((cudaStream_t)0);
 }
 

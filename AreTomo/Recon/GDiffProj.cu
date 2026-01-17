@@ -15,8 +15,8 @@ static __global__ void mGDiffProj
 	if(iProj >= iNumProjs) return;
 	//----------------------------
 	int i = iProj * iProjSizeX + blockIdx.x;
-	if(gfForProjs[i] < (float)-1e10) gfDifProjs[i] = (float)-1e30;
-	else if(gfRawProjs[i] < (float)-1e10) gfDifProjs[i] = (float)-1e30;
+	if(gfForProjs[i] < (float)-1e10) gfDifProjs[i] = 0.0f; 
+	else if(gfRawProjs[i] < (float)-1e10) gfDifProjs[i] = 0.0f; 
 	else gfDifProjs[i] = gfRawProjs[i] - gfForProjs[i];
 }
 

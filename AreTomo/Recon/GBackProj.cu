@@ -31,29 +31,32 @@ static __global__ void mGBackProj
 	int i, iCount = 0;
 	for(i=iStartProj; i<iEndProj; i++)
 	{	if(gbNoProjs[i]) continue;
-		//--------------------------
+		//-------------------
 		float fXp = fX * gfCosSin[2 * i] + fZ * gfCosSin[2 * i + 1] 
 		   + fProjCentX;
 		if(fXp < 0 || fXp > iProjEndX) continue;
-		//--------------------------
+		//-------------------
 		int iXp = (int)fXp;
 		fXp = fXp - iXp;
 		int j = i * giSize[1] + iXp;
-		//--------------------------
+		//-------------------
 		fXp = gfPadSinogram[j] * (1 - fXp)
 		   + gfPadSinogram[j+1] * fXp;
 		if(fXp <= (float)-1e10) continue;
-		//----------------
+		//-------------------
 		fInt += fXp;
 		iCount += 1;
         }
 	if(iCount <= 0) return;
-	//-----------------
+	//---------------------------
 	i = blockIdx.y * giSize[3] + iX;
 	fInt = fRelax * fInt / iCount + gfVolXZ[i];
-	//-----------------
-	if(bSart) gfVolXZ[i] = fmaxf(fInt, 0.0f);
-	else gfVolXZ[i] = fInt;
+	//---------------------------
+	if(fInt > (float)-1e10)
+	{	if(bSart) gfVolXZ[i] = fmaxf(fInt, 0.0f);
+		else gfVolXZ[i] = fInt;
+	}
+	else gfVolXZ[i] = (float)-1e30;
 }
 
 GBackProj::GBackProj(void)

@@ -79,6 +79,7 @@ private:
 	int m_iInImgX;
 	int m_iOutImgX;
 	int m_iOutImgY;
+	MU::GFillEmpty2D* m_pFillEmpty2D;
 };
 
 class CCorrProj

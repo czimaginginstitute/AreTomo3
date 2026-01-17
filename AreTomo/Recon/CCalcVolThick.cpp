@@ -105,6 +105,7 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	//-----------------
 	for(int z=0; z<iEndZ; z++)
 	{	pfCCs[z] = mMeasure(z, aiStart);
+		//printf("%5d  %.4e\n", z, pfCCs[z]);
 	}
 	mSmooth(pfCCs, iEndZ);
 	//-----------------
@@ -184,117 +185,60 @@ void CCalcVolThick::mClean(void)
 
 void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 {
-	//-----------------------------------------------
-	// 1) local min CCs from left and right sides
-	// respectively.
-	//-----------------------------------------------
 	int iHalfZ = iSize / 2;
 	int iOffset = (int)(iSize * 0.05f);
-	float afMinCCs[] = {100.0f, 100.0f};
-	int aiMinLocs[] = {-1, -1};
 	//---------------------------
-	for(int i=iOffset; i<iHalfZ; i++)
-	{	if(pfCCs[i] < afMinCCs[0])
-		{	afMinCCs[0] = pfCCs[i];
-			aiMinLocs[0] = i;
-		}
-		//----------------
-		int j = iSize - 1 - i;
-		if(pfCCs[j] < afMinCCs[1])
-		{	afMinCCs[1] = pfCCs[j];
-			aiMinLocs[1] = j;
+	int iBot = iOffset;
+	float fMinBot = pfCCs[iBot];
+	for(int i=iBot+1; i<iHalfZ; i++)
+	{	if(pfCCs[i] < fMinBot)
+		{	fMinBot = pfCCs[i];
+			iBot = i;
 		}
 	}
-	//-----------------------------------------------
-	// 1) search the location of the maximum CC
-	//-----------------------------------------------
-	float fMaxCC = -1000.0f;
-	int iMaxCC = -1;
-	for(int i=aiMinLocs[0]; i<aiMinLocs[1]; i++)
-	{	if(pfCCs[i] > fMaxCC)
-		{	fMaxCC = pfCCs[i];
-			iMaxCC = i;
+	//---------------------------
+	int iTop = iSize - iOffset;
+	float fMinTop = pfCCs[iTop];
+	for(int i=iTop-1; i>iHalfZ; i--)
+	{	if(pfCCs[i] < fMinTop)
+		{	fMinTop = pfCCs[i];
+			iTop = i;
 		}
 	}
 	//-----------------------------------------------
-	// 1) seach the location of the second maximum
-	// CC in another half of the volume.
+	// 1) calculate the mean score. 
 	//-----------------------------------------------
-	int iStart, iEnd;
-	if(iMaxCC < iHalfZ)
-	{	iStart = iHalfZ; 
-		iEnd = aiMinLocs[1];
+	float fMeanCC = 0.0f;
+	for(int i=iBot; i<iTop; i++)
+	{	fMeanCC += pfCCs[i];
 	}
-	else
-	{	iStart = aiMinLocs[0];
-		iEnd = iHalfZ;
-	}
-	float fMaxCC2 = -1000.0;
-	int iMaxCC2 = -1;
-	for(int i=iStart; i<iEnd; i++)
-	{	if(pfCCs[i] > fMaxCC2)
-		{	fMaxCC2 = pfCCs[i];
-			iMaxCC2 = i;
-		}
-	}
-	//-----------------------------------------------
-	// 1) find which of fMaxCC fMaxCC2 is at left
-	// and which at right
-	//-----------------------------------------------
-	int aiMaxLocs[] = {0, 0};
-	if(iMaxCC < iMaxCC2)
-	{	aiMaxLocs[0] = iMaxCC;
-		aiMaxLocs[1] = iMaxCC2;
-	}
-	else
-	{	aiMaxLocs[0] = iMaxCC2;
-		aiMaxLocs[1] = iMaxCC;
-	}
+	fMeanCC = fMeanCC / (iTop - iBot);
 	//-----------------------------------------------
 	// 1) Determine the true minimums that are free
 	// from SART artifact.
 	//-----------------------------------------------
-	float fMinCC0 = pfCCs[aiMinLocs[0]];
-	float fMinCC1 = pfCCs[aiMinLocs[1]];
-	//-----------------------------------------------
-	// 1) The sample edges are in the middle between
-	// true minimum and maximum
-	//-----------------------------------------------
-	float fW = 0.50f;
-	float fMinCC = (fMinCC0 > fMinCC1) ? fMinCC0 : fMinCC1;
-	fMaxCC = (pfCCs[aiMaxLocs[0]] + pfCCs[aiMaxLocs[1]]) * 0.5f;
-	float fEdgeCC = (fMinCC + fMaxCC) * 0.5f;
-	/*
-	float fEdgeCC1 = fMaxCC * (1 - fW) + fMinCC * fW;
-	float fEdgeCC2 = fMaxCC * (1 - fW) + fMinCC * fW;
-	float fEdgeCC = (fEdgeCC1 + fEdgeCC2) * 0.5f;
-	*/
-	//-----------------------------------------------
-	// 1) This is initialization just in case
-	//-----------------------------------------------
-	m_aiSampleEdges[0] = aiMinLocs[0];
-	m_aiSampleEdges[1] = aiMinLocs[1];
-	//-----------------
-	for(int i=aiMaxLocs[0]; i>aiMinLocs[0]; i--)
-	{	if(pfCCs[i] < fEdgeCC)
-		{	m_aiSampleEdges[0] = i;
-			break;
-		}
+	m_aiSampleEdges[0] = iBot;
+	fMinBot = (fMeanCC + fMinBot) * 0.5f;
+	for(int i=iBot+1; i<iHalfZ; i++)
+	{	if(pfCCs[i] < fMinBot) continue;
+		m_aiSampleEdges[0] = i;
+		break;
 	}
-	//-----------------
-	for(int i=aiMaxLocs[1]; i<aiMinLocs[1]; i++)
-	{	if(pfCCs[i] < fEdgeCC)
-		{	m_aiSampleEdges[1] = i;
-			break;
-		}
+	//---------------------------
+	m_aiSampleEdges[1] = iTop;
+	fMinTop = (fMeanCC + fMinTop) * 0.5f;
+	for(int i=iTop-1; i>iHalfZ; i--)
+	{	if(pfCCs[i] < fMeanCC) continue;
+		m_aiSampleEdges[1] = i;
+		break;
 	}
-	//------------------
+	//---------------------------
 	m_aiSampleEdges[0] *= m_fBinning;
 	m_aiSampleEdges[1] *= m_fBinning;
-	//-----------------
+	//---------------------------
 	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
 	pAlnParam->m_iThickness = m_aiSampleEdges[1] - m_aiSampleEdges[0];
-	//-----------------
+	//---------------------------
 	int iSampleCent = (m_aiSampleEdges[0] + m_aiSampleEdges[1]) / 2;
 	int iVolCent = (int)(iHalfZ * m_fBinning);
 	pAlnParam->m_iOffsetZ = iSampleCent - iVolCent;

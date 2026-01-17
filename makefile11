@@ -11,9 +11,11 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./MaUtil/GCorrLinearInterp.cu \
 	./MaUtil/GFFT1D.cu \
 	./MaUtil/GFFTUtil2D.cu \
+	./MaUtil/GFillEmpty2D.cu \
 	./MaUtil/GFindMinMax2D.cu \
 	./MaUtil/GFourierResize2D.cu \
 	./MaUtil/GFtResize2D.cu \
+	./MaUtil/GGenRandoms.cu \
 	./MaUtil/GNormalize2D.cu \
 	./MaUtil/GPad2D.cu \
 	./MaUtil/GPartialCopy.cu \

@@ -616,3 +616,19 @@ Changes:
       downstream processing.
    5) Forward projection in AreTomo/ProjAlign and AreTomo/Recon is made
       consisten.
+
+AreTomo3 2.2.4 [01-13-2026]
+---------------------------
+Bug Fix:
+   1) Fixed bug in AreTomo/Recon/GDiffProj.cu: when the forward projection
+      pixels are large negative number, make the diff projection pixels zero
+   2) GForProj.cu: set large negative number only when the count along the
+      ray is zero.
+Changes:
+   1) Added GGenRandoms.cu and GFillEmpty2D.cu in MaUtil.
+   2) Modified AreTomo/Correct/GCorrPatchShift.cu to use GFillEmpty to
+      fill random pixels in the empty area.
+   3) Modified AreTomoRecon/GBackProj.cu: Apply positivity constraint only
+      when the voxel is not large negative number.
+   4) For AreTomo/Recon/CTomoSart.cpp: fill the empty region with "good"
+      voxel values

@@ -99,7 +99,7 @@ bool CStackFolder::ReadFiles(void)
 	printf("Directory: %s\n", m_acDirName);
 	printf("Prefix:    %s\n", m_acPrefix);
 	printf("Suffix:    %s\n", m_acSuffix);
-	printf("Skips:     %s\n", m_acSkips);
+	printf("Skips:     %s\n\n", m_acSkips);
 	//-------------------------------------------------
 	// Read all the movies in the specified folder for
 	// batch processing.

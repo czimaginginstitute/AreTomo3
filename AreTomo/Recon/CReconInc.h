@@ -165,8 +165,8 @@ protected:
 	//-----------------
 	MD::CTiltSeries* m_pTiltSeries;
 	MAM::CAlignParam* m_pAlignParam;
+	MU::GFillEmpty2D* m_pFillEmpty2D;
 	//-----------------
-	//GBackProj m_aGBackProj;
 	GWeightProjs m_aGWeightProjs;
 	cudaStream_t m_stream;
 };

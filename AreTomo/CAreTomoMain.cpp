@@ -390,20 +390,8 @@ void CAreTomoMain::mAlign(void)
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	pParam->m_fXcfSize = 2048.0f;
 	mProjAlign();
-	//---------------------------------------------------------
-	// 1. When pInput->m_afTiltAxis[1] is negative, do not
-	//    refine user provided tilt axis.
-	//---------------------------------------------------------
-	CAtInput* pInput = CAtInput::GetInstance();
-	if(pInput->m_afTiltAxis[1] >= 0)
-	{	float fRange = (pInput->m_afTiltAxis[0] == 0) ? 20.0f : 6.0f;
-		int iIters = (pInput->m_afTiltAxis[0] == 0) ? 4 : 2;
-		for(int i=1; i<=iIters; i++) 
-		{	mRotAlign(fRange/i , 100);
-			if(i == 1) mProjAlign();
-		}
-		mProjAlign();
-	}
+	//---------------------------
+	mRefineAlign();
 	//---------------------------
 	mPatchAlign();
 	//---------------------------
@@ -428,12 +416,11 @@ void CAreTomoMain::mCoarseAlign(void)
 	if(pInput->m_afTiltAxis[0] == 0)
 	{	for(int i=1; i<=4; i++)
 		{	streAlignMain.DoIt();
-			float fRange = fmax(180.0f / i, 50.0f);
-			mRotAlign(fRange, 100);
+			mRotAlign(180.0f, 180);
 		}
 		for(int i=1; i<=5; i++)
-		{	float fRange = fmax(50.0f / i, 10);
-			mRotAlign(fRange, 100);
+		{	float fRange = fmax(20.0f / i, 10);
+			mRotAlign(fRange, 40);
 		}
 		pTimeStamp->Record("TomoAlignCoarse:End");
 		return;
@@ -465,6 +452,26 @@ void CAreTomoMain::mCoarseAlign(void)
 	pTimeStamp->Record("TomoAlignCoarse:End");
 }
 
+void CAreTomoMain::mRefineAlign(void)
+{
+	CAtInput* pInput = CAtInput::GetInstance();
+	bool bRefineAxis = (pInput->m_afTiltAxis[1] < 0) ? false : true;
+	//---------------------------
+	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
+	float fOldAxis = pAlignParam->GetTiltAxis(0);
+	float fLastAxis = fOldAxis;
+	//---------------------------
+	float fAxisRange = 6.0f;
+	//---------------------------
+	for(int i=1; i<=2; i++)
+	{	if(bRefineAxis) mRotAlign(fAxisRange/i , 60);
+		mProjAlign();
+	}
+	//---------------------------
+	//mCalcThickness();
+	//mPatchAlign();
+}
+
 void CAreTomoMain::mProjAlign(void)
 {
 	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
@@ -474,33 +481,17 @@ void CAreTomoMain::mProjAlign(void)
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
         pParam->m_afMaskSize[0] = 0.8f;
         pParam->m_afMaskSize[1] = 0.8f;
-	//-----------------
+	//---------------------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);	
 	ProjAlign::CProjAlignMain aProjAlign;
-	aProjAlign.Set0(500, m_iNthGpu);
+	aProjAlign.Set0(500.0f, m_iNthGpu);
 	aProjAlign.Set1(pParam);
 	float fLastErr = aProjAlign.DoIt(pAlignParam);
 	MrcUtil::CAlignParam* pLastParam = pAlignParam->GetCopy();
-	//-----------------
-	int iIterations = 1; //10;
-	int iLastIter = iIterations - 1;
-	pParam->m_afMaskSize[0] = 0.55f;
-	pParam->m_afMaskSize[1] = 0.55f;
-	//-----------------
-	for(int i=1; i<iIterations; i++)
-	{	float fErr = aProjAlign.DoIt(pAlignParam);
-		if(fErr < 2.0f) break;
-		//--------------------
-		if(fErr <= fLastErr)
-		{	fLastErr = fErr;
-			pLastParam->Set(pAlignParam);
-		}
-		else
-		{	pAlignParam->Set(pLastParam);
-			break;
-		}
-	}
-	delete pLastParam;
+	//---------------------------
+	float fErr = aProjAlign.DoIt(pAlignParam);
+	if(fErr > fLastErr) pAlignParam->Set(pLastParam);
+	if(pLastParam != 0L) delete pLastParam;
 	pTimeStamp->Record("TomoAlignRefine:End");
 }
 
