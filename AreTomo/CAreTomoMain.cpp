@@ -413,14 +413,17 @@ void CAreTomoMain::mCoarseAlign(void)
 	//    axis. Let's estimate here.
 	//---------------------------------------------------------
 	CAtInput* pInput = CAtInput::GetInstance();
+	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	if(pInput->m_afTiltAxis[0] == 0)
-	{	for(int i=1; i<=4; i++)
+	{	for(int i=1; i<=2; i++)
 		{	streAlignMain.DoIt();
+			streAlignMain.DoIt();
+			pAlignParam->SetTiltAxisAll(0.0f);
 			mRotAlign(180.0f, 180);
 		}
-		for(int i=1; i<=5; i++)
+		for(int i=1; i<=4; i++)
 		{	float fRange = fmax(20.0f / i, 10);
-			mRotAlign(fRange, 40);
+			mRotAlign(fRange, 20);
 		}
 		pTimeStamp->Record("TomoAlignCoarse:End");
 		return;
@@ -429,7 +432,6 @@ void CAreTomoMain::mCoarseAlign(void)
 	// 1) Users provide an initial estimate of the tilt axis,
 	//    let's use it for initial alignment.
 	//---------------------------------------------------------
-	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->SetTiltAxisAll(pInput->m_afTiltAxis[0]);
 	//---------------------------------------------------------
 	// 2) Users do not want to refine their tilt axis, do not
@@ -461,7 +463,7 @@ void CAreTomoMain::mRefineAlign(void)
 	float fOldAxis = pAlignParam->GetTiltAxis(0);
 	float fLastAxis = fOldAxis;
 	//---------------------------
-	float fAxisRange = 6.0f;
+	float fAxisRange = 60.0f;
 	//---------------------------
 	for(int i=1; i<=2; i++)
 	{	if(bRefineAxis) mRotAlign(fAxisRange/i , 60);

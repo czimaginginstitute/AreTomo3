@@ -632,3 +632,10 @@ Changes:
       when the voxel is not large negative number.
    4) For AreTomo/Recon/CTomoSart.cpp: fill the empty region with "good"
       voxel values
+
+AreTomo3 2.2.5 [01-17-2026]
+---------------------------
+Bug Fix:
+Changes:
+   1) Removed tilt axis refinement in CFitPatchShifts.cpp, unrefliable.
+   2) Changes edge detection in CCalcVolThick.cpp

@@ -325,6 +325,8 @@ private:
 	void mSetup(void);
 	void mClean(void);
 	void mDetectEdges(float* pfCCs, int iSize);
+	void mSearchMin(float* pfCCs, int iSize, int* piMin);
+	void mSearchMax(float* pfCCs, int iSize, int* piMax);
 	//-----------------
 	void mSaveTmpVol(void);
 	void mSaveTmpCCs(float* pfCCs, int iSize);

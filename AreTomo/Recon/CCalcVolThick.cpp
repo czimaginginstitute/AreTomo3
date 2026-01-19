@@ -188,23 +188,15 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	int iHalfZ = iSize / 2;
 	int iOffset = (int)(iSize * 0.05f);
 	//---------------------------
-	int iBot = iOffset;
-	float fMinBot = pfCCs[iBot];
-	for(int i=iBot+1; i<iHalfZ; i++)
-	{	if(pfCCs[i] < fMinBot)
-		{	fMinBot = pfCCs[i];
-			iBot = i;
-		}
-	}
+	int aiMinEdges[2] = {0};
+	int aiMaxEdges[2] = {0};
+	mSearchMin(pfCCs, iSize, aiMinEdges);
+	mSearchMax(pfCCs, iSize, aiMaxEdges);
 	//---------------------------
-	int iTop = iSize - iOffset;
-	float fMinTop = pfCCs[iTop];
-	for(int i=iTop-1; i>iHalfZ; i--)
-	{	if(pfCCs[i] < fMinTop)
-		{	fMinTop = pfCCs[i];
-			iTop = i;
-		}
-	}
+	int iBot = (aiMinEdges[0] < aiMaxEdges[0]) ? 
+	   aiMinEdges[0] : aiMaxEdges[0];
+	int iTop = (aiMinEdges[1] > aiMaxEdges[1]) ?
+	   aiMinEdges[1] : aiMaxEdges[1];
 	//-----------------------------------------------
 	// 1) calculate the mean score. 
 	//-----------------------------------------------
@@ -218,19 +210,25 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	// from SART artifact.
 	//-----------------------------------------------
 	m_aiSampleEdges[0] = iBot;
-	fMinBot = (fMeanCC + fMinBot) * 0.5f;
-	for(int i=iBot+1; i<iHalfZ; i++)
-	{	if(pfCCs[i] < fMinBot) continue;
-		m_aiSampleEdges[0] = i;
-		break;
+	float fMinBot = pfCCs[iBot];
+	if(fMinBot < fMeanCC)
+	{	fMinBot = fMeanCC;
+		for(int i=iBot+1; i<iHalfZ; i++)
+		{	if(pfCCs[i] < fMinBot) continue;
+			m_aiSampleEdges[0] = i;
+			break;
+		}
 	}
 	//---------------------------
 	m_aiSampleEdges[1] = iTop;
-	fMinTop = (fMeanCC + fMinTop) * 0.5f;
-	for(int i=iTop-1; i>iHalfZ; i--)
-	{	if(pfCCs[i] < fMeanCC) continue;
-		m_aiSampleEdges[1] = i;
-		break;
+	float fMinTop = pfCCs[iTop];
+	if(fMinTop < fMeanCC)
+	{	fMinTop = fMeanCC;
+		for(int i=iTop-1; i>iHalfZ; i--)
+		{	if(pfCCs[i] < fMeanCC) continue;
+			m_aiSampleEdges[1] = i;
+			break;
+		}
 	}
 	//---------------------------
 	m_aiSampleEdges[0] *= m_fBinning;
@@ -245,6 +243,58 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	//-----------------
 	printf("Sample edges: %6d  %6d\n\n", 
 	   m_aiSampleEdges[0], m_aiSampleEdges[1]);
+}
+
+void CCalcVolThick::mSearchMin(float* pfCCs, int iSize, int* piMin)
+{
+	int iHalfZ = iSize / 2;
+	int iOffset = (int)(iSize * 0.05f);
+	//---------------------------
+	int iBot = iOffset;
+	float fMinBot = pfCCs[iBot];
+	for(int i=iBot+1; i<iHalfZ; i++)
+	{	if(pfCCs[i] < fMinBot)
+		{	fMinBot = pfCCs[i];
+			iBot = i;
+		}
+	}
+	piMin[0] = iBot;
+	//---------------------------
+	int iTop = iSize - iOffset;
+	float fMinTop = pfCCs[iTop];
+	for(int i=iTop-1; i>iHalfZ; i--)
+	{	if(pfCCs[i] < fMinTop)
+		{	fMinTop = pfCCs[i];
+			iTop = i;
+		}
+	}
+	piMin[1] = iTop;
+}
+
+void CCalcVolThick::mSearchMax(float* pfCCs, int iSize, int* piMax)
+{
+	int iHalfZ = iSize / 2;
+	int iOffset = (int)(iSize * 0.05f);
+	//---------------------------
+	int iBot = iOffset;
+	float fMaxBot = pfCCs[iBot];
+	for(int i=iBot+1; i<iHalfZ; i++)
+	{       if(pfCCs[i] > fMaxBot)
+		{       fMaxBot = pfCCs[i];
+			iBot = i;
+		}
+	}
+	piMax[0] = iBot;
+	//---------------------------
+	int iTop = iSize - iOffset;
+	float fMaxTop = pfCCs[iTop];
+	for(int i=iTop-1; i>iHalfZ; i--)
+	{       if(pfCCs[i] > fMaxTop)
+		{       fMaxTop = pfCCs[i];
+			iTop = i;
+		}
+	}
+	piMax[1] = iTop;
 }
 
 void CCalcVolThick::mSaveTmpVol(void)
