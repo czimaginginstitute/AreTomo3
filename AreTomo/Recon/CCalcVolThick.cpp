@@ -76,16 +76,12 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	//--------------------------------------------------
 	// 3) reconstruct the aligned tilt series by WBP.
 	//--------------------------------------------------
-	CDoSartRecon* pDoSartRecon = new CDoSartRecon;
+	CDoWbpRecon* pDoWbpRecon = new CDoWbpRecon;
 	int iVolZ = pAlnSeries->m_aiStkSize[0] * 3 / 8 * 2;
-	int iNumTilts = pAlnSeries->m_aiStkSize[2];
-	int iNumSubsets = iNumTilts / 5;
-	if(iNumSubsets == 0) iNumSubsets = 1;
-	int iIters = 20;
-	MD::CTiltSeries* pVolSeries = pDoSartRecon->DoIt(pAlnSeries,
-	   pAlnParam, 0, iNumTilts, iVolZ, iIters, iNumSubsets);
+	MD::CTiltSeries* pVolSeries = pDoWbpRecon->DoIt(pAlnSeries, 
+	   pAlnParam, iVolZ);
 	if(pAlnSeries != 0L) delete pAlnSeries;
-	if(pDoSartRecon != 0L) delete pDoSartRecon;	
+	if(pDoWbpRecon != 0L) delete pDoWbpRecon;
 	//--------------------------------------------------
 	// 4) flip the volume to xyz view.
 	//--------------------------------------------------
@@ -160,8 +156,8 @@ float CCalcVolThick::mMeasure(int iZ, int* piStart)
 
 void CCalcVolThick::mSetup(void)
 {
-	m_aiTileSize[0] = (int)(m_pVolSeries->m_aiStkSize[0] * 0.8f) / 2 * 2;
-	m_aiTileSize[1] = (int)(m_pVolSeries->m_aiStkSize[1] * 0.8f) / 2 * 2;
+	m_aiTileSize[0] = (int)(m_pVolSeries->m_aiStkSize[0] * 0.6f) / 2 * 2;
+	m_aiTileSize[1] = (int)(m_pVolSeries->m_aiStkSize[1] * 0.6f) / 2 * 2;
 	//-----------------`
 	int iPixels = m_pVolSeries->GetPixels();
 	size_t tBytes = sizeof(float) * iPixels * 2;

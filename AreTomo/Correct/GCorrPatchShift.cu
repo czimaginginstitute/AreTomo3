@@ -46,33 +46,7 @@ static __device__ void mGCalcLocalShift
 		afLS[1] = 0.0f;
 	}
 }
-/*
-static __device__ float mGRandom
-(	int x, int y, 
-	int iInImgX,
-	float* gfInImg
-)
-{	if(x < 0) x = -x;
-	if(y < 0) y = -y;
-	if(x >= iInImgX) x = iInImgX - 1 - (x % iInImgX);
-	if(y >= giInSize[1]) y = giInSize[1] - 1 - (y % giInSize[1]);
-	//-----------------------------------------------------------
-	int iWin = 51, ix = 0, iy = 0;
-	int iSize = iWin * iWin;
-	unsigned int next = y * giInSize[0] + x;
-	for(int i=0; i<20; i++)
-	{	next = (next * 509 + 283) % iSize;
-		ix = (next % iSize) - iWin / 2 + x;
-		if(ix < 0 || ix >= iInImgX) continue;
-		//-----------------------------------
-		iy = (next / iWin) - iWin / 2 + y;
-		if(iy < 0 || iy >= giInSize[1]) continue;
-		//---------------------------------------
-		return gfInImg[iy * giInSize[0] + ix];
-	}
-	return gfInImg[y * giInSize[0] + x];
-}
-*/
+
 //-----------------------------------------------------------------------------
 // Imod coordinate system: [0, Nx] where 0 is the left edge of the image and
 //    Nx the right edge. The origin is at Nx * 0.5. The leftmost pixel is at
@@ -113,17 +87,15 @@ static __global__ void mGCorrect
 	}
 	afXY[0] += (fGlobalShiftX + iInImgX * 0.5f);
 	afXY[1] += (fGlobalShiftY + giInSize[1] * 0.5f);
-	//----------------------------------------------
+	//---------------------------
 	x = (int)(afXY[0] + 0.5f);
 	y = (int)(afXY[1] + 0.5f);
-	//------------------------
+	//---------------------------
 	if(x >= 0 && x < iInImgX && y >= 0 && y < giInSize[1]) 
 	{	gfOutImg[i] = gfInImg[y * giInSize[0] + x];
 		return;
 	}
-	//-------------
-	//if(bRandomFill) gfOutImg[i] = mGRandom(x, y, iInImgX, gfInImg);
-	//else gfOutImg[i] = (float)(-1e30);
+	//---------------------------
 	gfOutImg[i] = (float)(-1e30);
 }
 

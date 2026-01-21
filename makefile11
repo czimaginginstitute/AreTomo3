@@ -65,6 +65,7 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/CommonLine/GRemoveMean.cu \
 	./AreTomo/CommonLine/GSumLines.cu \
 	./AreTomo/Correct/GCorrPatchShift.cu \
+	./AreTomo/Correct/GRoundProjEdge.cu \
 	./AreTomo/DoseWeight/GDoseWeightImage.cu \
 	./AreTomo/FindCtf/GBackground1D.cu \
 	./AreTomo/FindCtf/GCalcCTF1D.cu \

@@ -93,9 +93,8 @@ float CFmIntParam::GetTotalDose(void)
 
 bool CFmIntParam::bIntegrate(void)
 {
-	CMcInput* pMcInput = CMcInput::GetInstance();
-	if(pMcInput->m_iFmInt > 1) return true;
-	else return false;
+	if(m_iNumRawFms == m_iNumIntFms) return false;
+	else return true;
 }
 
 bool CFmIntParam::bHasDose(void)
@@ -106,23 +105,31 @@ bool CFmIntParam::bHasDose(void)
 
 void CFmIntParam::mCalcIntFms(void)
 {
+	float fRawFmDose = m_fTotalDose / m_iNumRawFms;
+	//---------------------------
 	CMcInput* pMcInput = CMcInput::GetInstance();
-	m_iNumIntFms = m_iNumRawFms / pMcInput->m_iFmInt;
+	int iFmInt = pMcInput->m_iFmInt;
+	if(iFmInt <= 0)
+	{	if(fRawFmDose > 0) iFmInt = (int)(0.15f / fRawFmDose);
+		else iFmInt = m_iNumRawFms / 12;
+	}
+	if(iFmInt < 1) iFmInt = 1;
+	//---------------------------
+	m_iNumIntFms = m_iNumRawFms / iFmInt;
 	if(m_iNumIntFms < 1) m_iNumIntFms = 1;
 	//---------------------------
 	mAllocate();
-	float fRawFmDose = m_fTotalDose / m_iNumRawFms;
 	int iLast = m_iNumIntFms - 1;
 	//---------------------------
 	for(int i=0; i<iLast; i++)
-	{	m_piIntFmStarts[i] = i * pMcInput->m_iFmInt;
-		m_piIntFmSizes[i] = pMcInput->m_iFmInt;
+	{	m_piIntFmStarts[i] = i * iFmInt;
+		m_piIntFmSizes[i] = iFmInt;
 		m_pfIntFmDoses[i] = m_piIntFmSizes[i] * fRawFmDose;
 		int iAccFms = m_piIntFmStarts[i] + m_piIntFmSizes[i];
 		m_pfAccFmDoses[i] = iAccFms * fRawFmDose;
 	}
 	//-----------------
-	m_piIntFmStarts[iLast] = iLast * pMcInput->m_iFmInt;
+	m_piIntFmStarts[iLast] = iLast * iFmInt;
 	m_piIntFmSizes[iLast] = m_iNumRawFms - m_piIntFmStarts[iLast];
 	m_pfIntFmDoses[iLast] = m_piIntFmSizes[iLast] * fRawFmDose;
 	m_pfAccFmDoses[iLast] = m_fTotalDose;

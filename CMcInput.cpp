@@ -216,7 +216,6 @@ void CMcInput::Parse(int argc, char* argv[])
 	aParseArgs.FindVals(m_acFmIntTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
         aParseArgs.GetVals(aiRange, &m_iFmInt);
-	if(m_iFmInt < 1) m_iFmInt = 1;
 	//-----------------
 	aParseArgs.FindVals(m_acGroupTag, aiRange);
 	if(aiRange[1] > 2) aiRange[1] = 2;

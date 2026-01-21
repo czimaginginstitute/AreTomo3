@@ -24,20 +24,22 @@ static __global__ void mGForProjs
 	int i = 2 * blockIdx.y;
 	float fCos = gfCosSin[i];
 	float fSin = gfCosSin[i + 1];
-	int iRayLength = (int)(giVolSize[2] / fCos) / 2 * 2 + 1; 
+	int iRayLength = (int)(giVolSize[2] / fCos + 1.5f); 
 	//---------------------------
-	float fXp = blockIdx.x + 0.5f - 0.5f * gridDim.x;
-	float fTempX = giVolSize[0] * 0.5f + iRayLength * 0.5f * fSin
-	   + fXp / fCos;
-	float fTempZ = giVolSize[2] * 0.5f - iRayLength * 0.5f * fCos;
+	float fXp = blockIdx.x - 0.5f * gridDim.x;
+	float fTempX = fXp / fCos + giVolSize[0] * 0.5f;
+	float fTempZ = giVolSize[2] * 0.5f;
+	//---------------------------
+	int iEndX = giVolSize[0] - 2;
+	int iEndZ = giVolSize[2] - 2;
 	//---------------------------
 	float fSum = 0.0f, fCount = 0.0f;
 	for(i=threadIdx.y; i<iRayLength; i+=blockDim.y)
-	{	float fX = fTempX - i * fSin;
-		float fZ = fTempZ + i * fCos;
+	{	float fZ = i - iRayLength * 0.5f;
+		float fX = fTempX - fZ * fSin;
+		fZ = fTempZ + fZ * fCos;
 		//--------------------------
-		if(fX < 0 || fX >= giVolSize[0]) continue;
-		if(fZ < 0 || fZ >= giVolSize[2]) continue;
+		if(fX < 0 || fZ < 0 || fX > iEndX || fZ > iEndZ) continue;
 		//--------------------------
 		int iX = (int)fX;
 		int iZ = (int)fZ;

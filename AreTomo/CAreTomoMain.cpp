@@ -469,9 +469,6 @@ void CAreTomoMain::mRefineAlign(void)
 	{	if(bRefineAxis) mRotAlign(fAxisRange/i , 60);
 		mProjAlign();
 	}
-	//---------------------------
-	//mCalcThickness();
-	//mPatchAlign();
 }
 
 void CAreTomoMain::mProjAlign(void)

@@ -97,7 +97,7 @@ MMD::CStackShift* CIterativeAlign::mAlignStack(MMD::CStackShift* pInitShift)
 	pTotalShift->Setup(iNumGroups);
 	//-----------------
 	float fBFactor = m_fBFactor;
-	float fMaxErr = bPatch ? 40.0f : 400.0f;
+	float fMaxErr = bPatch ? 100.0f : 300.0f;
 	fMaxErr = fMaxErr * 2.0f / (m_afXcfBin[0] + m_afXcfBin[1]);
 	CAlignedSum alignedSum;
 	//-----------------

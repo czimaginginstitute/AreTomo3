@@ -22,8 +22,8 @@ static __global__ void mGBackProj
 {	int iX = blockIdx.x * blockDim.x + threadIdx.x;
 	if(iX >= giSize[3]) return;
 	//---------------------------
-	float fX = iX + 0.5f - giSize[3] * 0.5f;
-	float fZ = blockIdx.y + 0.5f - gridDim.y * 0.5f;
+	float fX = iX - giSize[3] * 0.5f;
+	float fZ = blockIdx.y - gridDim.y * 0.5f;
 	float fProjCentX = giSize[0] / 2.0f;
 	int iProjEndX = giSize[0] - 2;
 	//---------------------------

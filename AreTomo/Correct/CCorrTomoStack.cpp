@@ -200,11 +200,6 @@ void CCorrTomoStack::mCorrectProj(int iProj)
 	size_t tBytes = sizeof(float) * pRawSeries->GetPixels();
 	cudaMemcpy(m_gfRawProj, pfProj, tBytes, cudaMemcpyDefault);
 	//-----------------
-	/*
-	if(!m_bShiftOnly && m_pCorrInt != 0L)
-	{	m_pCorrInt->DoIt(m_gfRawProj, m_gfCorrProj);
-	}*/
-	//-----------------
 	if(m_gfLocalParam != 0L) 
 	{	pLocalParam->GetParam(iProj, m_gfLocalParam);
 	}

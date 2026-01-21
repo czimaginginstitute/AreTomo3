@@ -636,6 +636,19 @@ Changes:
 AreTomo3 2.2.5 [01-17-2026]
 ---------------------------
 Bug Fix:
+   1) Regressed to 2.2.1/AreTomo/Recon/GForProj.cu. 2.2.3, 2.2.4, 2.2.5
+      all have vertical striation in SART volumes that occurs at some
+      AtBinning.
 Changes:
    1) Removed tilt axis refinement in CFitPatchShifts.cpp, unrefliable.
    2) Changes edge detection in CCalcVolThick.cpp
+
+AreTomo3 2.2.6 [01-21-2026]
+---------------------------
+Bug Fix:
+   1) Fixed math in AreTomo/Recon/GForProj.cu, no striations in SART
+      reconstruction
+Changes:
+   1) Replaced SART recontruction with WBP reconstruction in the thickness
+      measurement in AreTomo/Recon/CCalcVolThick.cpp
+
