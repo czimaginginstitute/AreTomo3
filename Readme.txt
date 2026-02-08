@@ -652,3 +652,11 @@ Changes:
    1) Replaced SART recontruction with WBP reconstruction in the thickness
       measurement in AreTomo/Recon/CCalcVolThick.cpp
 
+AreTomo3 2.2.7 [01-21-2027]
+---------------------------
+Bug Fix:
+   1) Fixed AreTomo/FindCtf/GExtractTile.cu: indexing error.
+   2) Fixed CAreTomo3Json.cpp
+Changes:
+   1) Changed AreTomo/Recon/CTomoSart.cpp fRelax
+

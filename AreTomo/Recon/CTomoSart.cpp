@@ -69,7 +69,6 @@ void CTomoSart::DoIt(float* gfPadSinogram, float* gfVolXZ, cudaStream_t stream)
 	mBackProj(m_gfPadSinogram, 0, m_iNumProjs, fRelax);
 	//---------------------------
 	fRelax = 1.0f / m_iNumSubsets;
-	if(fRelax < 0.1f) fRelax = 0.1f;
 	//---------------------------
 	for(int iIter=0; iIter<m_iNumIters; iIter++)
 	{	for(int i=0; i<m_iNumSubsets; i++)
@@ -83,7 +82,6 @@ void CTomoSart::DoIt(float* gfPadSinogram, float* gfVolXZ, cudaStream_t stream)
 			mDiffProj(iStartProj, iNumProjs);
 			mBackProj(m_gfPadForProjs, iStartProj, iEndProj, fRelax);
 		}
-		fRelax *= 0.8f;
 	}
 	cudaStreamSynchronize(m_stream);
 	//---------------------------

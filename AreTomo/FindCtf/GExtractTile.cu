@@ -30,24 +30,29 @@ static __global__ void mGExtractTile
 
 static __global__ void mGRandomFill
 (	float* gfTile,
+        
 	int iTilePadX, int iTileY
 )
-{	int y = blockIdx.y * blockDim.y + threadIdx.y;
+{       int y = blockIdx.y * blockDim.y + threadIdx.y;
 	if(y >= iTileY) return;
 	unsigned int i = y * iTilePadX + blockIdx.x;
-	if(gfTile[i] > (float)-1e25) return;
-	//-----------------
+	if(gfTile[i] >= (float)-1e10) return;
+	//---------------------------
 	unsigned int iTileSize = gridDim.x * iTileY; 
 	unsigned int next = (i * 509 + 283) % iTileSize;
 	for(int j=0; j<21; j++)
-	{	float fVal = gfTile[next];
-		if(fVal > (float)-1e25)
+	{	int x = next % gridDim.x;
+		y = (next / gridDim.x) * iTilePadX + x;
+		//-------------------
+		float fVal = gfTile[y];
+		if(fVal >= (float)-1e10)
 		{	gfTile[i] = fVal;
 			return;
 		}
-		next = (next * 509 + 283) % iTileSize;	
+		next = (next * 509 + 283) % iTileSize;
 	}
-	gfTile[i] = gfTile[iTileSize / 2];
+	//---------------------------
+	gfTile[i] = 0.0f;
 }
 
 GExtractTile::GExtractTile(void)
