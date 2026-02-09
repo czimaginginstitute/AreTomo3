@@ -7,7 +7,6 @@
 #include <cuda_runtime.h>
 #include <memory.h>
 #include <stdio.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::MrcUtil;
 using namespace McAreTomo::MotionCor;
@@ -36,8 +35,7 @@ void CApplyRefs::DoIt
 	float* pfDark,
 	int iNthGpu
 )
-{	nvtxRangePushA("CApplyRefs::DoIt");
-	m_iNthGpu = iNthGpu;
+{	m_iNthGpu = iNthGpu;
 	//------------------
 	MD::CBufferPool* pBufPool = MD::CBufferPool::GetInstance(m_iNthGpu);
 	m_pFrmBuffer = pBufPool->GetBuffer(MD::EBuffer::frm);
@@ -64,8 +62,6 @@ void CApplyRefs::DoIt
 	m_pvMrcFrames[1] = 0L;
 	m_gfGain = 0L;
 	m_gfDark = 0L;
-	//-----------------
-	nvtxRangePop();
 }
 
 void CApplyRefs::mCopyRefs(float* pfDark, float* pfGain)

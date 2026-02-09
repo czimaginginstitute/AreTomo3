@@ -4,7 +4,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cufft.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::Align;
 
@@ -18,7 +17,6 @@ CAlignMain::~CAlignMain(void)
 
 void CAlignMain::DoIt(int iNthGpu)
 {
-	nvtxRangePush ("CAlignMain::DoIt");
 	m_iNthGpu = iNthGpu;
 	//-----------------
 	MD::CMcPackage* pMcPackage = MD::CMcPackage::GetInstance(m_iNthGpu);
@@ -29,7 +27,6 @@ void CAlignMain::DoIt(int iNthGpu)
 	//------------------------------------------------------------
 	// Temporarily diable local motion correction at high tilts.
 	//------------------------------------------------------------
-	nvtxRangePushA("align select");
 	if(pAlignParam->bPatchAlign()) 
 	{	printf("Patch based alignment\n");
 		pAlignBase = new CPatchAlign;
@@ -38,7 +35,6 @@ void CAlignMain::DoIt(int iNthGpu)
 	{	printf("Full frame alignment\n");
 		pAlignBase = new CFullAlign;
 	}
-	nvtxRangePop();
 	pAlignBase->DoIt(m_iNthGpu);
 	//-----------------
 	char* pcLogFile = mCreateLogFile();
@@ -48,7 +44,6 @@ void CAlignMain::DoIt(int iNthGpu)
 	}
 	//-----------------
 	if(pAlignBase != 0L) delete pAlignBase;
-	nvtxRangePop();
 }
 
 char* CAlignMain::mCreateLogFile(void)

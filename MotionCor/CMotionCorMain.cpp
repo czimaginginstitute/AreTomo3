@@ -11,7 +11,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cufft.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo;
 using namespace McAreTomo::MotionCor;

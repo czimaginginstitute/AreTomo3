@@ -5,7 +5,6 @@
 #include <math.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::BadPixel;
 
@@ -19,7 +18,6 @@ CLocalCCMap::~CLocalCCMap(void)
 
 void CLocalCCMap::DoIt(int* piModSize, int iNthGpu)
 {	
-	nvtxRangePushA("CLocalCCMap::DoIt");
 	MD::CBufferPool* pBufferPool = 
 	   MD::CBufferPool::GetInstance(iNthGpu);
 	MD::CStackBuffer* pSumBuffer = 
@@ -50,6 +48,4 @@ void CLocalCCMap::DoIt(int* piModSize, int iNthGpu)
 	aGLocalCC.SetRef(pfMod, piModSize);
 	aGLocalCC.DoIt(gfPadSum, aiPadSize, 0, iPadSize, gfPadCC, aStream);
 	cudaStreamSynchronize(aStream);
-	//-----------------
-	nvtxRangePop();
 }

@@ -6,7 +6,6 @@
 #include <cufft.h>
 #include <memory.h>
 #include <stdio.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::MrcUtil;
 using namespace McAreTomo::MotionCor;
@@ -27,7 +26,6 @@ CSumFFTStack::~CSumFFTStack(void)
 //------------------------------------------------------------------------------ 
 void CSumFFTStack::DoIt(int iBuffer, bool bSplitSum, int iNthGpu)
 {
-        nvtxRangePushA("CSumFFTStack::DoIt");
 	m_iBuffer = iBuffer;
 	m_bSplitSum = bSplitSum;
 	m_iNthGpu = iNthGpu;
@@ -45,7 +43,6 @@ void CSumFFTStack::DoIt(int iBuffer, bool bSplitSum, int iNthGpu)
 	//-----------------
 	cudaStreamSynchronize(m_streams[1]);
 	cudaStreamSynchronize(m_streams[0]);
-        nvtxRangePop();
 }
 
 void CSumFFTStack::mSumFrames(void)

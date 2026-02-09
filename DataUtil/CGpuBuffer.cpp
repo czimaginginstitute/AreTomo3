@@ -8,7 +8,6 @@
 #include <errno.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::DataUtil;
 
@@ -64,7 +63,6 @@ void CGpuBuffer::Create(size_t tFrmBytes, int iNumFrames, int iGpuID)
 	cudaSetDevice(m_iGpuID);
 	mCalcGpuFrames();
 	//---------------
-	nvtxRangePushA("CGpuBuffer: allocate GPU memory");
 	Util_Time utilTime;
 	float afTimes[2] = {0.0f}, afGBs[2] = {0.0f};
 	size_t tBytes = m_iNumGpuFrames * m_tFmBytes;
@@ -74,18 +72,15 @@ void CGpuBuffer::Create(size_t tFrmBytes, int iNumFrames, int iGpuID)
 		cudaMalloc(&m_pvGpuFrames, tBytes);
 		afTimes[0] = utilTime.GetElapsedSeconds();
 	}
-	nvtxRangePop();
 	if(m_iNumGpuFrames >= m_iNumFrames) 
 	{	mPrintAllocTimes(afGBs, afTimes);	
 		return;
 	}
 	//-----------------
-	nvtxRangePushA("CGpuBuffer: allocate pinned memory");
 	utilTime.Measure();
 	int iCpuFrms = m_iNumFrames - m_iNumGpuFrames;
 	mCreateCpuBuf(iCpuFrms);
 	afTimes[1] = utilTime.GetElapsedSeconds();
-	nvtxRangePop();
 	//-----------------
 	tBytes = m_iMaxCpuFrms * m_tFmBytes;
 	afGBs[1] = (float)(tBytes / (1024.0f * 1024.0 * 1024.0));

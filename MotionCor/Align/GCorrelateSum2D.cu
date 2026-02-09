@@ -1,7 +1,6 @@
 #include "CAlignInc.h"
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::Align;
 
@@ -110,8 +109,7 @@ void GCorrelateSum2D::DoIt
 	MU::CCufft2D* pInverseFFT,
 	cudaStream_t stream
 )
-{	nvtxRangePushA ("GCorrelateSum2D");
-	dim3 aBlockDim(1, 64, 1);
+{	dim3 aBlockDim(1, 64, 1);
         dim3 aGridDim(m_aiCmpSize[0], 1, 1);
 	aGridDim.y = (m_aiCmpSize[1] + aBlockDim.y - 1) / aBlockDim.y;
 	//------------------------------------------------------------
@@ -123,7 +121,6 @@ void GCorrelateSum2D::DoIt
 	   m_aiCmpSize[1]);
 	//---------------------------------------------------------
         pInverseFFT->Inverse(gCmpXcf, stream);
-        nvtxRangePop();
 	//-------------
 	int iPadX = m_aiCmpSize[0] * 2;
 	int iImgX = (m_aiCmpSize[0] - 1) * 2;

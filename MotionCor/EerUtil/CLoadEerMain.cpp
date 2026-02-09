@@ -6,7 +6,6 @@
 #include <sys/sysinfo.h>
 #include <string.h>
 #include <stdio.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::EerUtil;
 

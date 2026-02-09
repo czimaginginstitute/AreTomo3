@@ -652,7 +652,7 @@ Changes:
    1) Replaced SART recontruction with WBP reconstruction in the thickness
       measurement in AreTomo/Recon/CCalcVolThick.cpp
 
-AreTomo3 2.2.7 [01-21-2027]
+AreTomo3 2.2.7 [01-21-2026]
 ---------------------------
 Bug Fix:
    1) Fixed AreTomo/FindCtf/GExtractTile.cu: indexing error.
@@ -660,3 +660,10 @@ Bug Fix:
 Changes:
    1) Changed AreTomo/Recon/CTomoSart.cpp fRelax
 
+AreTomo3 2.2.8 [02-07-2026]
+---------------------------
+Bug Fix:
+
+Changes:
+   1) Added a makefile for cuda 13
+   2) Removed -lnvToolsExt, not needed in cuda 13.

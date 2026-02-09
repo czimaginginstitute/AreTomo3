@@ -6,7 +6,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cufft.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::Align;
 using namespace McAreTomo::MotionCor;
@@ -50,7 +49,6 @@ void CPatchAlign::DoIt(int iNthGpu)
 
 void CPatchAlign::mCorrectFullShift(void)
 {
-	nvtxRangePushA("CPatchAlign::mCorrectFullShift");
 	CAlignParam* pAlignParam = CAlignParam::GetInstance();
 	int iRefFrame = pAlignParam->GetFrameRef(m_pFullShift->m_iNumFrames);
 	m_pFullShift->MakeRelative(iRefFrame);
@@ -63,12 +61,10 @@ void CPatchAlign::mCorrectFullShift(void)
 	//---------------------------
 	printf("Global shifts are corrected: %f sec\n",
 	   utilTime.GetElapsedSeconds());
-	nvtxRangePop();
 }
 
 void CPatchAlign::mCalcPatchShifts(void)
 {
-	nvtxRangePushA("CPatchAlign::mCalcPatchShifts");
 	CAlignParam* pAlignParam = CAlignParam::GetInstance();
 	MD::CBufferPool* pBufferPool = MD::CBufferPool::GetInstance(m_iNthGpu);
 	//-----------------
@@ -81,8 +77,6 @@ void CPatchAlign::mCalcPatchShifts(void)
 	CMeasurePatches meaPatches;
 	meaPatches.DoIt(m_pPatchShifts, m_iNthGpu);
 	m_pFullShift = 0L;
-	//-----------------
-	nvtxRangePop();
 }
 
 void CPatchAlign::LogShift(char* pcLogFile)
