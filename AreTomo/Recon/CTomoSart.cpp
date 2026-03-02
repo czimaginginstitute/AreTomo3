@@ -56,21 +56,20 @@ void CTomoSart::DoIt(float* gfPadSinogram, float* gfVolXZ, cudaStream_t stream)
 	m_gfPadSinogram = gfPadSinogram;
 	m_gfVolXZ = gfVolXZ;
 	m_stream = stream;
-	//-----------------
+	//---------------------------
 	MAU::CSplitItems splitItems;
 	splitItems.Create(m_aiTiltRange[1], m_iNumSubsets);
-	//-----------------
+	//---------------------------
 	bool bPadded = true;
 	int aiProjSize[] = {m_iPadProjX, m_iNumProjs};
 	m_aGWeightProjs.DoIt(m_gfPadSinogram, m_gfCosSin, aiProjSize, 
 	   bPadded, m_aiVolSize[1], m_stream);
-	//-----------------
+	//---------------------------
 	float fRelax = 1.0f;
 	mBackProj(m_gfPadSinogram, 0, m_iNumProjs, fRelax);
-	//-----------------
+	//---------------------------
 	fRelax = 1.0f / m_iNumSubsets;
-	if(fRelax < 0.1f) fRelax = 0.1f;
-	//-----------------
+	//---------------------------
 	for(int iIter=0; iIter<m_iNumIters; iIter++)
 	{	for(int i=0; i<m_iNumSubsets; i++)
 		{	int iStartProj = splitItems.GetStart(i);
@@ -83,8 +82,10 @@ void CTomoSart::DoIt(float* gfPadSinogram, float* gfVolXZ, cudaStream_t stream)
 			mDiffProj(iStartProj, iNumProjs);
 			mBackProj(m_gfPadForProjs, iStartProj, iEndProj, fRelax);
 		}
-		fRelax *= 0.8f;
 	}
+	cudaStreamSynchronize(m_stream);
+	//---------------------------
+	m_pFillEmpty2D->DoIt(gfVolXZ, m_stream);
 	cudaStreamSynchronize(m_stream);
 }
 

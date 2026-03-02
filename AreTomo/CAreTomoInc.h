@@ -91,6 +91,7 @@ private:
 	//-----------------
 	void mAlign(void);
 	void mCoarseAlign(void);
+	void mRefineAlign(void);
 	void mStretchAlign(void);
 	void mRotAlign(float fAngRange, int iNumSteps);
 	void mRotAlign(void);

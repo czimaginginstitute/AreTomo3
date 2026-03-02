@@ -12,6 +12,7 @@ CTomoBase::CTomoBase(void)
 {
 	m_gfCosSin = 0L;
 	m_gbNoProjs = 0L;
+	m_pFillEmpty2D = 0L;
 }
 
 CTomoBase::~CTomoBase(void)
@@ -23,8 +24,10 @@ void CTomoBase::Clean(void)
 {
 	if(m_gfCosSin != 0L) cudaFree(m_gfCosSin);
 	if(m_gbNoProjs != 0L) cudaFree(m_gbNoProjs);
+	if(m_pFillEmpty2D != 0L) delete m_pFillEmpty2D;
 	m_gfCosSin = 0L;
 	m_gbNoProjs = 0L;
+	m_pFillEmpty2D = 0L;
 }
 
 void CTomoBase::Setup
@@ -34,25 +37,26 @@ void CTomoBase::Setup
 	MAM::CAlignParam* pAlignParam
 )
 {	this->Clean();
-	//-----------------
+	//---------------------------
 	m_aiVolSize[0] = iVolX;
 	m_aiVolSize[1] = iVolZ;
 	m_pTiltSeries = pTiltSeries;
 	m_pAlignParam = pAlignParam;
-	//-----------------
+	//---------------------------
 	m_iPadProjX = (m_pTiltSeries->m_aiStkSize[0] / 2 + 1) * 2;
 	m_iNumProjs = m_pTiltSeries->m_aiStkSize[2];
-	//-----------------
+	//---------------------------
 	size_t tBytes = sizeof(bool) * m_iNumProjs;
 	cudaMalloc(&m_gbNoProjs, tBytes);
 	cudaMemset(m_gbNoProjs, 0, tBytes);
-	//-----------------
+	//---------------------------
 	tBytes = sizeof(float) * m_iNumProjs * 2;
 	cudaMalloc(&m_gfCosSin, tBytes);
 	bool bCopy = true;
-	float fRad = 3.1415926f / 180.0f;
+	float fRad = 0.017453f;
 	float* pfTilts = m_pAlignParam->GetTilts(!bCopy);
 	float* pfCosSin = new float[m_iNumProjs * 2];
+	//---------------------------
 	for(int i=0; i<m_iNumProjs; i++)
 	{	int j = 2 * i;
 		float fAngle = fRad * pfTilts[i];
@@ -61,9 +65,10 @@ void CTomoBase::Setup
 	}
 	cudaMemcpy(m_gfCosSin, pfCosSin, tBytes, cudaMemcpyDefault);
 	delete[] pfCosSin;
-	//-----------------
-	//int aiPadProjSize[] = {m_iPadProjX, m_iNumProjs};
-        //m_aGBackProj.SetSize(aiPadProjSize, m_aiVolSize);
+	//---------------------------
+	m_pFillEmpty2D = new MU::GFillEmpty2D;
+	bool bPadded = true;
+	m_pFillEmpty2D->SetSize(m_aiVolSize, !bPadded);
 }
 
 void CTomoBase::ExcludeTilts(float* pfTilts, int iNumTilts)

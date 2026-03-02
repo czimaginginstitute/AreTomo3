@@ -61,7 +61,7 @@ static __global__ void mGCenterOrigin(cufftComplex* gComp, int iCmpY)
 GProjXcf::GProjXcf(void)
 {
 	m_fBFactor = 300.0f;
-	m_fPower = 0.5f;
+	m_fPower = 1.0f;
 	m_pfXcfImg = 0L;
 	memset(m_aiXcfSize, 0, sizeof(m_aiXcfSize));
 	m_pInverseFFT2D = new MU::CCufft2D;
@@ -125,21 +125,29 @@ void GProjXcf::DoIt
 	cudaMemcpy(m_pfXcfImg, gCmp2, tBytes, cudaMemcpyDefault);
 }
 
-float GProjXcf::SearchPeak(void)
+float GProjXcf::SearchPeak(int* piSeaRange)
 {
+	int aiStart[2] = {0}, aiEnd[2] = {0};
+	if(piSeaRange == 0L)
+	{	aiStart[0] = m_aiXcfSize[0] / 20;
+		aiStart[1] = m_aiXcfSize[1] / 20;
+	}
+	else
+	{	aiStart[0] = (m_aiXcfSize[0] - piSeaRange[0]) / 2;
+		aiStart[1] = (m_aiXcfSize[1] - piSeaRange[1]) / 2;
+		if(aiStart[0] < 0) aiStart[0] = 0;
+		if(aiStart[1] < 0) aiStart[1] = 0;
+	}
+	aiEnd[0] = m_aiXcfSize[0] - aiStart[0];
+	aiEnd[1] = m_aiXcfSize[1] - aiStart[1];
+	//---------------------------
 	float fPeak = (float)-1e20;
 	int aiPeak[] = {0, 0};
-	int iStartX = m_aiXcfSize[0] / 20;
-	int iStartY = m_aiXcfSize[1] / 20;
-	if(iStartX < 3) iStartX = 3;
-	if(iStartY < 3) iStartY = 3;
-	int iEndX = m_aiXcfSize[0] - iStartX;
-	int iEndY = m_aiXcfSize[1] - iStartY;
-	//-----------------------------------
 	int iPadX = (m_aiXcfSize[0] / 2 + 1) * 2;
-	for(int y=iStartY; y<iEndY; y++)
+	//---------------------------
+	for(int y=aiStart[1]; y<aiEnd[1]; y++)
 	{	int i = y * iPadX;
-		for(int x=iStartX; x<iEndX; x++)
+		for(int x=aiStart[0]; x<aiEnd[0]; x++)
 		{	int j = i + x;
 			if(fPeak >= m_pfXcfImg[j]) continue;
 			aiPeak[0] = x;
@@ -171,14 +179,7 @@ float GProjXcf::SearchPeak(void)
                 + m_pfXcfImg[ic]);
 	return m_fPeak;
 }
-/*
-float* GProjXcf::GetXcfImg(bool bClean)
-{
-	float* pfXcfImg = m_pfXcfImg;
-	if(bClean) m_pfXcfImg = 0L;
-	return pfXcfImg;
-}
-*/
+
 void GProjXcf::GetShift(float* pfShift, float fXcfBin)
 {
 	pfShift[0] = m_afPeak[0] - m_aiXcfSize[0] / 2;

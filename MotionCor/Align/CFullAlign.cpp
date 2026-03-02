@@ -6,7 +6,6 @@
 #include <cuda_runtime.h>
 #include <cufft.h>
 #include <Util/Util_Time.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::Align;
 using namespace McAreTomo::MotionCor;
@@ -22,10 +21,8 @@ CFullAlign::~CFullAlign(void)
 
 void CFullAlign::Align(int iNthGpu)
 {
-	nvtxRangePushA ("AlignBase Clean+DoIt");
 	CAlignBase::Clean();
 	CAlignBase::DoIt(iNthGpu);
-	nvtxRangePop();
 	//-----------------
 	MD::CBufferPool* pBufferPool = 
 	   MD::CBufferPool::GetInstance(iNthGpu);
@@ -33,9 +30,7 @@ void CFullAlign::Align(int iNthGpu)
 	   pBufferPool->GetBuffer(MD::EBuffer::frm);	
 	//-----------------
 	bool bForward = true;
-	nvtxRangePushA ("mFourierTransform(bForward)");
 	mFourierTransform(bForward);
-	nvtxRangePop();
 	//-----------------
 	m_pFullShift = new MMD::CStackShift;
 	m_pFullShift->Setup(pFrmBuffer->m_iNumFrames);

@@ -19,7 +19,7 @@ public:
 	void Create(int iMode, int* piStkSize);
 	void* GetFrame(int iFrame);
 	void** GetFrames(void) { return m_ppvFrames; }
-	void RemoveFrame(int iFrame);
+	void RemoveFrames(int* piThrow);
 	int GetPixels(void);
 	//-----------------
 	int m_aiStkSize[3];

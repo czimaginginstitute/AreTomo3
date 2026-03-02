@@ -598,4 +598,72 @@ Changes:
       -tilt range and then high-tilt range, this version does the estimation
       in full-tilt range, then identifies the failed estimation, and finally
       refines with the nearest good estimation as the initial guess at those
-      tilts. 
+      tilts.
+
+AreTomo3 2.2.3 [Dec-17-2025]
+----------------------------
+Bug fix:
+Changes:
+   1) Added -CorrCTF 3, a function that performs local CTF multiplication
+      for template matching.
+   2) In measuring the tomogram thickness, a smaller central region is used
+      to avoid carbon film presence, which deteriorates the thickness
+      measurement.
+   3) Increased the patch size in local tilt series alignment. The gold
+      fiducials show more symmetric shapes.
+   4) Restored -Throw a b function in motion correction. a and b refer to
+      initial and trailing number of frames. These frames are excluded for
+      downstream processing.
+   5) Forward projection in AreTomo/ProjAlign and AreTomo/Recon is made
+      consisten.
+
+AreTomo3 2.2.4 [01-13-2026]
+---------------------------
+Bug Fix:
+   1) Fixed bug in AreTomo/Recon/GDiffProj.cu: when the forward projection
+      pixels are large negative number, make the diff projection pixels zero
+   2) GForProj.cu: set large negative number only when the count along the
+      ray is zero.
+Changes:
+   1) Added GGenRandoms.cu and GFillEmpty2D.cu in MaUtil.
+   2) Modified AreTomo/Correct/GCorrPatchShift.cu to use GFillEmpty to
+      fill random pixels in the empty area.
+   3) Modified AreTomoRecon/GBackProj.cu: Apply positivity constraint only
+      when the voxel is not large negative number.
+   4) For AreTomo/Recon/CTomoSart.cpp: fill the empty region with "good"
+      voxel values
+
+AreTomo3 2.2.5 [01-17-2026]
+---------------------------
+Bug Fix:
+   1) Regressed to 2.2.1/AreTomo/Recon/GForProj.cu. 2.2.3, 2.2.4, 2.2.5
+      all have vertical striation in SART volumes that occurs at some
+      AtBinning.
+Changes:
+   1) Removed tilt axis refinement in CFitPatchShifts.cpp, unrefliable.
+   2) Changes edge detection in CCalcVolThick.cpp
+
+AreTomo3 2.2.6 [01-21-2026]
+---------------------------
+Bug Fix:
+   1) Fixed math in AreTomo/Recon/GForProj.cu, no striations in SART
+      reconstruction
+Changes:
+   1) Replaced SART recontruction with WBP reconstruction in the thickness
+      measurement in AreTomo/Recon/CCalcVolThick.cpp
+
+AreTomo3 2.2.7 [01-21-2026]
+---------------------------
+Bug Fix:
+   1) Fixed AreTomo/FindCtf/GExtractTile.cu: indexing error.
+   2) Fixed CAreTomo3Json.cpp
+Changes:
+   1) Changed AreTomo/Recon/CTomoSart.cpp fRelax
+
+AreTomo3 2.2.8 [02-07-2026]
+---------------------------
+Bug Fix:
+
+Changes:
+   1) Added a makefile for cuda 13
+   2) Removed -lnvToolsExt, not needed in cuda 13.

@@ -26,19 +26,19 @@ CCorrCtfMain::~CCorrCtfMain(void)
 //    angle offset.
 // 4. iLowpass controls how strong the low-pass filter is.
 //--------------------------------------------------------------------
-void CCorrCtfMain::DoIt(int iNthGpu, bool bPhaseFlip, int iLowpass)
+void CCorrCtfMain::DoIt(int iNthGpu, int iMode, int iLowpass)
 {
 	if(!CFindCtfMain::bCheckInput()) return;
-	//-----------------	
+	//---------------------------	
 	m_iNthGpu = iNthGpu;
-	m_bPhaseFlip = bPhaseFlip;
+	m_iMode = iMode;
 	printf("GPU %d local CTF correction: started ...\n\n", m_iNthGpu);
-	//-----------------
+	//---------------------------
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* pTiltSeries = pTsPkg->GetSeries(0);
 	m_pCorrImgCtf->Setup(pTiltSeries->m_aiStkSize, m_iNthGpu);
 	m_pCorrImgCtf->SetLowpass(iLowpass);
-	//-----------------
+	//---------------------------
 	for(int i=0; i<MD::CAlnSums::m_iNumSums; i++)
 	{	mCorrTiltSeries(i);
 	}
@@ -67,7 +67,7 @@ void CCorrCtfMain::mCorrTiltSeries(int iSeries)
 	{	float* pfImage = (float*)pTiltSeries->GetFrame(i);
 		float fTilt = pTiltSeries->m_pfTilts[i];
 		m_pCorrImgCtf->DoIt(pfImage, fTilt, fTiltAxis, 
-		   fAlpha0, fBeta0, m_bPhaseFlip);
+		   fAlpha0, fBeta0, m_iMode);
 	}
 	//-----------------
 	/* Debugging code here	

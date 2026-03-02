@@ -4,7 +4,6 @@
 #include <cufft.h>
 #include <memory.h>
 #include <stdio.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::Align;
 using namespace McAreTomo::MotionCor;
@@ -19,7 +18,6 @@ CGenXcfStack::~CGenXcfStack(void)
 
 void CGenXcfStack::DoIt(MMD::CStackShift* pStackShift, int iNthGpu)
 {	
-	nvtxRangePushA ("CGenXcfStack::DoIt");
 	m_pStackShift = pStackShift;
 	//-----------------
 	MD::CBufferPool* pBufferPool = 
@@ -36,8 +34,6 @@ void CGenXcfStack::DoIt(MMD::CStackShift* pStackShift, int iNthGpu)
 	}
 	cudaStreamSynchronize(m_stream);
         m_pStackShift = 0L;
-	//-----------------
-	nvtxRangePop();
 }
 
 void CGenXcfStack::mDoXcfFrame(int iFrm)

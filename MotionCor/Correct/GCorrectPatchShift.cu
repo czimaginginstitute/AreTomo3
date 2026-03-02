@@ -6,7 +6,6 @@
 #include <cuda_runtime.h>
 #include <cufft.h>
 #include <Util/Util_Time.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::Correct;
 using namespace McAreTomo::MotionCor;

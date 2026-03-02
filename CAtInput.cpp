@@ -67,7 +67,7 @@ CAtInput::CAtInput(void)
 	m_iFlipVol = 0;
 	m_iFlipInt = 0;
 	m_aiSartParam[0] = 20;
-	m_aiSartParam[1] = 5;
+	m_aiSartParam[1] = 3;
 	m_iWbp = 0;
 	m_iOutXF = 0;
 	m_iAlign = 1;
@@ -267,8 +267,8 @@ void CAtInput::Parse(int argc, char* argv[])
 	aParseArgs.FindVals(m_acSartTag, aiRange);
 	if(aiRange[1] > 2) aiRange[1] = 2;
 	aParseArgs.GetVals(aiRange, m_aiSartParam);
-	if(m_aiSartParam[0] <= 0) m_aiSartParam[0] = 15;
-	if(m_aiSartParam[1] < 1) m_aiSartParam[1] = 5;
+	if(m_aiSartParam[0] <= 0) m_aiSartParam[0] = 20;
+	if(m_aiSartParam[1] < 1) m_aiSartParam[1] = 3;
 	//--------------------------------------------
 	aParseArgs.FindVals(m_acWbpTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;

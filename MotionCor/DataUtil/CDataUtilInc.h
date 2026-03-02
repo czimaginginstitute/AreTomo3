@@ -27,7 +27,9 @@ public:
 	( int iNumRawFms,   // frames of raw movie
           int iMrcMode,
           float fMdocDose   // movie dose
-        );
+	);
+	void RemoveFrames(int* piThrow);
+	//-----------------
         int GetIntFmStart(int iIntFrame);
         int GetIntFmSize(int iIntFrame);
         int GetNumIntFrames(void);
@@ -43,6 +45,7 @@ public:
 private:
         CFmIntParam(void);
         void mCalcIntFms(void);
+	void mRemoveFrames(void);
         void mClean(void);
         void mAllocate(void);
         void mCalcIntFmCenters(void);

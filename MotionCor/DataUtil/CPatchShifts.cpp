@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::DataUtil;
 

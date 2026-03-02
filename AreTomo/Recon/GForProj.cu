@@ -26,9 +26,9 @@ static __global__ void mGForProjs
 	float fSin = gfCosSin[i + 1];
 	int iRayLength = (int)(giVolSize[2] / fCos + 1.5f); 
 	//---------------------------
-	float fXp = blockIdx.x + 0.5f - 0.5f * gridDim.x;
-	float fTempX = fXp * fCos + giVolSize[0] * 0.5f;
-	float fTempZ = fXp * fSin + giVolSize[2] * 0.5f;
+	float fXp = blockIdx.x - 0.5f * gridDim.x;
+	float fTempX = fXp / fCos + giVolSize[0] * 0.5f;
+	float fTempZ = giVolSize[2] * 0.5f;
 	//---------------------------
 	int iEndX = giVolSize[0] - 2;
 	int iEndZ = giVolSize[2] - 2;

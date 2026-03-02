@@ -6,7 +6,6 @@
 #include <sys/sysinfo.h>
 #include <string.h>
 #include <stdio.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::EerUtil;
 
@@ -70,7 +69,7 @@ void CLoadEerMain::mLoadHeader(void)
 	MMD::CFmGroupParam* pFmGroupParam = 0L;
 	pFmGroupParam = MMD::CFmGroupParam::GetInstance(m_iNthGpu, false);
         pFmGroupParam->Setup(pMcInput->m_aiGroup[0]);
-	//-----------------
+	//---------------------------
 	pFmGroupParam = MMD::CFmGroupParam::GetInstance(m_iNthGpu, true);
 	pFmGroupParam->Setup(pMcInput->m_aiGroup[1]);
 	//-------------------------------------------------

@@ -75,7 +75,7 @@ void CCorrImgCtf::DoIt
 (	float* pfImage,	
 	float fTilt, float fTiltAxis,
 	float fAlpha0, float fBeta0,
-	bool bPhaseFlip
+	int iMode // 1 - WienerSZ, 2 - PhaseFlip, 3 - MultiplyCTF
 )
 {	m_pfImage = pfImage;
 	m_fTilt = fTilt;
@@ -88,7 +88,7 @@ void CCorrImgCtf::DoIt
 	m_iDfHand = pCtfResults->m_iDfHand;
 	//-----------------
 	m_pGCorrCTF2D->SetParam(m_pImgCtfParam);
-	m_pGCorrCTF2D->SetPhaseFlip(bPhaseFlip);
+	m_pGCorrCTF2D->SetMode(iMode);
 	m_pGCorrCTF2D->SetLowpass(m_iBFactor);
 	//-----------------
 	m_pExtractTiles->DoIt(m_pfImage);

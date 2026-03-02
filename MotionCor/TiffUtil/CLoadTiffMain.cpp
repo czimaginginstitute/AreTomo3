@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::TiffUtil;
 namespace MMD = McAreTomo::MotionCor::DataUtil;
@@ -93,7 +92,6 @@ void CLoadTiffMain::mLoadStack(void)
 {
 	Util_Time aTimer;
 	aTimer.Measure();
-	nvtxRangePushA("CLoadTiffMain");
 	//-----------------
 	m_pLoadTiffImage = new CLoadTiffImage;
 	m_pLoadTiffImage->SetFile(m_iFile);
@@ -106,7 +104,6 @@ void CLoadTiffMain::mLoadStack(void)
 	delete m_pLoadTiffImage;
 	m_pLoadTiffImage = 0L;
 	//-----------------
-	nvtxRangePop();
 	m_fLoadTime = aTimer.GetElapsedSeconds();
 }
 

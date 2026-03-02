@@ -88,6 +88,7 @@ public:
 	int m_iMcIter;
 	float m_fMcTol;
 	float m_fMcBin;
+	int m_aiThrow[2];
 	int m_iFmInt;
 	int m_aiGroup[2];
 	int m_iFmRef;
@@ -108,6 +109,7 @@ public:
 	char m_acIterTag[32];
 	char m_acTolTag[32];
 	char m_acMcBinTag[32];
+	char m_acThrowTag[32];
 	char m_acGroupTag[32];
 	char m_acFmRefTag[32];
 	char m_acRotGainTag[32];
@@ -303,6 +305,8 @@ private:
 	void mProcessMovie(int iTilt);
 	void mAssembleTiltSeries(int iTilt);
 	void mProcessTiltSeries(void);
+	//-----------------
+	int m_iCounter;
 	//-----------------
 	static CProcessThread* m_pInstances;
 	static int m_iNumGpus;

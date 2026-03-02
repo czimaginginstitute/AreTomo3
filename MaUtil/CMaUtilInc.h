@@ -222,6 +222,17 @@ private:
 	cufftHandle m_cufftPlan;
 };
 
+class GGenRandoms
+{
+public:
+	GGenRandoms(void);
+	~GGenRandoms(void);
+	void DoIt(int iSize);
+	//---------------------------
+	int* m_giRandoms;
+	int m_iSize;
+};
+
 class GPad2D
 {
 public:
@@ -514,6 +525,24 @@ private:
 	void mCalcFFT(float* gfPadImg1, float* gfPadImg2);
 	int m_aiCmpSize[2];
 };
+
+class GFillEmpty2D
+{
+public:
+	GFillEmpty2D(void);
+	~GFillEmpty2D(void);
+	void SetSize(int* piImgSize, bool bPadded);
+	void DoIt(float* gfImg, cudaStream_t stream);
+private:
+	void mClean(void);
+	//---------------------------
+	int m_aiImgSize[2];
+	int m_iPadX;
+	bool* m_gbEmpty;
+	float* m_gfMean;
+	GGenRandoms* m_pGenRandoms;
+};
+
 }
 
 namespace MU = McAreTomo::MaUtil;

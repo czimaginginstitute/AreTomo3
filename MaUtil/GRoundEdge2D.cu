@@ -17,7 +17,7 @@ static __global__ void mGRoundEdge2D
 	{	gfImg[i] = 0.0f;
 		return;
 	}
-	//-------------
+	//---------------------------
 	float fX = 2 * fabsf(blockIdx.x - fMaskCentX) / fMaskSizeX;
 	float fY = 2 * fabsf(y - fMaskCentY) / fMaskSizeY;
 	float fR = sqrtf(fX * fX + fY * fY);
@@ -25,7 +25,7 @@ static __global__ void mGRoundEdge2D
 	{	gfImg[i] = 0.0f;
 		return;
 	}
-	//-------------
+	//---------------------------
 	fR = 0.5f * (1 - cosf(3.1415926f * fR));
 	fR = 1.0f - powf(fR, fPower);
 	gfImg[i] = gfImg[i] * fR;

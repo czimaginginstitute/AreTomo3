@@ -4,7 +4,6 @@
 #include <cufft.h>
 #include <memory.h>
 #include <stdio.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::Align;
 using namespace McAreTomo::MotionCor;
@@ -42,13 +41,11 @@ void CTransformStack::Setup
 
 void CTransformStack::DoIt(void)
 {
-	nvtxRangePushA("CTransformStack::DoIt");
 	MD::CBufferPool* pBufferPool = 
 	   MD::CBufferPool::GetInstance(m_iNthGpu);
 	//-----------------
 	mTransformCpuFrames();
 	mTransformGpuFrames();
-	nvtxRangePop();
 }
 
 void CTransformStack::mTransformGpuFrames(void)

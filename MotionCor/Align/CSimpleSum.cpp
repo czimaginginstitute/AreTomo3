@@ -5,7 +5,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cufft.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::Align;
 using namespace McAreTomo::MotionCor;
@@ -21,7 +20,6 @@ CSimpleSum::~CSimpleSum(void)
 
 void CSimpleSum::DoIt(int iNthGpu)
 {
-	nvtxRangePushA ("CsimpleSum");
 	CAlignBase::Clean();
 	CAlignBase::DoIt(iNthGpu);
 	//-----------------
@@ -42,7 +40,6 @@ void CSimpleSum::DoIt(int iNthGpu)
 	}	
 	//-----------------
 	mCalcSum();
-	nvtxRangePop ();
 }
 
 void CSimpleSum::mCalcSum(void)

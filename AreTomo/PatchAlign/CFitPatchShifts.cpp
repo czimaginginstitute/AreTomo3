@@ -235,15 +235,6 @@ void CFitPatchShifts::mCalcLocalShifts(void)
 		}
 		if(fErrZ < 1.0f) break;
 	}
-	for(int iter=0; iter<100; iter++)
-	{	mRefineTiltAxis();
-		mCalcSinCosRots(); // Missing before, added 07-18-2023
-		float fTiltAxis = m_pFullParam->GetTiltAxis(0);
-		float fErrZ = mCalcZs();
-		printf("Refine tilt aixs and z: %8.2f  %9.5e\n", 
-		   fTiltAxis, fErrZ);
-		if(fErrZ < 1.0f && iter > 5) break;
-	}
 	//-----------------------------
 	for(int p=0; p<m_iNumPatches; p++)
 	{	int iOffset = p * m_iNumTilts;

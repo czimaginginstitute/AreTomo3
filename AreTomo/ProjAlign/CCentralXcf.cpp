@@ -122,7 +122,7 @@ void CCentralXcf::mNormalize(float* gfPadImg)
 	afMaskSize[1] = m_aiCentSize[1] * pParam->m_afMaskSize[1];
 	//-----------------
 	MU::GRoundEdge2D roundEdge;
-	float fPower = 4.0f;
+	float fPower = 3.0f;
 	roundEdge.DoIt(gfPadImg, m_aiPadSize, bPadded, fPower);
 }
 
@@ -131,12 +131,18 @@ void CCentralXcf::mCorrelate(void)
 	bool bNorm = true;
 	m_pCufft2D->Forward(m_gfPadRef, !bNorm);
 	m_pCufft2D->Forward(m_gfPadImg, !bNorm);
-	//----------------------------------
+	//---------------------------
 	cufftComplex* gRefCmp = (cufftComplex*)m_gfPadRef;
 	cufftComplex* gImgCmp = (cufftComplex*)m_gfPadImg;
 	m_projXcf.DoIt(gRefCmp, gImgCmp, m_fBFactor, m_fPower);
-	//-----------------------------------------------------
+	//---------------------------
+	int aiSeaRange[2] = {0};
+	CParam* pParam = CParam::GetInstance(m_iNthGpu);
+	aiSeaRange[0] = (int)(m_aiCentSize[0] * pParam->m_afMaskSize[0]);
+	aiSeaRange[1] = (int)(m_aiCentSize[1] * pParam->m_afMaskSize[1]);
+	//---------------------------
 	bool bClean = true;
-	m_projXcf.SearchPeak();
+	//m_projXcf.SearchPeak(aiSeaRange);
+	m_projXcf.SearchPeak(0L);
 	m_projXcf.GetShift(m_afShift, 1.0f);
 }

@@ -126,20 +126,20 @@ void CStretchXcf::mNormalize(float* gfPadImg)
 	   - afMeanStd[0] * afMeanStd[0];
 	if(afMeanStd[1] <= 0) afMeanStd[1] = 0.0f;
 	else afMeanStd[1] = (float)sqrtf(afMeanStd[1]);
-	//---------------------------------------------
+	//---------------------------
 	MU::GNormalize2D aGNorm2D;
 	aGNorm2D.DoIt(gfPadImg, m_aiPadSize, bPadded,
-		afMeanStd[0], afMeanStd[1]);
+	   afMeanStd[0], afMeanStd[1]);
 }
 
 void CStretchXcf::mRoundEdge(void)
 {
 	float afCent[] = {m_aiImgSize[0] * 0.5f, m_aiImgSize[1] * 0.5f};
-	float afSize[] = {m_aiImgSize[0] * 1.0f, m_aiImgSize[1] * 1.0f};
-	//--------------------------------------------------------------
+	float afSize[] = {m_aiImgSize[0] * 0.7f, m_aiImgSize[1] * 0.7f};
+	//---------------------------
 	bool bPadded = true;
 	MU::GRoundEdge2D roundEdge;
-	float fPower = 4.0f;
+	float fPower = 3.0f;
 	roundEdge.SetMask(afCent, afSize);
 	roundEdge.DoIt((float*)m_gCmpRef, m_aiPadSize, bPadded, fPower);
 	roundEdge.DoIt((float*)m_gCmp, m_aiPadSize, bPadded, fPower);

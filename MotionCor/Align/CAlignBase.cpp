@@ -5,7 +5,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cufft.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::Align;
 using namespace McAreTomo::MotionCor;
@@ -29,7 +28,6 @@ void CAlignBase::Clean(void)
 
 void CAlignBase::DoIt(int iNthGpu)
 {
-	nvtxRangePushA ("CAlignBase::DoIt");
 	m_iNthGpu = iNthGpu;
 	//-----------------
 	CMcInput* pInput = CMcInput::GetInstance();
@@ -49,7 +47,6 @@ void CAlignBase::DoIt(int iNthGpu)
 	m_aiPadSize[1] = m_aiCmpSize[1];
 	//-----------------
 	mCreateAlnSums();
-	nvtxRangePop();
 }
 
 void CAlignBase::LogShift(char* pcLogFile)

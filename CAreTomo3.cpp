@@ -4,7 +4,6 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <string.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo;
 
@@ -31,7 +30,7 @@ int main(int argc, char* argv[])
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	//-----------------
 	char acVersion[64] = {'\0'};
-	strcpy(acVersion, "version 2.2.2, built on Jul 11, 2025");
+	strcpy(acVersion, "version 2.2.8, built on Feb. 07, 2026");
 	if(argc == 1)
 	{	printf("\nAreTomo3: fully integrated and automated cryoET "
 		   "pipeline for both real-time and offline tomographic "
@@ -71,7 +70,6 @@ int main(int argc, char* argv[])
 	CMcAreTomoMain mcAreTomoMain;
 	bool bSuccess = mcAreTomoMain.DoIt();
 	//-----------------
-	nvtxRangePop();
 	float fSecs = aTimer.GetElapsedSeconds();
 	printf("Total time: %f sec\n", fSecs);
 	if(!bSuccess) return eFailProcess;

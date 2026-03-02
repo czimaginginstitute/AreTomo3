@@ -165,8 +165,8 @@ protected:
 	//-----------------
 	MD::CTiltSeries* m_pTiltSeries;
 	MAM::CAlignParam* m_pAlignParam;
+	MU::GFillEmpty2D* m_pFillEmpty2D;
 	//-----------------
-	//GBackProj m_aGBackProj;
 	GWeightProjs m_aGWeightProjs;
 	cudaStream_t m_stream;
 };
@@ -325,6 +325,8 @@ private:
 	void mSetup(void);
 	void mClean(void);
 	void mDetectEdges(float* pfCCs, int iSize);
+	void mSearchMin(float* pfCCs, int iSize, int* piMin);
+	void mSearchMax(float* pfCCs, int iSize, int* piMax);
 	//-----------------
 	void mSaveTmpVol(void);
 	void mSaveTmpCCs(float* pfCCs, int iSize);

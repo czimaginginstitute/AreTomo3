@@ -204,6 +204,9 @@ void CAreTomo3Json::mAddMcInput(void)
 	mAddKeyIntPair(pMcInput->m_acFmIntTag + 1,
 	   &(pMcInput->m_iFmInt), 1, 10, !bList, !bEnd);
 	//-----------------
+	mAddKeyIntPair(pMcInput->m_acThrowTag + 1,
+	   pMcInput->m_aiThrow, 2, 10, bList, !bEnd);
+	//-----------------
 	mAddKeyIntPair(pMcInput->m_acGroupTag + 1, 
 	   pMcInput->m_aiGroup, 2, 10, bList, !bEnd);
 	//-----------------
@@ -265,7 +268,7 @@ void CAreTomo3Json::mAddAtInput(void)
 	   &(pAtInput->m_iFlipVol), 1, 10, !bList, !bEnd);
 	//-----------------
         mAddKeyIntPair(pAtInput->m_acSartTag + 1, 
-	   pAtInput->m_aiSartParam, 2, 10, !bList, !bEnd);
+	   pAtInput->m_aiSartParam, 2, 10, bList, !bEnd);
 	//-----------------
         mAddKeyIntPair(pAtInput->m_acWbpTag + 1, 
 	   &(pAtInput->m_iWbp), 1, 10, !bList, !bEnd);

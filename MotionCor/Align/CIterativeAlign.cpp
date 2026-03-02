@@ -5,7 +5,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cufft.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::Align;
 using namespace McAreTomo::MotionCor;
@@ -53,8 +52,6 @@ void CIterativeAlign::Setup
 
 void CIterativeAlign::DoIt(MMD::CStackShift* pStackShift)
 {	
-	nvtxRangePushA("CIterativeAlign::DoIt");
-	//-----------------
 	MD::CBufferPool* pBufferPool = MD::CBufferPool::GetInstance(m_iNthGpu);
 	MD::CStackBuffer* pStackBuffer = pBufferPool->GetBuffer(m_iBuffer);
 	//-----------------
@@ -78,8 +75,6 @@ void CIterativeAlign::DoIt(MMD::CStackShift* pStackShift)
 	pStackShift->Smooth(fWeight);
 	//-----------------
 	delete m_pAlignStack;
-	//-----------------
-        nvtxRangePop();
 }
 
 MMD::CStackShift* CIterativeAlign::mAlignStack(MMD::CStackShift* pInitShift)
@@ -97,7 +92,7 @@ MMD::CStackShift* CIterativeAlign::mAlignStack(MMD::CStackShift* pInitShift)
 	pTotalShift->Setup(iNumGroups);
 	//-----------------
 	float fBFactor = m_fBFactor;
-	float fMaxErr = bPatch ? 10.0f : 100.0f;
+	float fMaxErr = bPatch ? 100.0f : 300.0f;
 	fMaxErr = fMaxErr * 2.0f / (m_afXcfBin[0] + m_afXcfBin[1]);
 	CAlignedSum alignedSum;
 	//-----------------

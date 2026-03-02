@@ -9,7 +9,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cufft.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo;
 
@@ -79,7 +78,8 @@ bool CProcessThread::WaitExitAll(float fSeconds)
 }
 
 CProcessThread::CProcessThread(void)
-{
+{	
+	m_iCounter = 0;
 }
 
 CProcessThread::~CProcessThread(void)

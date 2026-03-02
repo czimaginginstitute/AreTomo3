@@ -6,7 +6,6 @@
 #include <math.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <nvToolsExt.h>
 
 using namespace McAreTomo::MotionCor::BadPixel;
 namespace MMU = McAreTomo::MotionCor::Util;
@@ -48,7 +47,6 @@ CCorrectMain::~CCorrectMain(void)
 
 void CCorrectMain::DoIt(int iDefectSize, int iNthGpu)
 {		
-	nvtxRangePushA("CCorrectMain::DoIt");
 	m_iDefectSize = iDefectSize;
 	m_iNthGpu = iNthGpu;
 	//-----------------
@@ -61,7 +59,6 @@ void CCorrectMain::DoIt(int iDefectSize, int iNthGpu)
 	m_aiPadSize[1] = pFrmBuffer->m_aiCmpSize[1];
 	//-----------------
 	mCorrectFrames();
-        nvtxRangePop();
 }
 
 void CCorrectMain::mCorrectFrames(void)

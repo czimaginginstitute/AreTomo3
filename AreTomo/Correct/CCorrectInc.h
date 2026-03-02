@@ -54,6 +54,20 @@ private:
 	bool m_bSameSize;
 };
 
+class GRoundProjEdge
+{
+public:
+	GRoundProjEdge(void);
+	~GRoundProjEdge(void);
+	void DoIt
+	( float* gfProj,
+	  int* piSize,
+	  bool bPadded,
+	  float fTiltAngle,
+	  cudaStream_t stream = 0
+	);
+};
+
 class GCorrPatchShift
 {
 public:
@@ -79,6 +93,7 @@ private:
 	int m_iInImgX;
 	int m_iOutImgX;
 	int m_iOutImgY;
+	MU::GFillEmpty2D* m_pFillEmpty2D;
 };
 
 class CCorrProj

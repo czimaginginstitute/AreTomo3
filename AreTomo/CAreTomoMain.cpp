@@ -390,20 +390,8 @@ void CAreTomoMain::mAlign(void)
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	pParam->m_fXcfSize = 2048.0f;
 	mProjAlign();
-	//---------------------------------------------------------
-	// 1. When pInput->m_afTiltAxis[1] is negative, do not
-	//    refine user provided tilt axis.
-	//---------------------------------------------------------
-	CAtInput* pInput = CAtInput::GetInstance();
-	if(pInput->m_afTiltAxis[1] >= 0)
-	{	float fRange = (pInput->m_afTiltAxis[0] == 0) ? 20.0f : 6.0f;
-		int iIters = (pInput->m_afTiltAxis[0] == 0) ? 4 : 2;
-		for(int i=1; i<=iIters; i++) 
-		{	mRotAlign(fRange/i , 100);
-			if(i == 1) mProjAlign();
-		}
-		mProjAlign();
-	}
+	//---------------------------
+	mRefineAlign();
 	//---------------------------
 	mPatchAlign();
 	//---------------------------
@@ -425,15 +413,17 @@ void CAreTomoMain::mCoarseAlign(void)
 	//    axis. Let's estimate here.
 	//---------------------------------------------------------
 	CAtInput* pInput = CAtInput::GetInstance();
+	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	if(pInput->m_afTiltAxis[0] == 0)
-	{	for(int i=1; i<=4; i++)
+	{	for(int i=1; i<=2; i++)
 		{	streAlignMain.DoIt();
-			float fRange = fmax(180.0f / i, 50.0f);
-			mRotAlign(fRange, 100);
+			streAlignMain.DoIt();
+			pAlignParam->SetTiltAxisAll(0.0f);
+			mRotAlign(180.0f, 180);
 		}
-		for(int i=1; i<=5; i++)
-		{	float fRange = fmax(50.0f / i, 10);
-			mRotAlign(fRange, 100);
+		for(int i=1; i<=4; i++)
+		{	float fRange = fmax(20.0f / i, 10);
+			mRotAlign(fRange, 20);
 		}
 		pTimeStamp->Record("TomoAlignCoarse:End");
 		return;
@@ -442,7 +432,6 @@ void CAreTomoMain::mCoarseAlign(void)
 	// 1) Users provide an initial estimate of the tilt axis,
 	//    let's use it for initial alignment.
 	//---------------------------------------------------------
-	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	pAlignParam->SetTiltAxisAll(pInput->m_afTiltAxis[0]);
 	//---------------------------------------------------------
 	// 2) Users do not want to refine their tilt axis, do not
@@ -465,6 +454,23 @@ void CAreTomoMain::mCoarseAlign(void)
 	pTimeStamp->Record("TomoAlignCoarse:End");
 }
 
+void CAreTomoMain::mRefineAlign(void)
+{
+	CAtInput* pInput = CAtInput::GetInstance();
+	bool bRefineAxis = (pInput->m_afTiltAxis[1] < 0) ? false : true;
+	//---------------------------
+	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
+	float fOldAxis = pAlignParam->GetTiltAxis(0);
+	float fLastAxis = fOldAxis;
+	//---------------------------
+	float fAxisRange = 60.0f;
+	//---------------------------
+	for(int i=1; i<=2; i++)
+	{	if(bRefineAxis) mRotAlign(fAxisRange/i , 60);
+		mProjAlign();
+	}
+}
+
 void CAreTomoMain::mProjAlign(void)
 {
 	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
@@ -472,35 +478,19 @@ void CAreTomoMain::mProjAlign(void)
 	//---------------------------
 	CAtInput* pInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
-        pParam->m_afMaskSize[0] = 0.7f;
-        pParam->m_afMaskSize[1] = 0.7f;
-	//-----------------
+        pParam->m_afMaskSize[0] = 0.8f;
+        pParam->m_afMaskSize[1] = 0.8f;
+	//---------------------------
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);	
 	ProjAlign::CProjAlignMain aProjAlign;
-	aProjAlign.Set0(500, m_iNthGpu);
+	aProjAlign.Set0(500.0f, m_iNthGpu);
 	aProjAlign.Set1(pParam);
 	float fLastErr = aProjAlign.DoIt(pAlignParam);
 	MrcUtil::CAlignParam* pLastParam = pAlignParam->GetCopy();
-	//-----------------
-	int iIterations = 1; //10;
-	int iLastIter = iIterations - 1;
-	pParam->m_afMaskSize[0] = 0.55f;
-	pParam->m_afMaskSize[1] = 0.55f;
-	//-----------------
-	for(int i=1; i<iIterations; i++)
-	{	float fErr = aProjAlign.DoIt(pAlignParam);
-		if(fErr < 2.0f) break;
-		//--------------------
-		if(fErr <= fLastErr)
-		{	fLastErr = fErr;
-			pLastParam->Set(pAlignParam);
-		}
-		else
-		{	pAlignParam->Set(pLastParam);
-			break;
-		}
-	}
-	delete pLastParam;
+	//---------------------------
+	float fErr = aProjAlign.DoIt(pAlignParam);
+	if(fErr > fLastErr) pAlignParam->Set(pLastParam);
+	if(pLastParam != 0L) delete pLastParam;
 	pTimeStamp->Record("TomoAlignRefine:End");
 }
 
@@ -555,15 +545,11 @@ void CAreTomoMain::mCalcThickness(void)
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	iThickness = iThickness * 8 / 20 * 2;
-	if(iThickness < 100) iThickness = 100;
-	else if(iThickness > 1200) iThickness = 1200;
+	if(iThickness < 200) iThickness = 200;
 	//-----------------------------------------------
 	// If users specify the AlignZ value, use it.
 	//-----------------------------------------------
-	if(pAtInput->m_iAlignZ <= 0) 
-	{	pParam->m_iAlignZ = iThickness;
-		if(pParam->m_iAlignZ < 200) pParam->m_iAlignZ = 200;
-	}
+	if(pAtInput->m_iAlignZ <= 0) pParam->m_iAlignZ = iThickness;
 	else pParam->m_iAlignZ = pAtInput->m_iAlignZ;
 }
 
@@ -590,14 +576,15 @@ void CAreTomoMain::mCorrectCTF(void)
 	   MD::CCtfResults::GetInstance(m_iNthGpu);
 	if(!pCtfResults->bHasCTF()) return;
 	//---------------------------
-	bool bPhaseFlip = false;
-	if(pAtInput->m_aiCorrCTF[0] == 2) bPhaseFlip = true;
+	int iMode = 1; // WienerSZ
+	if(pAtInput->m_aiCorrCTF[0] == 2) iMode = 2; // phaseFlip
+	else if(pAtInput->m_aiCorrCTF[0] == 3) iMode = 3; // MultiplyCTF
 	//---------------------------
 	MD::CTimeStamp* pTimeStamp = MD::CTimeStamp::GetInstance(m_iNthGpu);
 	pTimeStamp->Record("CorrectCTF:Start");
 	//---------------------------
 	MAF::CCorrCtfMain corrCtfMain;
-	corrCtfMain.DoIt(m_iNthGpu, bPhaseFlip, pAtInput->m_aiCorrCTF[1]);
+	corrCtfMain.DoIt(m_iNthGpu, iMode, pAtInput->m_aiCorrCTF[1]);
 	pTimeStamp->Record("CorrectCTF:End");
 }
 

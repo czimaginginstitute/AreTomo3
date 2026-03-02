@@ -13,11 +13,11 @@ static __global__ void mGNorm2D
 )
 {	int y = blockIdx.y * blockDim.y + threadIdx.y;
 	if(y >= iSizeY) return;
-	//---------------------
+	//---------------------------
 	int i = y * iPadX + blockIdx.x;
 	float fInt = gfImg[i];
 	if(fInt < (float)-1e10) return;
-	//-----------------------------
+	//---------------------------
 	gfImg[i] = (fInt - fMean) / fStd;
 }
 
