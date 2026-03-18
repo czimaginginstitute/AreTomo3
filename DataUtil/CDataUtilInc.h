@@ -56,7 +56,6 @@ public:
 	//-----------------
 	CTiltSeries* GetSubSeries(int* piStart, int* piSize);
 	void RemoveFrame(int iFrame);
-	void RemoveFrames(int* piIndices, int iNumFrms);
 	//-----------------
 	void GetAlignedSize(float fTiltAxis, int* piAlnSize);
 	float** GetImages(void); // do not free;

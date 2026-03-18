@@ -50,6 +50,7 @@ CReadMdoc::CReadMdoc(void)
 	memset(m_piAcqIdxs, 0, sizeof(int) * m_iBufSize);
 	memset(m_pfTilts, 0, sizeof(float) * m_iBufSize);
 	memset(m_pfDoses, 0, sizeof(float) * m_iBufSize);
+	memset(m_acMdocFile, 0, sizeof(m_acMdocFile));
 }
 
 CReadMdoc::~CReadMdoc(void)

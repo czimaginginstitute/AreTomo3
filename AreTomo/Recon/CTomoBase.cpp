@@ -71,15 +71,3 @@ void CTomoBase::Setup
 	m_pFillEmpty2D->SetSize(m_aiVolSize, !bPadded);
 }
 
-void CTomoBase::ExcludeTilts(float* pfTilts, int iNumTilts)
-{
-	bool* pbNoProjs = new bool[m_iNumProjs];
-	memset(pbNoProjs, 0, sizeof(bool) * m_iNumProjs);
-	for(int i=0; i<iNumTilts; i++)
-	{	int j = m_pAlignParam->GetFrameIdxFromTilt(pfTilts[i]);
-		pbNoProjs[j] = true;
-	}
-	cudaMemcpy(m_gbNoProjs, pbNoProjs, sizeof(bool) * m_iNumProjs,
-	   cudaMemcpyDefault);
-}
-

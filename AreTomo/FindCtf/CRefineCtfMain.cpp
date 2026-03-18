@@ -45,9 +45,14 @@ void CRefineCtfMain::DoIt(int iNthGpu)
 	printf("GPU %d: %s\n\n", iNthGpu, pcMsg1);
 	mFindHandedness();
 	//-----------------
-	mRefineOffset(3.1f, 22, !bBeta);
-	printf("GPU %d: %s\n\n", iNthGpu, pcMsg2);
-	mRefineOffset(1.1f, 9, !bBeta);
+	CAtInput* pAtInput = CAtInput::GetInstance();
+	m_fTiltOffset = pAtInput->m_afTiltCor[1];
+	//-----------------
+	if(m_fTiltOffset == 0)
+	{	mRefineOffset(3.1f, 22, !bBeta);
+		printf("GPU %d: %s\n\n", iNthGpu, pcMsg2);
+		mRefineOffset(1.1f, 9, !bBeta);
+	}
 	//-----------------
 	printf("GPU %d: %s\n\n", iNthGpu, pcMsg2);
 	mRefineOffset(3.0f, 7, bBeta);

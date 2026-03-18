@@ -663,7 +663,23 @@ Changes:
 AreTomo3 2.2.8 [02-07-2026]
 ---------------------------
 Bug Fix:
-
 Changes:
    1) Added a makefile for cuda 13
    2) Removed -lnvToolsExt, not needed in cuda 13.
+
+AreTomo3 2.2.9 [03-11-2026]
+---------------------------
+Bug Fix:
+Changes:
+   1) -TiltCor accepts user provided alpha offset as the second number. In
+      this case, the value overwrites measured value.
+   2) CAreTomoMain.cpp: For some tilt series, mRefineAlign can change quite
+      significantly the tilt axis. We recalculate the sample thickness
+      followed by calling mRefineAlign again.
+   3) In Recon/CCalcThicknesss, calculate both mean and sigma CCs. Set the
+      edge CC a slightly lower than the mean CC.
+   4) Let users specify -FmInt 0. This lets AreTomo3 to calculate based on 
+      the movie dose in mdoc file to decide the value. The determined value 
+      will yield integrated frames with 0.25e/A2.
+   5) In CAreTomoMain.cpp, measure sample thickness second time after the
+      refinement of global alignment based on projection matching. 

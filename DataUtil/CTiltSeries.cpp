@@ -67,11 +67,16 @@ void CTiltSeries::Create(int* piImgSize, int iNumTilts)
 	this->ResetSecIndices();
 	//----------------
 	m_ppfCenters = new float*[m_aiStkSize[2]];
+	memset(m_ppfCenters, 0, sizeof(float*) * m_aiStkSize[2]);
 	for(int i=0; i<m_aiStkSize[2]; i++)
-	{	float* pfCent = new float[2];
+	{	float* pfCent = m_ppfCenters[i];
+		if(pfCent != 0L) delete[] pfCent;
+		//-------------------
+		m_ppfCenters[i] = new float[2];
+		pfCent = m_ppfCenters[i];
+		//-------------------
 		pfCent[0] = 0.5f * m_aiStkSize[0];
 		pfCent[1] = 0.5f * m_aiStkSize[1];
-		m_ppfCenters[i] = pfCent;
 	} 
 	//-----------------
 	if(m_ppfImages != 0L) delete[] m_ppfImages;
@@ -187,6 +192,13 @@ CTiltSeries* CTiltSeries::GetSubSeries(int* piStart, int* piSize)
 	return pSubSeries;		
 }
 
+//--------------------------------------------------------------------
+// 1. Remove a specific frame from the stack by placing it at the end
+//    without physically deleting it.
+// 2. Reduce m_aiStkSize[2] by 1.
+// 3. Keep m_iBufSize the same, so we do not forget to delete this
+//    frame when we are done with this stack.
+//--------------------------------------------------------------------
 void CTiltSeries::RemoveFrame(int iFrame)
 {
 	void* pvFrm = m_ppvFrames[iFrame];
@@ -209,63 +221,6 @@ void CTiltSeries::RemoveFrame(int iFrame)
 	m_ppfImages[iLast] = pfImg;
 	m_ppfCenters[iLast] = pfCent;
 	m_aiStkSize[2] = iLast;
-}
-
-
-void CTiltSeries::RemoveFrames(int* piIndices, int iRemFrms)
-{
-	if(piIndices == 0L || iRemFrms <= 0) return;
-	//---------------------------
-	int iNewSize = m_aiStkSize[2] - iRemFrms;
-	float* pfTilts = new float[iNewSize];
-	float* pfDoses = new float[iNewSize];
-	int* piAcqIndices = new int[iNewSize];
-	int* piSecIndices = new int[iNewSize];
-	float** ppfCenters = new float*[iNewSize];
-	float** ppfImages = new float*[iNewSize];
-	//---------------------------
-	int k = 0;
-	for(int i=0; i<m_aiStkSize[2]; i++)
-	{	bool bDark = false;
-		for(int j=0; j<iRemFrms; j++)
-		{	if(i == piIndices[j])
-			{	bDark = true; 
-				break;
-			}
-		}
-		//-------------------
-		if(bDark)
-		{	if(m_ppfCenters[i] != 0L)
-			{	delete[] m_ppfCenters[i];
-				m_ppfCenters[i] = 0L;
-			}
-		}
-		else
-		{	ppfCenters[k] = m_ppfCenters[i];
-			m_ppfCenters[i] = 0L;
-			ppfImages[k] = m_ppfImages[i];
-			m_ppfImages[i] = 0L;
-			pfTilts[k] = m_pfTilts[i];
-			pfDoses[k] = m_pfDoses[i];
-			piAcqIndices[k] = m_piAcqIndices[i];
-			piSecIndices[k] = m_piSecIndices[i];
-			k += 1;
-		}
-	}
-	//---------------------------
-	mCleanCenters();
-	m_ppfCenters = ppfCenters;
-	if(m_ppfImages != 0L) delete[] m_ppfImages;
-	m_ppfImages = ppfImages;
-	if(m_pfTilts != 0L) delete[] m_pfTilts;
-	m_pfTilts = pfTilts;
-	if(m_pfDoses != 0L) delete[] m_pfDoses;
-	m_pfDoses = pfDoses;
-	if(m_piAcqIndices != 0L) delete[] m_piAcqIndices;
-	m_piAcqIndices = piAcqIndices;
-	if(m_piSecIndices != 0L) delete[] m_piSecIndices;
-	m_piSecIndices = piSecIndices;
-	m_aiStkSize[2] = iNewSize;
 }
 
 void CTiltSeries::GetAlignedSize(float fTiltAxis, int* piAlnSize)
@@ -383,8 +338,8 @@ void CTiltSeries::mCleanCenters(void)
 {
 	if(m_ppfCenters == 0L) return;
 	for(int i=0; i<m_aiStkSize[2]; i++)
-	{	if(m_ppfCenters[i] == 0L) continue;
-		delete[] m_ppfCenters[i];
+	{	float* pfCenter = m_ppfCenters[i];
+		if(pfCenter != 0L) delete[] pfCenter;
 	}
 	delete[] m_ppfCenters;
 	m_ppfCenters = 0L;
