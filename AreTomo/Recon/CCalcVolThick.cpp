@@ -13,7 +13,7 @@ CCalcVolThick::CCalcVolThick(void)
 	m_gLocalCC2D = 0L;
 	m_gfImg1 = 0L;
 	m_gfImg2 = 0L;
-	m_fBinning = 10.0f;
+	m_fBinning = 20.0f;
 	m_fPixSize = 1.0f;
 	m_iNthGpu = 0;
 }
@@ -54,8 +54,8 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	//-------------------------------------------------
 	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* pSeries = pTsPkg->GetSeries(0);
-	m_fBinning = 15.0f / pSeries->m_fPixSize;
-	m_fBinning = fmaxf(m_fBinning, 10.0f);
+	m_fBinning = 20.0f / pSeries->m_fPixSize;
+	m_fBinning = fmaxf(m_fBinning, 20.0f);
 	//-------------------------------------------------
 	// 1) align tilt series 0 and then 2) reconstruct.
 	//-------------------------------------------------
@@ -77,7 +77,7 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	// 3) reconstruct the aligned tilt series by WBP.
 	//--------------------------------------------------
 	CDoWbpRecon* pDoWbpRecon = new CDoWbpRecon;
-	int iVolZ = pAlnSeries->m_aiStkSize[0] * 3 / 8 * 2;
+	int iVolZ = (int)(pAlnSeries->m_aiStkSize[0] * 0.8) / 2 * 2;
 	MD::CTiltSeries* pVolSeries = pDoWbpRecon->DoIt(pAlnSeries, 
 	   pAlnParam, iVolZ);
 	if(pAlnSeries != 0L) delete pAlnSeries;
@@ -100,8 +100,8 @@ void CCalcVolThick::DoIt(int iNthGpu)
 	float* pfCCs = new float[iEndZ];
 	//-----------------
 	for(int z=0; z<iEndZ; z++)
-	{	pfCCs[z] = mMeasure(z, aiStart);
-		//printf("%5d  %.4e\n", z, pfCCs[z]);
+	{	//pfCCs[z] = mMeasure(z, aiStart);
+		pfCCs[z] = mMeasureStd(z, aiStart);
 	}
 	mSmooth(pfCCs, iEndZ);
 	//-----------------
@@ -154,10 +154,37 @@ float CCalcVolThick::mMeasure(int iZ, int* piStart)
 	return fCC;
 }
 
+float CCalcVolThick::mMeasureStd(int iZ, int* piStart)
+{
+	float* pfImg = (float*)m_pVolSeries->GetFrame(iZ);
+	int iImgX = m_pVolSeries->m_aiStkSize[0];
+	double dSum1 = 0.0f, dSum2 = 0.0f;
+	int iCount = 0;
+	//---------------------------
+	for(int j=0; j<m_aiTileSize[1]; j++)
+	{	float* pfBuf = &pfImg[j * iImgX + piStart[0]];
+		for(int i=0; i<m_aiTileSize[0]; i++)
+		{	float fVal = pfBuf[i];
+			if(fVal < (float)-1e20) continue;
+			dSum1 += fVal;
+			dSum2 += (fVal * fVal);
+			iCount += 1;
+		}
+	}
+	dSum1 = dSum1 / iCount;
+	dSum2 = dSum2 / iCount - dSum1 * dSum1;
+	if(dSum2 <= 0) dSum2 = 0.0f;
+	else dSum2 = sqrtf(dSum2);
+	//---------------------------
+	float fMean = (float)dSum1;
+	float fStd = (float)dSum2;
+	return fStd;
+}
+
 void CCalcVolThick::mSetup(void)
 {
-	m_aiTileSize[0] = (int)(m_pVolSeries->m_aiStkSize[0] * 0.6f) / 2 * 2;
-	m_aiTileSize[1] = (int)(m_pVolSeries->m_aiStkSize[1] * 0.6f) / 2 * 2;
+	m_aiTileSize[0] = (int)(m_pVolSeries->m_aiStkSize[0] * 0.4f) / 2 * 2;
+	m_aiTileSize[1] = (int)(m_pVolSeries->m_aiStkSize[1] * 0.4f) / 2 * 2;
 	//-----------------`
 	int iPixels = m_pVolSeries->GetPixels();
 	size_t tBytes = sizeof(float) * iPixels * 2;
@@ -182,50 +209,63 @@ void CCalcVolThick::mClean(void)
 void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 {
 	int iHalfZ = iSize / 2;
-	int iOffset = (int)(iSize * 0.05f);
 	//---------------------------
 	int aiMinEdges[2] = {0};
 	int aiMaxEdges[2] = {0};
 	mSearchMin(pfCCs, iSize, aiMinEdges);
 	mSearchMax(pfCCs, iSize, aiMaxEdges);
 	//---------------------------
-	int iBot = (aiMinEdges[0] < aiMaxEdges[0]) ? 
-	   aiMinEdges[0] : aiMaxEdges[0];
-	int iTop = (aiMinEdges[1] > aiMaxEdges[1]) ?
-	   aiMinEdges[1] : aiMaxEdges[1];
+	int iBot = (int)(iSize * 0.1); 
+	int iTop = iSize - iBot;
 	//-----------------------------------------------
 	// 1) calculate the mean score. 
 	//-----------------------------------------------
 	float fMeanCC = 0.0f;
+	float fStdCC = 0.0f;
 	for(int i=iBot; i<iTop; i++)
 	{	fMeanCC += pfCCs[i];
+		fStdCC += (pfCCs[i] * pfCCs[i]);
 	}
 	fMeanCC = fMeanCC / (iTop - iBot);
-	//-----------------------------------------------
-	// 1) Determine the true minimums that are free
-	// from SART artifact.
-	//-----------------------------------------------
-	m_aiSampleEdges[0] = iBot;
-	float fMinBot = pfCCs[iBot];
-	if(fMinBot < fMeanCC)
-	{	fMinBot = fMeanCC;
-		for(int i=iBot+1; i<iHalfZ; i++)
-		{	if(pfCCs[i] < fMinBot) continue;
-			m_aiSampleEdges[0] = i;
-			break;
-		}
+	fStdCC = fStdCC / (iTop - iBot) - fMeanCC * fMeanCC;
+	if(fStdCC <= 0) fStdCC = 0.0f;
+	else fStdCC = (float)sqrtf(fStdCC);
+	//---------------------------
+	for(int i=iBot; i<iHalfZ; i++)
+	{	if(pfCCs[i] < fMeanCC) continue;
+		m_aiSampleEdges[0] = i;
+		break;
 	}
 	//---------------------------
-	m_aiSampleEdges[1] = iTop;
-	float fMinTop = pfCCs[iTop];
-	if(fMinTop < fMeanCC)
-	{	fMinTop = fMeanCC;
-		for(int i=iTop-1; i>iHalfZ; i--)
-		{	if(pfCCs[i] < fMeanCC) continue;
-			m_aiSampleEdges[1] = i;
-			break;
-		}
+	float fMinCC = fMeanCC;
+	int iMin = m_aiSampleEdges[0];
+	for(int i=iBot; i<m_aiSampleEdges[0]; i++)
+	{	if(pfCCs[i] >= fMinCC) continue;
+		fMinCC = pfCCs[i];
+		iMin = i;
 	}
+	m_aiSampleEdges[0] = (m_aiSampleEdges[0] + iMin) / 2;
+	//-----------------------------------------------
+	// temporarily search the top edge from the top
+	// until we hit the point of mean CC.
+	//-----------------------------------------------
+	for(int i=iTop; i>iHalfZ; i--)
+	{	if(pfCCs[i] < fMeanCC) continue;
+		m_aiSampleEdges[1] = i;
+		break;
+	}
+	//-----------------------------------------------
+	// we search the min CC point in between iTop
+	// the mean CC point stored in m_aiSampleEdges[1]
+	//-----------------------------------------------
+	fMinCC = fMeanCC;
+	iMin = m_aiSampleEdges[1];
+	for(int i=iTop; i>m_aiSampleEdges[1]; i--)
+	{	if(pfCCs[i] >= fMinCC) continue;
+		fMinCC = pfCCs[i];
+		iMin = i;
+	}
+	m_aiSampleEdges[1] = (m_aiSampleEdges[1] + iMin) / 2;
 	//---------------------------
 	m_aiSampleEdges[0] *= m_fBinning;
 	m_aiSampleEdges[1] *= m_fBinning;
@@ -236,33 +276,35 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	int iSampleCent = (m_aiSampleEdges[0] + m_aiSampleEdges[1]) / 2;
 	int iVolCent = (int)(iHalfZ * m_fBinning);
 	pAlnParam->m_iOffsetZ = iSampleCent - iVolCent;
-	//-----------------
-	printf("Sample edges: %6d  %6d\n\n", 
-	   m_aiSampleEdges[0], m_aiSampleEdges[1]);
+	//---------------------------
+	int iVolSize = (int)(iSize * m_fBinning + 0.5f);
+	printf("Sample edges: %6d %6d %6d\n", 
+	   m_aiSampleEdges[0], m_aiSampleEdges[1], iVolSize);
+	printf("Search range: %6d %6d\n\n", (int)(iBot * m_fBinning),
+	   (int)(iTop * m_fBinning));
 }
 
 void CCalcVolThick::mSearchMin(float* pfCCs, int iSize, int* piMin)
 {
-	int iHalfZ = iSize / 2;
-	int iOffset = (int)(iSize * 0.05f);
-	//---------------------------
+	int iOffset = iSize / 8;
 	int iBot = iOffset;
-	float fMinBot = pfCCs[iBot];
-	for(int i=iBot+1; i<iHalfZ; i++)
-	{	if(pfCCs[i] < fMinBot)
-		{	fMinBot = pfCCs[i];
-			iBot = i;
-		}
+	float fBot = pfCCs[iOffset];
+	//---------------------------
+	for(int i=0; i<iOffset; i++)
+	{	if(pfCCs[i] >= fBot) continue;
+		fBot = pfCCs[i];
+		iBot = i;
 	}
 	piMin[0] = iBot;
 	//---------------------------
-	int iTop = iSize - iOffset;
-	float fMinTop = pfCCs[iTop];
-	for(int i=iTop-1; i>iHalfZ; i--)
-	{	if(pfCCs[i] < fMinTop)
-		{	fMinTop = pfCCs[i];
-			iTop = i;
-		}
+	int iStart = iSize - iOffset;
+	int iTop = iStart;
+	float fTop = pfCCs[iStart];
+	//---------------------------
+	for(int i=iStart; i<iSize; i++)
+	{	if(pfCCs[i] >= fTop) continue;
+		fTop = pfCCs[i];
+		iTop = i;
 	}
 	piMin[1] = iTop;
 }
@@ -317,7 +359,7 @@ void CCalcVolThick::mSaveTmpCCs(float* pfCCs, int iSize)
 	FILE* pFile = fopen(pcCCName, "w");
 	if(pFile != 0L)
 	{	for(int i=0; i<iSize; i++)
-		{	fprintf(pFile, "%d,%.5f,%.1f,%.1f\n", 
+		{	fprintf(pFile, "%d,%.4e,%.1f,%.1f\n", 
 			   i, pfCCs[i], fBotEdge, fTopEdge);
 		}
 		fclose(pFile);

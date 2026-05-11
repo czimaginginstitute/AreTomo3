@@ -249,6 +249,7 @@ bool CProcessThread::mLoadTiltSeries(void)
 void CProcessThread::mProcessMovie(int iTilt)
 {
 	CInput* pInput = CInput::GetInstance();
+	CAtInput* pAtInput = CAtInput::GetInstance();
 	MD::CMcPackage* pMcPackage = MD::CMcPackage::GetInstance(m_iNthGpu);
         MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
 	//---------------------------
@@ -257,7 +258,12 @@ void CProcessThread::mProcessMovie(int iTilt)
 	pMcPackage->m_iAcqIdx = pReadMdoc->GetAcqIdx(iTilt);
 	pMcPackage->m_fTilt = pReadMdoc->GetTilt(iTilt);
 	pMcPackage->m_fPixSize = pInput->m_fPixSize;
-	pMcPackage->m_fTotalDose = pReadMdoc->GetDose(iTilt);
+	//---------------------------
+	float fTsDose = pAtInput->m_fTotalDose;
+	float fPercentage = pReadMdoc->GetExpTime(iTilt);
+	float fTiltDose = fTsDose * fPercentage;
+	if(fTiltDose == 0) fTiltDose = pReadMdoc->GetDose(iTilt);
+	pMcPackage->m_fTotalDose = fTiltDose;
 	//---------------------------
 	printf("GPU %d: Motion correct %s\n"
 	   "------------------\n\n", 

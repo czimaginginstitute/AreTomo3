@@ -23,7 +23,7 @@ CFindCtfBase::CFindCtfBase(void)
         m_afPhaseRange[0] = 0.0f;
 	m_afPhaseRange[1] = 0.0f;
 	//-----------------
-	m_afDfRange[0] = 3000.0f;
+	m_afDfRange[0] = 2000.0f;
 	m_afDfRange[1] = 40000.0f;
 	//-----------------
 	m_iNthGpu = 0;
@@ -53,12 +53,12 @@ void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory)
 	m_aiCmpSize[0] = m_aiCmpSize[1] / 2 + 1;
 	//-----------------
 	float fPixSize = m_pCtfTheory->GetPixelSize();
-        m_afResRange[0] = 20.0f * fPixSize;
+        m_afResRange[0] = 18.0f * fPixSize;
 	m_afResRange[1] = (2.0f * fPixSize) / 0.75f;
         if(m_afResRange[1] < 3.5f) m_afResRange[1] = 3.5f;
 	//-----------------
 	float fPixSize2 = fPixSize * fPixSize;
-	m_afDfRange[0] =  3000.0f * fPixSize2;
+	m_afDfRange[0] =  2000.0f * fPixSize2;
 	m_afDfRange[1] = 40000.0f * fPixSize2;
 	//-----------------
 	int iCmpSize = m_aiCmpSize[0] * m_aiCmpSize[1];
@@ -67,17 +67,16 @@ void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory)
 	m_gfCtfSpect = m_gfFullSpect + iCmpSize * 3;
 }
 
-void CFindCtfBase::SetPhase(float fInitPhase, float fPhaseRange)
+void CFindCtfBase::SetPhase(float fMinPhase, float fMaxPhase)
 {
-	m_afPhaseRange[0] = fInitPhase;
-	m_afPhaseRange[1] = fPhaseRange;
+	m_afPhaseRange[0] = fMinPhase;
+	m_afPhaseRange[1] = fMaxPhase;
 }
 
-void CFindCtfBase::SetDefocus(float fInitDF, float fDfRange)
+void CFindCtfBase::SetDefocus(float fMinDf, float fMaxDf)
 {
-	m_afDfRange[0] = fInitDF - 0.5f * fDfRange;
-	m_afDfRange[1] = fInitDF + 0.5f * fDfRange;
-	if(m_afDfRange[0] < 100.0f) m_afDfRange[0] = 100.0f;
+	m_afDfRange[0] = fMinDf;
+	m_afDfRange[1] = fMaxDf;
 }
 
 void CFindCtfBase::SetHalfSpect(float* pfCtfSpect)

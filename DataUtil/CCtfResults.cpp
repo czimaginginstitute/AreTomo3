@@ -75,6 +75,7 @@ void CCtfResults::Setup
 	m_aiSpectSize[1] = piSpectSize[1];
 	//-----------------
 	m_ppfSpects = new float*[m_iNumImgs];
+	memset(m_ppfSpects, 0, sizeof(float*) * m_iNumImgs);
 	int iSpectSize = m_aiSpectSize[0] * m_aiSpectSize[1];
 	//-----------------
 	m_ppCtfParams = new CCtfParam*[m_iNumImgs];
@@ -82,6 +83,8 @@ void CCtfResults::Setup
 	{	m_ppCtfParams[i] = new CCtfParam;
 		m_ppCtfParams[i]->SetParam(pCtfParam);
 		//----------------
+		float* pfSpect = m_ppfSpects[i];
+		if(pfSpect != 0L) delete[] pfSpect;
 		m_ppfSpects[i] = new float[iSpectSize];
 	}
 }
@@ -91,8 +94,10 @@ void CCtfResults::Clean(void)
 	if(m_iNumImgs == 0) return;
 	//-----------------
 	for(int i=0; i<m_iNumImgs; i++)
-	{	if(m_ppfSpects[i] != 0L) delete[] m_ppfSpects[i];
-		if(m_ppCtfParams[i] != 0L) delete m_ppCtfParams[i];
+	{	float* pfSpect = m_ppfSpects[i];
+		CCtfParam* pCtfParam = m_ppCtfParams[i];
+		if(pfSpect != 0L) delete[] pfSpect;
+		if(pCtfParam != 0L) delete pCtfParam;
 	}
 	if(m_ppfSpects != 0L) delete[] m_ppfSpects;
 	if(m_ppCtfParams != 0L) delete[] m_ppCtfParams;

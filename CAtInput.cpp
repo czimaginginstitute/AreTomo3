@@ -128,13 +128,16 @@ void CAtInput::ShowTags(void)
 	printf("%-10s\n", m_acTiltCorTag);
         printf("   1. Correct the offset of tilt angle.\n");
         printf("   2. This argument can be followed by two values. The\n"
-           "      first value can be -1, 0, or 1. and the  default is 0,\n"
-	   "      indicating the tilt offset is measured for alignment\n"
+           "      first value can be -1, 0, or 1. The  default is 0.\n"
+	   "   3. 1 means that the angular offset will be corrected\n"
+	   "      to generate the leveled tomogram. 0 means that it is\n"
+	   "      used only in the alignment process. -1 disables both\n"
+	   "      the measurement and the application.\n"
 	   "      only  When the value is 1, the offset is applied to\n"
 	   "      reconstion too. When a negative value is given, tilt\n"
 	   "      is not measured not applied.\n"
-           "   3. The second value is user provided tilt offset. When it\n"
-	   "      is given, the measurement is disabled.\n\n");
+           "   4. The second value is user provided tilt offset. When it\n"
+	   "      is given, it replaces the measured value.\n\n");
 	//-----------------
 	printf("%-10s\n", m_acReconRangeTag);
 	printf("   1. It specifies the min and max tilt angles from which\n");

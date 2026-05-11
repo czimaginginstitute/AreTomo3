@@ -86,7 +86,7 @@ void CProjAlignMain::Set1(CParam* pParam)
 	m_pBinSeries = m_pCorrTomoStack->GetCorrectedStack(false);
 	//-----------------
 	m_iVolZ = pParam->m_iAlignZ / m_iBin / 2 * 2;
-	int iMaxZ = m_pBinSeries->m_aiStkSize[0] / 6 * 2;
+	int iMaxZ = m_pBinSeries->m_aiStkSize[0] / 5 * 2;
 	if(m_iVolZ > iMaxZ) m_iVolZ = iMaxZ;
 	//-----------------
 	int iPixels = m_pBinSeries->GetPixels();

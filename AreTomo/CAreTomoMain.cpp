@@ -389,8 +389,10 @@ void CAreTomoMain::mAlign(void)
 	pAlignParam->ResetShift();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	pParam->m_fXcfSize = 2048.0f;
-	mProjAlign();
+	//mProjAlign();
 	//---------------------------
+	mRefineAlign();
+	mCalcThickness();
 	mRefineAlign();
 	//---------------------------
 	mPatchAlign();
@@ -465,6 +467,7 @@ void CAreTomoMain::mRefineAlign(void)
 	//---------------------------
 	float fAxisRange = 60.0f;
 	//---------------------------
+	mProjAlign();
 	for(int i=1; i<=2; i++)
 	{	if(bRefineAxis) mRotAlign(fAxisRange/i , 60);
 		mProjAlign();
@@ -532,11 +535,11 @@ void CAreTomoMain::mCalcThickness(void)
 	MD::CCtfResults* pCtfResults =MD::CCtfResults::GetInstance(m_iNthGpu);
 	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
 	float fAlpha0 = pCtfResults->m_fAlphaOffset;
-	pAlnParam->AddAlphaOffset(fAlpha0);
+	//pAlnParam->AddAlphaOffset(fAlpha0);
 	//-----------------	
 	Recon::CCalcVolThick calcVolThick;
         calcVolThick.DoIt(m_iNthGpu);
-	pAlnParam->AddAlphaOffset(-fAlpha0);
+	//pAlnParam->AddAlphaOffset(-fAlpha0);
 	//-----------------
 	float fThickness = calcVolThick.GetThickness(false);
 	int iThickness = (int)fThickness / 2 * 2;
@@ -544,7 +547,6 @@ void CAreTomoMain::mCalcThickness(void)
 	//-----------------
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
-	iThickness = iThickness * 8 / 20 * 2;
 	if(iThickness < 200) iThickness = 200;
 	//-----------------------------------------------
 	// If users specify the AlignZ value, use it.
@@ -557,10 +559,13 @@ void CAreTomoMain::mCorrAngOffset(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	if(pAtInput->m_afTiltCor[0] == 0) return;
+	//---------------------------
+	float fAlphaOffset = pAtInput->m_afTiltCor[1];
 	MD::CCtfResults* pCtfResults =MD::CCtfResults::GetInstance(m_iNthGpu);
+	if(fAlphaOffset == 0) fAlphaOffset = pCtfResults->m_fAlphaOffset;
 	//---------------------------
 	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
-	pAlnParam->AddAlphaOffset(pCtfResults->m_fAlphaOffset);
+	pAlnParam->AddAlphaOffset(fAlphaOffset);
 	//---------------------------
 	MAM::CDarkFrames* pDarkFrames = 
 	   MAM::CDarkFrames::GetInstance(m_iNthGpu);

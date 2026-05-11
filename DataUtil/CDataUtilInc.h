@@ -56,7 +56,6 @@ public:
 	//-----------------
 	CTiltSeries* GetSubSeries(int* piStart, int* piSize);
 	void RemoveFrame(int iFrame);
-	void RemoveFrames(int* piIndices, int iNumFrms);
 	//-----------------
 	void GetAlignedSize(float fTiltAxis, int* piAlnSize);
 	float** GetImages(void); // do not free;
@@ -302,6 +301,7 @@ public:
 	//-----------------
 	~CMcPackage(void);
 	void SetMovieName(char* pcMovieName);
+	bool bMrcFile(void);
 	bool bTiffFile(void);
 	bool bEerFile(void);
 	//-----------------
@@ -336,6 +336,7 @@ public:
 	int GetAcqIdx(int iTilt);
 	float GetTilt(int iTilt);
 	float GetDose(int iTilt);
+	float GetExpTime(int iTilt);
 	int m_iNumTilts;
 	int m_iNthGpu;
 	char m_acMdocFile[256];
@@ -345,12 +346,15 @@ private:
 	int mExtractValZ(char* pcLine);
 	bool mExtractTilt(char* pcLine, float* pfTilt);
 	bool mExtractDose(char* pcLine, float* pfDose);
+	bool mExtractExpTime(char* pcLine, float* pfExpTime);
 	char* mExtractFramePath(char* pcLine);
-	//-----------------
+	void mMakeExpTimeRelative(void);
+	//---------------------------
 	char** m_ppcFrmPath;
 	int* m_piAcqIdxs;
 	float* m_pfTilts;
 	float* m_pfDoses;
+	float* m_pfExpTimes;
 	int m_iBufSize;
 	static CReadMdoc* m_pInstances;
 	static int m_iNumGpus;

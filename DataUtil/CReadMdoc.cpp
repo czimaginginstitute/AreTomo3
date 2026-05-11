@@ -40,16 +40,19 @@ CReadMdoc::CReadMdoc(void)
 	m_iNthGpu = 0;
 	m_iBufSize = 1024;
 	m_iNumTilts = 0;
-	//-----------------
+	//---------------------------
 	m_ppcFrmPath = new char*[m_iBufSize];
 	m_piAcqIdxs = new int[m_iBufSize];
 	m_pfTilts = new float[m_iBufSize];
 	m_pfDoses = new float[m_iBufSize];
-	//-----------------
+	m_pfExpTimes = new float[m_iBufSize];
+	//---------------------------
 	memset(m_ppcFrmPath, 0, sizeof(char*) * m_iBufSize);
 	memset(m_piAcqIdxs, 0, sizeof(int) * m_iBufSize);
 	memset(m_pfTilts, 0, sizeof(float) * m_iBufSize);
 	memset(m_pfDoses, 0, sizeof(float) * m_iBufSize);
+	memset(m_pfExpTimes, 0, sizeof(float) * m_iBufSize);
+	memset(m_acMdocFile, 0, sizeof(m_acMdocFile));
 }
 
 CReadMdoc::~CReadMdoc(void)
@@ -59,6 +62,7 @@ CReadMdoc::~CReadMdoc(void)
 	if(m_piAcqIdxs != 0L) delete[] m_piAcqIdxs;
 	if(m_pfTilts != 0L) delete[] m_pfTilts;
 	if(m_pfDoses != 0L) delete[] m_pfDoses;
+	if(m_pfExpTimes != 0L) delete[] m_pfExpTimes;
 }
 
 char* CReadMdoc::GetFramePath(int iTilt)
@@ -93,19 +97,31 @@ float CReadMdoc::GetDose(int iTilt)
 	return m_pfDoses[iTilt];
 }
 
+//--------------------------------------------------------------------
+// 1. Exposure times are stored as percentages relative to the total
+//    exposure time of the entire tilt series.
+// 2. This is done to facilitate the calulation of per-tilt dose
+//    given the total dose of the tilt series.
+// 3. This implementation takes into account of the variable per
+//    per tilt dose.
+//-------------------------------------------------------------------- 
+float CReadMdoc::GetExpTime(int iTilt)
+{
+	return m_pfExpTimes[iTilt];
+}
+
 bool CReadMdoc::DoIt(const char* pcMdocFile)
 {
 	mClean();
 	FILE* pFile = fopen(pcMdocFile, "rt");
 	if(pFile == 0L) return false;
-	//-----------------
+	//---------------------------
 	memset(m_acMdocFile, 0, sizeof(m_acMdocFile));
 	strcpy(m_acMdocFile, pcMdocFile);
-	//-----------------
+	//---------------------------
 	m_iNumTilts = 0;
 	char acBuf[256] = {'\0'};
-	bool bTiltLoaded, bDoseLoaded, bFmLoaded;
-	//-----------------
+	//---------------------------
 	while(!feof(pFile))
 	{	memset(acBuf, 0, sizeof(char) * 256);
 		char* pcRet = fgets(acBuf, 256, pFile);
@@ -115,9 +131,10 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 		if(iValZ < 0) continue;
 		m_piAcqIdxs[m_iNumTilts] = iValZ;
 		//----------------
-		bTiltLoaded = false;
-		bDoseLoaded = false;
-		bFmLoaded = false;
+		bool bTiltLoaded = false;
+		bool bDoseLoaded = false;
+		bool bFmLoaded = false;
+		bool bExpTimeLoaded = false;
 		//----------------
 		while(!feof(pFile))
 		{	memset(acBuf, 0, sizeof(char) * 256);
@@ -139,6 +156,10 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 					bFmLoaded = true;
 				}
 			}
+			else if(!bExpTimeLoaded)
+			{	bExpTimeLoaded = mExtractExpTime(acBuf,
+				   &m_pfExpTimes[m_iNumTilts]);
+			}
 			else
 			{	m_iNumTilts += 1;
 				break;
@@ -146,7 +167,8 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 		}
 	}
 	fclose(pFile);
-	//-----------------
+	mMakeExpTimeRelative();
+	//---------------------------
 	if(m_iNumTilts >= 7) return true;
 	else return false;
 }
@@ -174,14 +196,27 @@ bool CReadMdoc::mExtractTilt(char* pcLine, float* pfTilt)
 bool CReadMdoc::mExtractDose(char* pcLine, float* pfDose)
 {
 	pfDose[0] = 0.0f;
-	char* pcTiltAngle = strstr(pcLine, "ExposureDose");
-	if(pcTiltAngle == 0L) return false;
+	char* pcExpDose = strstr(pcLine, "ExposureDose");
+	if(pcExpDose == 0L) return false;
 	//-----------------
 	char* pcEqual = strrchr(pcLine, '=');
 	if(strlen(pcEqual) < 2) return false;
 	//-----------------
 	pfDose[0] = (float)atof(&pcEqual[1]);
 	return true;
+}
+
+bool CReadMdoc::mExtractExpTime(char* pcLine, float* pfExpTime)
+{
+        pfExpTime[0] = 0.0f;
+        char* pcExpTime = strstr(pcLine, "ExposureTime");
+        if(pcExpTime == 0L) return false;
+        //-----------------
+        char* pcEqual = strrchr(pcLine, '=');
+        if(strlen(pcEqual) < 2) return false;
+        //-----------------
+        pfExpTime[0] = (float)atof(&pcEqual[1]);
+        return true;
 }
 
 char* CReadMdoc::mExtractFramePath(char* pcLine)
@@ -220,6 +255,26 @@ char* CReadMdoc::mExtractFramePath(char* pcLine)
 	}
 	return pcPath;
 }
+
+void CReadMdoc::mMakeExpTimeRelative(void)
+{
+	float fSum = 0.0f;
+	for(int i=0; i<m_iNumTilts; i++)
+	{	fSum += m_pfExpTimes[i];
+	}
+	//---------------------------
+	if(fSum > 0)
+	{	for(int i=0; i<m_iNumTilts; i++)
+		{	m_pfExpTimes[i] /= fSum;
+		}
+	}
+	else
+	{	for(int i=0; i<m_iNumTilts; i++)
+		{	m_pfExpTimes[i] = 1.0f / m_iNumTilts;
+		}
+	}
+}
+
 
 void CReadMdoc::mClean(void)
 {

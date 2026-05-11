@@ -75,9 +75,12 @@ bool CMcAreTomoMain::DoIt(void)
 	// wait a new movie for 10 minutes and quit if not found.
 	//--------------------------------------------------------
 	bool bExit = false;
+	int iCount = 0;
 	while(true)
 	{	int iQueueSize = s_pStackFolder->GetQueueSize();
-		if(iQueueSize > 0) 
+		//iCount += 1;
+		//if(iQueueSize > 0 && iCount <= 1)
+		if(iQueueSize > 0)
 		{	mProcess();
 			if(pInput->m_iCmd == 0)
 			{	s_pStackFolder->WaitForExit(5.0f);

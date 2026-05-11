@@ -151,7 +151,6 @@ public:
 	  MD::CTiltSeries* pTiltSeries,
 	  MAM::CAlignParam* pAlignParam
 	);
-	void ExcludeTilts(float* pfTilts, int iNumTilts);
 protected:
 	int m_aiVolSize[2];
 	int m_iPadProjX;
@@ -322,6 +321,7 @@ public:
 private:
 	void mSmooth(float* pfCCs, int iSize);
 	float mMeasure(int iZ, int* piStart);
+	float mMeasureStd(int iZ, int* piStart);
 	void mSetup(void);
 	void mClean(void);
 	void mDetectEdges(float* pfCCs, int iSize);
