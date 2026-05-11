@@ -122,8 +122,10 @@ void CFindCtfMain::mGenAvgSpects
 void CFindCtfMain::mDoTilts(void)
 {
 	CAtInput* pAtInput = CAtInput::GetInstance();
-        float fPhaseRange = fmaxf(pAtInput->m_afExtPhase[1], 0.0f);
-	m_pFindCtf2D->SetPhase(pAtInput->m_afExtPhase[0], fPhaseRange);
+	float fHalfR = pAtInput->m_afExtPhase[1] / 2;
+	float fMinP = fmaxf(pAtInput->m_afExtPhase[0] - fHalfR, 0.0f);
+	float fMaxP = fminf(pAtInput->m_afExtPhase[0] + fHalfR, 180.0f);
+	m_pFindCtf2D->SetPhase(fMinP, fMaxP);
 	//---------------------------
 	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
 	int iZeroTilt = pTsTiles->GetTiltIdx(0.0f);
@@ -131,11 +133,14 @@ void CFindCtfMain::mDoTilts(void)
 	m_pFindCtf2D->Do2D();
 	mGetResults(iZeroTilt);
 	//---------------------------
-	float fInitPhase = m_pFindCtf2D->m_fExtPhase;
-	if(fPhaseRange > 0) fPhaseRange = fminf(fPhaseRange, 5.0f);
+	float fInitP = m_pFindCtf2D->m_fExtPhase;
+	fHalfR = fHalfR * 0.25f;
+	fMinP = fmaxf(fMinP, fInitP - fHalfR);
+	fMaxP = fminf(fMaxP, fInitP + fHalfR);
 	//---------------------------
 	for(int i=0; i<m_iNumTilts; i++)
-	{	m_pFindCtf2D->SetPhase(fInitPhase, fPhaseRange);
+	{	if(i == iZeroTilt) continue;
+		m_pFindCtf2D->SetPhase(fMinP, fMaxP);
 		m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
 		m_pFindCtf2D->Do2D();
 		mGetResults(i);
@@ -145,7 +150,7 @@ void CFindCtfMain::mDoTilts(void)
 void CFindCtfMain::mRefineTilts(void)
 {
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
-	int iWinSize = 5;
+	int iWinSize = 7;
 	for(int i=0; i<m_iNumTilts; i++)
 	{	int iStart = i - iWinSize / 2;
 		if(iStart < 0) iStart = 0;
@@ -165,7 +170,7 @@ void CFindCtfMain::mRefineTilts(void)
 		float fTiltScore = pCtfResults->GetScore(i);
 		float fDiff = (fBestScore - fTiltScore) / 
 		   (fBestScore + (float)1e-30);
-		if(fDiff < 0.4f) continue;
+		if(fDiff < 0.30f) continue;
 		else mRefineTilt(i, iBestTilt);
 	}
 }
@@ -183,9 +188,9 @@ void CFindCtfMain::mRefineTilt(int iTilt, int iRefTilt)
 	//---------------------------
 	float afDfRange[2] = {0.0f};
 	float fPixSize2 = fPixSize * fPixSize;
-	float fDfMin = pCtfResults->GetDfMean(iRefTilt) * 0.60f;
-	float fDfMax = pCtfResults->GetDfMean(iRefTilt) * 1.40f;
-	fDfMin = fmaxf(fDfMin,  3000.0f * fPixSize2);
+	float fDfMin = pCtfResults->GetDfMean(iRefTilt) - 5000.0f;
+	float fDfMax = pCtfResults->GetDfMean(iRefTilt) + 5000.0f;
+	fDfMin = fmaxf(fDfMin,  2000.0f * fPixSize2);
 	fDfMax = fminf(fDfMax, 40000.0f * fPixSize2);
 	afDfRange[0] = (fDfMin + fDfMax) * 0.5f;
 	afDfRange[1] = fDfMax - fDfMin;
@@ -193,7 +198,7 @@ void CFindCtfMain::mRefineTilt(int iTilt, int iRefTilt)
 	float afAstRatio[2] = {0.0f};
         MD::CCtfParam* pCtfParam = pCtfResults->GetCtfParam(iRefTilt);
         afAstRatio[0] = pCtfParam->GetDfSigma(false) /
-           (pCtfParam->GetDfMean(false) + 0.001f);
+           (pCtfParam->GetDfMean(false) + (float)1e-10);
         afAstRatio[1] = 0.0f;
 	//---------------------------
 	float afAstAngle[2] = {0.0f};

@@ -60,6 +60,16 @@ void CMcPackage::SetMovieName(char* pcMovieName)
 	strcat(m_acMoviePath, pcMovieName);
 }
 
+bool CMcPackage::bMrcFile(void)
+{
+        char* pcDot = strrchr(m_acMoviePath, '.');
+        if(pcDot == 0L) return false;
+        //-----------------
+        char* pcTif = strcasestr(pcDot, ".mrc");
+        if(pcTif == 0L) return false;
+        else return true;
+}
+
 bool CMcPackage::bTiffFile(void)
 {
 	char* pcDot = strrchr(m_acMoviePath, '.');
@@ -79,6 +89,8 @@ bool CMcPackage::bEerFile(void)
 	if(pcEer == 0L) return false;
 	else return true;
 }
+
+
 
 int* CMcPackage::GetMovieSize(void)
 {

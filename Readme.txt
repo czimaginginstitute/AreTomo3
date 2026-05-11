@@ -682,4 +682,16 @@ Changes:
       the movie dose in mdoc file to decide the value. The determined value 
       will yield integrated frames with 0.25e/A2.
    5) In CAreTomoMain.cpp, measure sample thickness second time after the
-      refinement of global alignment based on projection matching. 
+      refinement of global alignment based on projection matching.
+
+AreTomo3 2.3.0 [03-18-2026]
+---------------------------
+Bug Fix:
+Changes: 
+   1) Incorporated FindCtf part of GCtfFind_1.1.7 for better estimating of
+      low-defocus (0.5 um) dataset collected with Volta Phase Plate.
+   2) The resolution range of CTF fitting has been changed from [3.5, 25A]
+      to [3.5A, 18A] to avoid the low-freq components. NEED testing on
+      no VPP datasets collected with higher defocus (>1 um).
+   3) Add support for loading gain corrected MRC movies.
+   4) Revised makefile, makefile11, makefile12

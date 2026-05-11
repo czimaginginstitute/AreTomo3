@@ -63,6 +63,10 @@ bool CMotionCorMain::mLoadStack(void)
 	{	EerUtil::CLoadEerMain loadEerMain;
 		bStatus = loadEerMain.DoIt(m_iNthGpu);
 	}
+	else if(pMcPackage->bMrcFile())
+	{	MrcUtil::CLoadMrcMain loadMrcMain;
+		bStatus = loadMrcMain.DoIt(m_iNthGpu);
+	}
 	//-----------------
 	MMD::CFmIntParam* pFmIntParam = 
 	   MMD::CFmIntParam::GetInstance(m_iNthGpu);

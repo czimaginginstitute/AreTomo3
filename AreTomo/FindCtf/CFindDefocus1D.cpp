@@ -75,32 +75,33 @@ void CFindDefocus1D::DoIt
 //--------------------------------------------------------------------
 void CFindDefocus1D::mBrutalForceSearch(float afResult[3])
 {	
-	float fTiny = (float)1e-30;
 	int iDfSteps = 501;
 	float fDfRange = m_afDfRange[1] - m_afDfRange[0];
 	float fDfStep = fDfRange / (iDfSteps - 1);
-	if(fDfStep < 50) fDfStep = 50.0f;
-	iDfSteps = (int)(fDfRange / (fDfStep + fTiny)) / 2 * 2 + 1;
+	if(fDfStep < 100) fDfStep = 100.0f;
+	iDfSteps = (int)(fDfRange / fDfStep) / 2 * 2 + 1;
 	//---------------------------
 	int iPsSteps = 37;
-	float fPsStep = m_afPhaseRange[1] / (iPsSteps - 1);
-	iPsSteps = (int)(m_afPhaseRange[1] / (fPsStep + fTiny)) / 2 * 2 + 1;
-	//-----------------
+	float fPhaseRange = m_afPhaseRange[1] - m_afPhaseRange[0];
+	float fPsStep = fPhaseRange / (iPsSteps - 1);
+	if(fPsStep < 1.0f) iPsSteps = 1.0f;
+	else iPsSteps = (int)(fPhaseRange / fPsStep) / 2 * 2 + 1;
+	//---------------------------
 	int iPoints = iDfSteps * iPsSteps;
 	float* pfCCs = new float[iPoints];
-	//-----------------
+	//---------------------------
 	float fDefocus, fPhase;
 	int iFocus = 0, iPhase = 0;
 	afResult[2] = (float)-1e20;
-	//-----------------
+	//---------------------------
 	for(int i=0; i<iPoints; i++)
 	{	iFocus = i % iDfSteps;
 		iPhase = i / iDfSteps;
 		fDefocus = m_afDfRange[0] + iFocus * fDfStep;
-		fPhase = m_afPhaseRange[0] + (iPhase - iPsSteps / 2) * fPsStep;
-		if(fPhase < 0) fPhase = 0.0f;
-		else if(fPhase > 150.0f) fPhase = 150.0f;
-		//----------------
+		fPhase = m_afPhaseRange[0] + iPhase * fPsStep;
+		if(fPhase < m_afPhaseRange[0]) continue;
+		if(fPhase > m_afPhaseRange[1]) continue;
+		//-------------------
 		mCalcCTF(fDefocus, fPhase);
 		pfCCs[i] = mCorrelate();
 		if(pfCCs[i] > afResult[2])
@@ -130,7 +131,7 @@ float CFindDefocus1D::mCorrelate(void)
 	float fMinFreq = fRes1 / m_afResRange[0];
 	float fMaxFreq = fRes1 / m_afResRange[1];
 	//---------------------------------------
-	m_pGCC1D->Setup(fMinFreq, fMaxFreq, 0.0f);
+	m_pGCC1D->Setup(fMinFreq, fMaxFreq, 1.0f);
 	float fCC = m_pGCC1D->DoIt(m_gfCtf1D, m_gfRadialAvg);
 	return fCC;
 }

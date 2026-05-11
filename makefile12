@@ -1,5 +1,5 @@
 PRJHOME = $(shell pwd)
-CUDAHOME = $(HOME)/nvidia/cuda-13.1
+CUDAHOME = $(HOME)/nvidia/cuda-12.1
 CUDAINC = $(CUDAHOME)/include
 CUDALIB = $(CUDAHOME)/lib64
 PRJINC = $(PRJHOME)/LibSrc/Include
@@ -269,7 +269,9 @@ CUFLAG = -Xptxas -dlcm=ca -O2 \
 	-gencode arch=compute_90,code=sm_90 \
 	-gencode arch=compute_89,code=sm_89 \
 	-gencode arch=compute_86,code=sm_86 \
-	-gencode arch=compute_80,code=sm_80 
+	-gencode arch=compute_80,code=sm_80 \
+	-gencode arch=compute_75,code=sm_75 \
+	-gencode arch=compute_70,code=sm_70
 #------------------------------------------
 cuda: $(CUCPPS)
 

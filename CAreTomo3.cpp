@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 	CAtInput* pAtInput = CAtInput::GetInstance();
 	//-----------------
 	char acVersion[64] = {'\0'};
-	strcpy(acVersion, "version 2.2.9, built on Mar. 18, 2026");
+	strcpy(acVersion, "version 2.3.0, built on Mar. 30, 2026");
 	if(argc == 1)
 	{	printf("\nAreTomo3: fully integrated and automated cryoET "
 		   "pipeline for both real-time and offline tomographic "

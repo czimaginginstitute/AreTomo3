@@ -210,6 +210,23 @@ private:
 	cudaStream_t m_streams[2];
 };
 
+class CLoadMrcMain
+{
+public:
+	CLoadMrcMain(void);
+	~CLoadMrcMain(void);
+	bool DoIt(int iNthGpu);
+private:
+	bool mLoadHeader(void);
+	void mLoadStack(void);
+	//---------------------------
+	int m_iNthGpu;
+	int m_iMode;
+	int m_aiStkSize[3];
+	bool m_bLoaded;
+	float m_fLoadTime;
+};
+
 }
 
 namespace MMM = McAreTomo::MotionCor::MrcUtil;
