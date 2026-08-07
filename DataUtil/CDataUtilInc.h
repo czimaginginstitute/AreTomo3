@@ -6,6 +6,7 @@
 #include <queue>
 #include <unordered_map>
 #include <string>
+#include <time.h>
 #include <cuda.h>
 
 namespace McAreTomo::DataUtil
@@ -348,13 +349,16 @@ private:
 	bool mExtractDose(char* pcLine, float* pfDose);
 	bool mExtractExpTime(char* pcLine, float* pfExpTime);
 	char* mExtractFramePath(char* pcLine);
+	bool mExtractDateTime(char* pcLine, time_t* pDateTime);
 	void mMakeExpTimeRelative(void);
+	void mOrderAcquisition(void);
 	//---------------------------
 	char** m_ppcFrmPath;
 	int* m_piAcqIdxs;
 	float* m_pfTilts;
 	float* m_pfDoses;
 	float* m_pfExpTimes;
+	time_t* m_pDateTimes;
 	int m_iBufSize;
 	static CReadMdoc* m_pInstances;
 	static int m_iNumGpus;
