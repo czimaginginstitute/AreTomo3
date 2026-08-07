@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 using namespace McAreTomo::DataUtil;
@@ -46,12 +47,14 @@ CReadMdoc::CReadMdoc(void)
 	m_pfTilts = new float[m_iBufSize];
 	m_pfDoses = new float[m_iBufSize];
 	m_pfExpTimes = new float[m_iBufSize];
+	m_pDateTimes = new time_t[m_iBufSize];
 	//---------------------------
 	memset(m_ppcFrmPath, 0, sizeof(char*) * m_iBufSize);
 	memset(m_piAcqIdxs, 0, sizeof(int) * m_iBufSize);
 	memset(m_pfTilts, 0, sizeof(float) * m_iBufSize);
 	memset(m_pfDoses, 0, sizeof(float) * m_iBufSize);
 	memset(m_pfExpTimes, 0, sizeof(float) * m_iBufSize);
+	memset(m_pDateTimes, 0, sizeof(time_t) * m_iBufSize);
 	memset(m_acMdocFile, 0, sizeof(m_acMdocFile));
 }
 
@@ -63,6 +66,7 @@ CReadMdoc::~CReadMdoc(void)
 	if(m_pfTilts != 0L) delete[] m_pfTilts;
 	if(m_pfDoses != 0L) delete[] m_pfDoses;
 	if(m_pfExpTimes != 0L) delete[] m_pfExpTimes;
+	if(m_pDateTimes != 0L) delete[] m_pDateTimes;
 }
 
 char* CReadMdoc::GetFramePath(int iTilt)
@@ -121,52 +125,70 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 	//---------------------------
 	m_iNumTilts = 0;
 	char acBuf[256] = {'\0'};
+	char* pcRet = 0L;
 	//---------------------------
 	while(!feof(pFile))
-	{	memset(acBuf, 0, sizeof(char) * 256);
-		char* pcRet = fgets(acBuf, 256, pFile);
-		if(pcRet == 0L) continue;
-		//----------------
-		int iValZ = mExtractValZ(acBuf);
-		if(iValZ < 0) continue;
-		m_piAcqIdxs[m_iNumTilts] = iValZ;
-		//----------------
+	{	int iValZ = mExtractValZ(acBuf);
+		if(iValZ < 0) 
+		{	pcRet = fgets(acBuf, 256, pFile);
+			if(pcRet == 0L) continue;
+		}
+		else m_piAcqIdxs[m_iNumTilts] = iValZ;
+		//-------------------
 		bool bTiltLoaded = false;
 		bool bDoseLoaded = false;
 		bool bFmLoaded = false;
 		bool bExpTimeLoaded = false;
-		//----------------
+		bool bDateTimeLoaded = false;
+		int iCount = 0;
+		//-------------------
 		while(!feof(pFile))
 		{	memset(acBuf, 0, sizeof(char) * 256);
 			char* pcRet = fgets(acBuf, 256, pFile);
 			if(pcRet == 0L) continue;
-			//---------------
+			//-----------
 			if(!bTiltLoaded)
 			{	bTiltLoaded = mExtractTilt(acBuf, 
 				   &m_pfTilts[m_iNumTilts]);
+				if(bTiltLoaded) iCount += 1;
 			}
-			else if(!bDoseLoaded)
+			if(!bDoseLoaded)
 			{	bDoseLoaded = mExtractDose(acBuf, 
 				   &m_pfDoses[m_iNumTilts]);
+				if(bDoseLoaded) iCount += 1;
                         }
-			else if(!bFmLoaded)
+			if(!bFmLoaded)
 			{	char* pcFramePath = mExtractFramePath(acBuf);
 				if(pcFramePath != 0L)
 				{	m_ppcFrmPath[m_iNumTilts] = pcFramePath;
 					bFmLoaded = true;
+					iCount += 1;
 				}
 			}
-			else if(!bExpTimeLoaded)
+			if(!bExpTimeLoaded)
 			{	bExpTimeLoaded = mExtractExpTime(acBuf,
 				   &m_pfExpTimes[m_iNumTilts]);
+				if(bExpTimeLoaded) iCount += 1;
 			}
-			else
+			if(!bDateTimeLoaded)
+			{	bDateTimeLoaded = mExtractDateTime(acBuf,
+				   &m_pDateTimes[m_iNumTilts]);
+				if(bDateTimeLoaded) iCount += 1;
+			}
+			if(iCount == 5)
 			{	m_iNumTilts += 1;
 				break;
 			}
+			//---------------------------------------------
+			// Hit another ZValue section without all the
+			// fields parsed. This acBuf will be parsed
+			// again in the outer loop - defect mdoc file.
+			//---------------------------------------------
+			if(mExtractValZ(acBuf) > 0) break;
 		}
 	}
 	fclose(pFile);
+	mOrderAcquisition();
 	mMakeExpTimeRelative();
 	//---------------------------
 	if(m_iNumTilts >= 7) return true;
@@ -256,6 +278,27 @@ char* CReadMdoc::mExtractFramePath(char* pcLine)
 	return pcPath;
 }
 
+bool CReadMdoc::mExtractDateTime(char* pcLine, time_t* pDateTime)
+{
+	char* pcDateTime = strstr(pcLine, "DateTime");
+	if(pcDateTime == 0L) return false;
+	//---------------------------
+	char* pcEqual = strrchr(pcLine, '=');
+	char acDateTime[64] = {'\0'};
+	int iStartIdx = (pcEqual[1] == ' ') ? 2 : 1;
+	strcpy(acDateTime, &pcEqual[iStartIdx]);
+	//---------------------------
+	char* pcRetN = strrchr(acDateTime, '\n');
+	if(pcRetN != 0L) pcRetN[0] = '\0';
+	char* pcRetR = strrchr(acDateTime, '\r');
+	if(pcRetR != 0L) pcRetR[0] = '\0';
+	//---------------------------
+	struct tm tmDateTime = {0};
+	strptime(acDateTime, "%d-%b-%Y %H:%M:%S", &tmDateTime);
+	pDateTime[0] = mktime(&tmDateTime);
+	return true;
+}
+
 void CReadMdoc::mMakeExpTimeRelative(void)
 {
 	float fSum = 0.0f;
@@ -275,6 +318,22 @@ void CReadMdoc::mMakeExpTimeRelative(void)
 	}
 }
 
+void CReadMdoc::mOrderAcquisition(void)
+{
+	for(int i=0; i<m_iNumTilts; i++)
+	{	m_piAcqIdxs[i] = i;
+	}
+	//---------------------------
+	for(int i=0; i<m_iNumTilts; i++)
+	{	int iCount = 0;
+		for(int j=0; j<m_iNumTilts; j++)
+		{	if(j == i) continue;
+			if(m_pDateTimes[i] < m_pDateTimes[j]) continue;
+			iCount += 1;
+		}
+		m_piAcqIdxs[i] = iCount;
+	}	
+}
 
 void CReadMdoc::mClean(void)
 {

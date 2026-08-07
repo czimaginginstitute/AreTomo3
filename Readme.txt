@@ -695,3 +695,13 @@ Changes:
       no VPP datasets collected with higher defocus (>1 um).
    3) Add support for loading gain corrected MRC movies.
    4) Revised makefile, makefile11, makefile12
+
+AreTomo3 2.3.1 [08-03-2026]
+---------------------------
+Bug Fix:
+   1) Fixed a bug in DataUtil/CReadMdoc.cpp (only in 2.3.1): Skip every
+      other ZValue section.
+Changes:
+   1) Parse the DateTime field in MDOC file instead of ZValue to determine
+      the correct acquisition order. Note that the format of DateTime are
+      similar to "01-Aug-2024 15:27-36", "02-Qug-2024 07:52:28".
