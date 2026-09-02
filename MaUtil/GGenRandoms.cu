@@ -4,6 +4,8 @@
 
 using namespace McAreTomo::MaUtil;
 
+int GGenRandoms::m_iSeed = -1;
+
 static __global__ void mGGenRandNumbers
 (	int* giOutput,
 	int iSize,
@@ -39,7 +41,8 @@ void GGenRandoms::DoIt(int iSize)
 	}
 	m_iSize = iSize;
 	//---------------------------
-	unsigned long long seed = time(0L);
+	unsigned long long seed = (m_iSeed >= 0) ?
+	   (unsigned long long)m_iSeed : (unsigned long long)time(0L);
 	dim3 aBlockDim(1024, 1);
 	dim3 aGridDim(1, 1);
 	aGridDim.x = (m_iSize + aBlockDim.x - 1) / aBlockDim.x;

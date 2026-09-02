@@ -229,6 +229,10 @@ public:
 	~GGenRandoms(void);
 	void DoIt(int iSize);
 	//---------------------------
+	// -Seed: < 0 (default) seeds cuRAND with time(0L) as before;
+	// >= 0 uses this fixed seed so that runs are reproducible.
+	static int m_iSeed;
+	//---------------------------
 	int* m_giRandoms;
 	int m_iSize;
 };

@@ -40,6 +40,7 @@ public:
 	int m_iCmd;
 	int m_iResume;
 	int m_iSerial;
+	int m_iSeed;
 	//-----------------
 	char m_acInPrefixTag[32];
 	char m_acInSuffixTag[32];
@@ -59,6 +60,7 @@ public:
 	char m_acCmdTag[32];
 	char m_acResumeTag[32];
 	char m_acSerialTag[32];
+	char m_acSeedTag[32];
 private:
         CInput(void);
 	void mExtractInDir(void);

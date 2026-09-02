@@ -177,6 +177,9 @@ void CAreTomo3Json::mAddMainInput(void)
 	mAddKeyIntPair(pInput->m_acResumeTag + 1,
 	   &(pInput->m_iResume), 1, 10, !bList, !bEnd);
 	//-----------------
+	mAddKeyIntPair(pInput->m_acSeedTag + 1,
+	   &(pInput->m_iSeed), 1, 10, !bList, !bEnd);
+	//-----------------
 	mAddKeyIntPair(pInput->m_acGpuIDTag + 1,
 	   pInput->m_piGpuIDs, pInput->m_iNumGpus, 10, bList, !bEnd);	
 }

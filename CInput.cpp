@@ -44,6 +44,7 @@ CInput::CInput(void)
 	strcpy(m_acCmdTag, "-Cmd");
 	strcpy(m_acResumeTag, "-Resume");
 	strcpy(m_acSerialTag, "-Serial");
+	strcpy(m_acSeedTag, "-Seed");
 	//-----------------
 	m_iNumGpus = 0;
 	m_piGpuIDs = 0L;
@@ -57,6 +58,7 @@ CInput::CInput(void)
 	m_iCmd = 0;
 	m_iResume = 0;
 	m_iSerial = 0;
+	m_iSeed = -1;
 }
 
 CInput::~CInput(void)
@@ -138,6 +140,16 @@ void CInput::ShowTags(void)
 	   "  2. -Resume 1 starts from what are left by skipping all the mdoc\n"
 	   "     files in MdocDone.txt file in the output folder.\n\n",
 	   m_acResumeTag); 
+	//-----------------
+	printf("%-15s\n"
+	   "  1. Seed of the random number generator that fills the empty\n"
+	   "     regions of shifted/rotated images (and SART volumes).\n"
+	   "  2. Default -1 seeds it with the wall-clock time, so results\n"
+	   "     vary slightly from run to run. Any value from 0 to\n"
+	   "     2147483647 fixes the seed: runs with the same input and\n"
+	   "     parameters then give bit-identical alignment and volumes\n"
+	   "     (this also requires the same GPU model, driver and CUDA).\n\n",
+	   m_acSeedTag);
 	//-----------------
 	printf("%-15s\n", m_acGpuIDTag);
 	printf("   GPU IDs. Default 0.\n");
@@ -227,6 +239,10 @@ void CInput::Parse(int argc, char* argv[])
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_iResume);
 	//-----------------
+	aParseArgs.FindVals(m_acSeedTag, aiRange);
+	if(aiRange[1] > 1) aiRange[1] = 1;
+	aParseArgs.GetVals(aiRange, &m_iSeed);
+	//-----------------
 	mExtractInDir();
 	mAddEndSlash(m_acOutDir);
 	mAddEndSlash(m_acLogDir);
@@ -253,6 +269,7 @@ void CInput::mPrint(void)
 	printf("%-15s  %d\n", m_acSerialTag, m_iSerial);
 	printf("%-15s  %d\n", m_acCmdTag, m_iCmd);
 	printf("%-15s  %d\n", m_acResumeTag, m_iResume);
+	printf("%-15s  %d\n", m_acSeedTag, m_iSeed);
 	//-----------------
 	printf("%-15s  %d\n", m_acSplitSumTag, m_iSplitSum);
 	//-----------------

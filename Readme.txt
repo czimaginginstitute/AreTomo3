@@ -705,3 +705,14 @@ Changes:
    1) Parse the DateTime field in MDOC file instead of ZValue to determine
       the correct acquisition order. Note that the format of DateTime are
       similar to "01-Aug-2024 15:27-36", "02-Qug-2024 07:52:28".
+
+AreTomo3 2.3.2 [09-01-2026]
+---------------------------
+Changes:
+   1) Added -Seed. Since 2.2.4 the empty regions of shifted/rotated images
+      (MaUtil/GFillEmpty2D.cu, used by tilt series alignment and by WBP/SART
+      reconstruction) are filled with randomly chosen pixels of the same image
+      whose cuRAND seed was time(0L), so identical inputs gave slightly
+      different alignments and volumes from run to run. -Seed N (N >= 0)
+      fixes that seed and makes runs with the same inputs and parameters
+      bit-identical. The default (-Seed -1) keeps the previous behavior.

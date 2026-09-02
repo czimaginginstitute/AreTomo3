@@ -57,6 +57,7 @@ int main(int argc, char* argv[])
 	pInput->Parse(argc, argv);
 	pMcInput->Parse(argc, argv);
 	pAtInput->Parse(argc, argv);
+	MU::GGenRandoms::m_iSeed = pInput->m_iSeed; // -Seed
 	//-----------------
 	CAreTomo3Json areTomo3Json;
 	areTomo3Json.Create(acVersion);
