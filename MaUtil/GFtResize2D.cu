@@ -10,6 +10,7 @@ static __global__ void mGTruncate
 	int iCmpSizeInY,
   	cufftComplex* gCmpOut, 
 	int iCmpSizeOutY,
+	float fBinning,
 	bool bSum
 )
 {	int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -21,13 +22,16 @@ static __global__ void mGTruncate
 	}
 	//---------------------------
 	int iIn = y * iCmpSizeInX + blockIdx.x;
+	float fRe = gCmpIn[iIn].x * fBinning;
+	float fIm = gCmpIn[iIn].y * fBinning;
+	//---------------------------
 	if(bSum)
-	{	gCmpOut[iOut].x += gCmpIn[iIn].x;
-		gCmpOut[iOut].y += gCmpIn[iIn].y;
+	{	gCmpOut[iOut].x += fRe;
+		gCmpOut[iOut].y += fIm;
 	}
 	else
-	{	gCmpOut[iOut].x = gCmpIn[iIn].x;
-		gCmpOut[iOut].y = gCmpIn[iIn].y;
+	{	gCmpOut[iOut].x = fRe;
+		gCmpOut[iOut].y = fIm;
 	}
 }
 
@@ -36,7 +40,8 @@ static __global__ void mGExpand
 	int iCmpSizeInY,
 	cufftComplex* gCmpOut,
 	int iCmpSizeOutX,
-	int iCmpSizeOutY
+	int iCmpSizeOutY,
+	float fBinning
 )
 {	int y = blockIdx.y * blockDim.y + threadIdx.y;
 	if(y >= iCmpSizeInY) return;
@@ -47,8 +52,8 @@ static __global__ void mGExpand
 	}
 	//---------------------
 	int iOut = y * iCmpSizeOutX + blockIdx.x;
-	gCmpOut[iOut].x = gCmpIn[iIn].x;
-	gCmpOut[iOut].y = gCmpIn[iIn].y;
+	gCmpOut[iOut].x = gCmpIn[iIn].x * fBinning;
+	gCmpOut[iOut].y = gCmpIn[iIn].y * fBinning;
 }
 
 GFtResize2D::GFtResize2D(void)
@@ -137,8 +142,14 @@ void GFtResize2D::DownSample
 	dim3 aGridDim(piSizeOut[0], 1);
 	aGridDim.y = (piSizeOut[1] + aBlockDim.y - 1) / aBlockDim.y;
 	//---------------------------
-	mGTruncate<<<aGridDim, aBlockDim, 0, stream>>>(gCmpIn, piSizeIn[0], 
-	   piSizeIn[1], gCmpOut, piSizeOut[1], bSum);	
+	double dSizeIn = piSizeIn[0] * piSizeIn[1];
+	double dSizeOut = piSizeOut[0] * piSizeOut[1];
+	float fBinning = (float)(dSizeIn / dSizeOut);
+	//---------------------------
+	mGTruncate<<<aGridDim, aBlockDim, 0, stream>>>(
+	   gCmpIn, piSizeIn[0], 
+	   piSizeIn[1], gCmpOut, piSizeOut[1], 
+	   fBinning, bSum);	
 }
 
 void GFtResize2D::UpSample
@@ -161,7 +172,13 @@ void GFtResize2D::UpSample
 	dim3 aGridDim(piSizeIn[0], 1);
 	aGridDim.y = (piSizeIn[1] + aBlockDim.y - 1) / aBlockDim.y;
 	//---------------------------
-	mGExpand<<<aGridDim, aBlockDim, 0, stream>>>(gCmpIn, piSizeIn[1],
-	   gCmpOut, piSizeOut[0], piSizeOut[1]);
+	double dSizeIn = piSizeIn[0] * piSizeIn[1];
+	double dSizeOut = piSizeOut[0] * piSizeOut[1];
+	float fBinning = (float)(dSizeIn / dSizeOut);
+	//---------------------------
+	mGExpand<<<aGridDim, aBlockDim, 0, stream>>>(
+	   gCmpIn, piSizeIn[1],
+	   gCmpOut, piSizeOut[0], piSizeOut[1],
+	   fBinning);
 }
 

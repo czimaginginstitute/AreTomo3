@@ -13,8 +13,8 @@ static __global__ void mGRWeight
 	int i = blockIdx.y * iCmpSize + x;
 	//--------------------------------
 	float fN = 2 * (iCmpSize - 1.0f);
-	gCmpSinogram[i].x /= fN;
-	gCmpSinogram[i].y /= fN;
+	//gCmpSinogram[i].x /= fN;
+	//gCmpSinogram[i].y /= fN;
 	//----------------------
 	float fR = x / fN;
 	fR = 2 * fR * (0.55f + 0.45f * cosf(6.2831852f * fR));

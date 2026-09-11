@@ -344,7 +344,9 @@ public:
 private:
 	CReadMdoc(void);
 	void mClean(void);
-	int mExtractValZ(char* pcLine);
+	void mAllocate(int iNumTilts);
+	//---------------------------
+	bool mExtractValZ(char* pcLine, int* pi);
 	bool mExtractTilt(char* pcLine, float* pfTilt);
 	bool mExtractDose(char* pcLine, float* pfDose);
 	bool mExtractExpTime(char* pcLine, float* pfExpTime);

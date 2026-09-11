@@ -10,6 +10,7 @@ static __global__ void mGResize
 	int iCmpSizeInY,
   	cufftComplex* gCmpOut, 
 	int iCmpSizeOutY,
+	float fScale,
 	bool bSum
 )
 {	int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -17,7 +18,7 @@ static __global__ void mGResize
 	//---------------------------
 	int iOut = y * gridDim.x + blockIdx.x;
 	if(blockIdx.x >= iCmpSizeInX) return;
-	//-----------------------------------
+	//---------------------------
         if(y > (iCmpSizeOutY / 2)) 
 	{	y -= iCmpSizeOutY;
 		if(y <= (-iCmpSizeInY / 2)) return;
@@ -26,15 +27,18 @@ static __global__ void mGResize
 	else
 	{	if(y > (iCmpSizeInY / 2)) return;
 	}
-	//---------------------------------------
+	//---------------------------
 	int iIn = y * iCmpSizeInX + blockIdx.x;
+	float fRe = gCmpIn[iIn].x * fScale;
+	float fIm = gCmpIn[iIn].y * fScale;
+	//---------------------------
 	if(bSum)
-	{	gCmpOut[iOut].x += gCmpIn[iIn].x;
-		gCmpOut[iOut].y += gCmpIn[iIn].y;
+	{	gCmpOut[iOut].x += fRe;
+		gCmpOut[iOut].y += fIm;
 	}
 	else
-	{	gCmpOut[iOut].x = gCmpIn[iIn].x;
-		gCmpOut[iOut].y = gCmpIn[iIn].y;
+	{	gCmpOut[iOut].x = fRe;
+		gCmpOut[iOut].y = fIm;
 	}
 }
 
@@ -122,13 +126,18 @@ void GFourierResize2D::DoIt
 	bool bSum,
 	cudaStream_t stream
 )
-{	dim3 aBlockDim(1, 64);
+{	double dSizeIn = piSizeIn[0] * piSizeIn[1];
+	double dSizeOut = piSizeOut[0] * piSizeOut[1];
+	float fBinning = (float)dSizeIn / dSizeOut;
+	//---------------------------
+	dim3 aBlockDim(1, 64);
 	dim3 aGridDim(piSizeOut[0], 1);
 	aGridDim.y = (piSizeOut[1] + aBlockDim.y - 1) / aBlockDim.y;
-	//-----------------
-	mGResize<<<aGridDim, aBlockDim, 0, stream>>>
-	( gCmpIn, piSizeIn[0], piSizeIn[1], 
-	  gCmpOut, piSizeOut[1], bSum );	
+	//---------------------------
+	mGResize<<<aGridDim, aBlockDim, 0, stream>>>(
+	   gCmpIn, piSizeIn[0], piSizeIn[1], 
+	   gCmpOut, piSizeOut[1], 
+	   fBinning, bSum);	
 }
 
 void GFourierResize2D::Clean(void)

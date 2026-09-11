@@ -118,13 +118,12 @@ void GBackProjWbp::DoIt
 	float* gfVolXZ,
 	cudaStream_t stream
 )
-{	MaUtil::CheckCudaError("0000000");
-	mGBackProjWbp<<<m_aGridDim, m_aBlockDim, 0, stream>>>(gfPadSinogram, 
-	   gfCosSin, gbNoProjs, m_gfPadVol2);
-	MaUtil::CheckCudaError("1111111");
+{	mGBackProjWbp<<<m_aGridDim, m_aBlockDim, 0, stream>>>(
+	   gfPadSinogram, 
+	   gfCosSin, gbNoProjs, 
+	   m_gfPadVol2);
 	//---------------------------
 	m_pForwardFFT->Forward(m_gfPadVol2, true, stream);
-	MaUtil::CheckCudaError("2222222");
 	cufftComplex* gCmp2 = (cufftComplex*)m_gfPadVol2;
 	cufftComplex* gCmp = (cufftComplex*)m_gfPadVol;
 	//---------------------------
@@ -132,12 +131,9 @@ void GBackProjWbp::DoIt
 	int aiCmpSize2[] = {m_aiVolSize2[0] / 2 + 1, m_aiVolSize2[1]};
 	MU::GFourierResize2D ftResize2D;
 	ftResize2D.DoIt(gCmp2, aiCmpSize2, gCmp, aiCmpSize, false, stream);
-	MaUtil::CheckCudaError("333333");
 	m_pInverseFFT->Inverse(gCmp, stream);
-	MaUtil::CheckCudaError("444444");
 	//---------------------------
 	int aiPadSize[] = {aiCmpSize[0] * 2, aiCmpSize[1]};
 	MU::CPad2D pad2D;
 	pad2D.Unpad(m_gfPadVol, aiPadSize, gfVolXZ);
-	MaUtil::CheckCudaError("555555");
 }

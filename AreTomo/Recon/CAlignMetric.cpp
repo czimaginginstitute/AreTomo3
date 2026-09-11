@@ -103,11 +103,12 @@ void CAlignMetric::mReproj(void)
 		gAddFrames.DoIt(m_gfImg2, 1.0f, m_gfImg3, 1.0f,
 		   m_gfImg2, m_pVolSeries->m_aiStkSize);
 	}
-
+	/*
 	MU::CSaveTempMrc saveMrc;
 	saveMrc.SetFile("/home/shawn.zheng/szheng/Temp/TestReproj", ".mrc");
 	saveMrc.GDoIt(m_gfImg2, m_pVolSeries->m_aiStkSize);
 	printf("CAlignMetric: done");
+	*/
 }
 
 void CAlignMetric::mSetup(int* piImgSize)
