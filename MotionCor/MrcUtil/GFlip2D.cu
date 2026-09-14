@@ -8,6 +8,10 @@ using namespace McAreTomo::MotionCor::MrcUtil;
 
 //-------------------------------------------------------------------
 // 1. Flip image upside down around x (horizontal) axis.
+// 2. Each thread swaps one pixel pair. The row/column guards must be
+//    ">=": the launch grids are rounded up, so out-of-range threads
+//    exist and would otherwise read/write one row (or column) past
+//    the end of the buffer.
 //-------------------------------------------------------------------
 static __global__ void mGVertical
 (	float* gfImg,
@@ -31,7 +35,7 @@ static __global__ void mGHorizontal
 	int iSizeY
 )
 {	int y = blockIdx.y * blockDim.y + threadIdx.y;
-	if(y > iSizeY) return;
+	if(y >= iSizeY) return;
 	int i = y * iSizeX + blockIdx.x;
 	//------------------------------
 	int iX = iSizeX - 1 - blockIdx.x;
@@ -101,7 +105,7 @@ void GFlip2D::mVertical
 {	int iHalfY = piImgSize[1] / 2;
 	dim3 aBlockDim(512, 1);
 	dim3 aGridDim(1, iHalfY);
-	aGridDim.x = piImgSize[0] / aBlockDim.x + 1;
+	aGridDim.x = (piImgSize[0] + aBlockDim.x - 1) / aBlockDim.x;
 	mGVertical<<<aGridDim, aBlockDim>>>
 	(  gfImg, piImgSize[0], piImgSize[1]
 	);
@@ -114,7 +118,7 @@ void GFlip2D::mHorizontal
 {	int iHalfX = piImgSize[0] / 2;
 	dim3 aBlockDim(1, 512);
 	dim3 aGridDim(iHalfX, 1);
-	aGridDim.y = piImgSize[1] / aBlockDim.y + 1;
+	aGridDim.y = (piImgSize[1] + aBlockDim.y - 1) / aBlockDim.y;
 	mGHorizontal<<<aGridDim, aBlockDim>>>
 	(  gfImg, piImgSize[0], piImgSize[1]
 	);
