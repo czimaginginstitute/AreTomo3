@@ -100,6 +100,8 @@ public:
 	int m_iEerSampling;
 	int m_iTiffOrder;
 	int m_iCorrInterp;
+	int m_iOutMotion;
+	int m_iInMotion;
 	//-----------------
 	char m_acGainFileTag[32];
 	char m_acDarkMrcTag[32];
@@ -120,6 +122,8 @@ public:
 	char m_acEerSamplingTag[32];
 	char m_acTiffOrderTag[32];
 	char m_acCorrInterpTag[32];
+	char m_acOutMotionTag[32];
+	char m_acInMotionTag[32];
 private:
         CMcInput(void);
         void mPrint(void);

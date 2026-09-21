@@ -33,6 +33,17 @@ public:
         int GetIntFmStart(int iIntFrame);
         int GetIntFmSize(int iIntFrame);
         int GetNumIntFrames(void);
+        //-----------------------------------------------------------
+        // Immutable frame provenance retained BEFORE mRemoveFrames
+        // compacts the integration arrays (needed by CSaveAlign to
+        // write the .mcaln frame table; see arewarpo docs).
+        //-----------------------------------------------------------
+        int GetNumRawFrames(void);
+        int GetProvNumIntFrames(void);        // pre-throw count
+        int GetProvStart(int iIntFrame);      // source_start
+        int GetProvSize(int iIntFrame);       // source_count
+        bool GetProvIncluded(int iIntFrame);
+        int GetProvAligned(int iIntFrame);    // aligned index or -1
         float GetIntFmDose(int iIntFrame);
         float GetAccDose(int iIntFrame);
         float GetTotalDose(void);
@@ -55,6 +66,11 @@ private:
         int* m_piIntFmSizes;
         int m_iNumRawFms;   // All frames in the input movie file
         int m_iMrcMode;
+        int* m_piProvStarts;   // pre-throw provenance (see getters)
+        int* m_piProvSizes;
+        int m_iProvIntFms;
+        int m_iProvKeepFirst;  // first kept pre-throw index
+        int m_iProvKeepCount;
         //-----------------
         static CFmIntParam* m_pInstances;
         static int m_iNumGpus;
@@ -176,6 +192,9 @@ public:
 	void CopyFlagsToGpu(bool* gbBadShifts);
 	void MakeRelative(void);
 	void DetectBads(void);
+	void SetBadFlag(int iFrame, int iPatch, bool bBad);
+	bool GetBadFlag(int iFrame, int iPatch);
+	void SetLocalShift(int iFrame, int iPatch, float* pfShift);
 	//-----------------
 	CStackShift* m_pFullShift; // shifts of full frames
 	int m_iNumPatches;

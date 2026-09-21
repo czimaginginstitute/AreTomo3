@@ -32,6 +32,8 @@ CMcInput::CMcInput(void)
 	strcpy(m_acIterTag, "-McIter");
 	strcpy(m_acTolTag, "-McTol");
 	strcpy(m_acMcBinTag, "-McBin");
+	strcpy(m_acOutMotionTag, "-OutMotion");
+	strcpy(m_acInMotionTag, "-InMotion");
 	strcpy(m_acThrowTag, "-Throw");
 	strcpy(m_acFmIntTag, "-FmInt");
 	strcpy(m_acGroupTag, "-Group");
@@ -65,6 +67,8 @@ CMcInput::CMcInput(void)
 	m_iEerSampling = 1;
 	m_iTiffOrder = 1;
 	m_iCorrInterp = 0;
+	m_iOutMotion = 0;
+	m_iInMotion = 0;
 }
 
 CMcInput::~CMcInput(void)
@@ -256,6 +260,14 @@ void CMcInput::Parse(int argc, char* argv[])
 	aParseArgs.FindVals(m_acCorrInterpTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_iCorrInterp);
+	//-----------------
+	aParseArgs.FindVals(m_acOutMotionTag, aiRange);
+	if(aiRange[1] > 1) aiRange[1] = 1;
+	aParseArgs.GetVals(aiRange, &m_iOutMotion);
+	//-----------------
+	aParseArgs.FindVals(m_acInMotionTag, aiRange);
+	if(aiRange[1] > 1) aiRange[1] = 1;
+	aParseArgs.GetVals(aiRange, &m_iInMotion);
 	mPrint();
 }
 
@@ -316,5 +328,7 @@ void CMcInput::mPrint(void)
 	printf("%-15s  %d\n", m_acInFmMotionTag, m_iInFmMotion);
 	printf("%-15s  %d\n", m_acTiffOrderTag, m_iTiffOrder);
 	printf("%-15s  %d\n", m_acCorrInterpTag, m_iCorrInterp);
+	printf("%-15s  %d\n", m_acOutMotionTag, m_iOutMotion);
+	printf("%-15s  %d\n", m_acInMotionTag, m_iInMotion);
 	printf("\n\n");
 }

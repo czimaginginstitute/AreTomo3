@@ -94,6 +94,23 @@ void CPatchShifts::CopyShiftsToGpu(float* gfPatShifts)
 	cudaMemcpy(gfPatShifts, m_pfPatShifts, iBytes, cudaMemcpyDefault);
 }
 
+void CPatchShifts::SetLocalShift(int iFrame, int iPatch, float* pfShift)
+{
+	int iOffset = (iFrame * m_iNumPatches + iPatch) * 2;
+	m_pfPatShifts[iOffset] = pfShift[0];
+	m_pfPatShifts[iOffset + 1] = pfShift[1];
+}
+
+void CPatchShifts::SetBadFlag(int iFrame, int iPatch, bool bBad)
+{
+	m_pbBadShifts[iFrame * m_iNumPatches + iPatch] = bBad;
+}
+
+bool CPatchShifts::GetBadFlag(int iFrame, int iPatch)
+{
+	return m_pbBadShifts[iFrame * m_iNumPatches + iPatch];
+}
+
 void CPatchShifts::CopyFlagsToGpu(bool* gbBadShifts)
 {
 	int iBytes = m_iNumPatches * m_aiFullSize[2] * sizeof(bool);

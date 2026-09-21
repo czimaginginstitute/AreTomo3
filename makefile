@@ -142,6 +142,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./MotionCor/Align/CPatchAlign.cpp \
 	./MotionCor/Align/CPatchCenters.cpp \
 	./MotionCor/Align/CSaveAlign.cpp \
+	./MotionCor/Align/CLoadAlign.cpp \
 	./MotionCor/Align/CSimpleSum.cpp \
 	./MotionCor/Align/CTransformStack.cpp \
 	./MotionCor/Correct/CCorrectFullShift.cpp \
