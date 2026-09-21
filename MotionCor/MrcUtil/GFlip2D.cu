@@ -31,7 +31,7 @@ static __global__ void mGHorizontal
 	int iSizeY
 )
 {	int y = blockIdx.y * blockDim.y + threadIdx.y;
-	if(y > iSizeY) return;
+	if(y >= iSizeY) return;
 	int i = y * iSizeX + blockIdx.x;
 	//------------------------------
 	int iX = iSizeX - 1 - blockIdx.x;

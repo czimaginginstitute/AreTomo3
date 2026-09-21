@@ -86,7 +86,6 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/PatchAlign/GExtractPatch.cu \
 	./AreTomo/PatchAlign/GGenXcfImage.cu \
 	./AreTomo/PatchAlign/GNormByStd2D.cu \
-	./AreTomo/PatchAlign/GRandom2D.cu \
 	./AreTomo/ProjAlign/GProjXcf.cu \
 	./AreTomo/ProjAlign/GReproj.cu \
 	./AreTomo/Recon/GBackProj.cu \

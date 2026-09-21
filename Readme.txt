@@ -736,4 +736,16 @@ Changes:
       forward FFT must be normalized first.
    5) DataUtil/CReadMdoc.cpp: Reimplemented the reading section. Instead of
       reading ZValue section by section, this version reads line by line,
-      parses the line, and puts it in the relavent queue. 
+      parses the line, and puts it in the relavent queue.
+
+AreTomo3 2.3.3 [09-11-2026]
+---------------------------
+General:
+   1) Fix the bugs reported on Github
+   2) Implement Utz's mcaln file.
+Changes:
+   1) MaUtil/GGenRandoms.cu: used a large prime number as the fix seed for
+      random number generation for run-to-run consistency.
+Bug Fix:
+   1) -FlipGain 2 crashes: MotionCor/MrcUtil/GFlip2D.cu::mGHorizontal:
+      if(y > iSizeY) return -> if(y >= iSizeY) return; 

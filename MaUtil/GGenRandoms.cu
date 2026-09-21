@@ -38,8 +38,12 @@ void GGenRandoms::DoIt(int iSize)
 		cudaMalloc(&m_giRandoms, sizeof(int) * iSize);
 	}
 	m_iSize = iSize;
-	//---------------------------
-	unsigned long long seed = time(0L);
+	//---------------------------------------------------------
+	// Use fixed seed to ensure alignment results are the same
+	// from repeated runs. A large prime number is used.
+	//---------------------------------------------------------	
+	//unsigned long long seed = time(0L);
+	unsigned long long seed = 101839;
 	dim3 aBlockDim(1024, 1);
 	dim3 aGridDim(1, 1);
 	aGridDim.x = (m_iSize + aBlockDim.x - 1) / aBlockDim.x;
