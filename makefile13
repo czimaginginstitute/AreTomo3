@@ -1,5 +1,5 @@
 PRJHOME = $(shell pwd)
-CUDAHOME = $(HOME)/nvidia/cuda-13.1
+CUDAHOME = $(HOME)/nvidia/cuda-13.0
 CUDAINC = $(CUDAHOME)/include
 CUDALIB = $(CUDAHOME)/lib64
 PRJINC = $(PRJHOME)/LibSrc/Include
@@ -86,7 +86,6 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/PatchAlign/GExtractPatch.cu \
 	./AreTomo/PatchAlign/GGenXcfImage.cu \
 	./AreTomo/PatchAlign/GNormByStd2D.cu \
-	./AreTomo/PatchAlign/GRandom2D.cu \
 	./AreTomo/ProjAlign/GProjXcf.cu \
 	./AreTomo/ProjAlign/GReproj.cu \
 	./AreTomo/Recon/GBackProj.cu \

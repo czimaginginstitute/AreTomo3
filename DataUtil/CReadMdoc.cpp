@@ -39,22 +39,22 @@ CReadMdoc* CReadMdoc::GetInstance(int iNthGpu)
 CReadMdoc::CReadMdoc(void)
 {
 	m_iNthGpu = 0;
-	m_iBufSize = 1024;
+	m_iNumTilts = 1024;
 	m_iNumTilts = 0;
 	//---------------------------
-	m_ppcFrmPath = new char*[m_iBufSize];
-	m_piAcqIdxs = new int[m_iBufSize];
-	m_pfTilts = new float[m_iBufSize];
-	m_pfDoses = new float[m_iBufSize];
-	m_pfExpTimes = new float[m_iBufSize];
-	m_pDateTimes = new time_t[m_iBufSize];
+	m_ppcFrmPath = new char*[m_iNumTilts];
+	m_piAcqIdxs = new int[m_iNumTilts];
+	m_pfTilts = new float[m_iNumTilts];
+	m_pfDoses = new float[m_iNumTilts];
+	m_pfExpTimes = new float[m_iNumTilts];
+	m_pDateTimes = new time_t[m_iNumTilts];
 	//---------------------------
-	memset(m_ppcFrmPath, 0, sizeof(char*) * m_iBufSize);
-	memset(m_piAcqIdxs, 0, sizeof(int) * m_iBufSize);
-	memset(m_pfTilts, 0, sizeof(float) * m_iBufSize);
-	memset(m_pfDoses, 0, sizeof(float) * m_iBufSize);
-	memset(m_pfExpTimes, 0, sizeof(float) * m_iBufSize);
-	memset(m_pDateTimes, 0, sizeof(time_t) * m_iBufSize);
+	memset(m_ppcFrmPath, 0, sizeof(char*) * m_iNumTilts);
+	memset(m_piAcqIdxs, 0, sizeof(int) * m_iNumTilts);
+	memset(m_pfTilts, 0, sizeof(float) * m_iNumTilts);
+	memset(m_pfDoses, 0, sizeof(float) * m_iNumTilts);
+	memset(m_pfExpTimes, 0, sizeof(float) * m_iNumTilts);
+	memset(m_pDateTimes, 0, sizeof(time_t) * m_iNumTilts);
 	memset(m_acMdocFile, 0, sizeof(m_acMdocFile));
 }
 
@@ -123,86 +123,98 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 	memset(m_acMdocFile, 0, sizeof(m_acMdocFile));
 	strcpy(m_acMdocFile, pcMdocFile);
 	//---------------------------
-	m_iNumTilts = 0;
 	char acBuf[256] = {'\0'};
-	char* pcRet = 0L;
+	std::queue<float> qTilt;
+	std::queue<float> qDose;
+	std::queue<float> qExpTime;
+	std::queue<char*> qFrmPath;
+	std::queue<time_t> qDateTime;
 	//---------------------------
 	while(!feof(pFile))
-	{	int iValZ = mExtractValZ(acBuf);
-		if(iValZ < 0) 
-		{	pcRet = fgets(acBuf, 256, pFile);
-			if(pcRet == 0L) continue;
+	{	char* pcRet = fgets(acBuf, 256, pFile);
+		//-------------------
+		float fTilt = -99.0f;
+		if(mExtractTilt(acBuf, &fTilt))
+ 		{	qTilt.push(fTilt);
+			continue;
 		}
-		else m_piAcqIdxs[m_iNumTilts] = iValZ;
 		//-------------------
-		bool bTiltLoaded = false;
-		bool bDoseLoaded = false;
-		bool bFmLoaded = false;
-		bool bExpTimeLoaded = false;
-		bool bDateTimeLoaded = false;
-		int iCount = 0;
+		float fDose = 0.0f;
+		if(mExtractDose(acBuf, &fDose))
+		{	qDose.push(fDose);
+			continue;
+		}
+		//-------------------	
+		char* pcFrmPath = mExtractFramePath(acBuf);
+		if(pcFrmPath != 0L)
+		{	qFrmPath.push(pcFrmPath);
+			continue;
+		}
 		//-------------------
-		while(!feof(pFile))
-		{	memset(acBuf, 0, sizeof(char) * 256);
-			char* pcRet = fgets(acBuf, 256, pFile);
-			if(pcRet == 0L) continue;
-			//-----------
-			if(!bTiltLoaded)
-			{	bTiltLoaded = mExtractTilt(acBuf, 
-				   &m_pfTilts[m_iNumTilts]);
-				if(bTiltLoaded) iCount += 1;
-			}
-			if(!bDoseLoaded)
-			{	bDoseLoaded = mExtractDose(acBuf, 
-				   &m_pfDoses[m_iNumTilts]);
-				if(bDoseLoaded) iCount += 1;
-                        }
-			if(!bFmLoaded)
-			{	char* pcFramePath = mExtractFramePath(acBuf);
-				if(pcFramePath != 0L)
-				{	m_ppcFrmPath[m_iNumTilts] = pcFramePath;
-					bFmLoaded = true;
-					iCount += 1;
-				}
-			}
-			if(!bExpTimeLoaded)
-			{	bExpTimeLoaded = mExtractExpTime(acBuf,
-				   &m_pfExpTimes[m_iNumTilts]);
-				if(bExpTimeLoaded) iCount += 1;
-			}
-			if(!bDateTimeLoaded)
-			{	bDateTimeLoaded = mExtractDateTime(acBuf,
-				   &m_pDateTimes[m_iNumTilts]);
-				if(bDateTimeLoaded) iCount += 1;
-			}
-			if(iCount == 5)
-			{	m_iNumTilts += 1;
-				break;
-			}
-			//---------------------------------------------
-			// Hit another ZValue section without all the
-			// fields parsed. This acBuf will be parsed
-			// again in the outer loop - defect mdoc file.
-			//---------------------------------------------
-			if(mExtractValZ(acBuf) > 0) break;
+		float fExpTime = 0.0f;	
+		if(mExtractExpTime(acBuf, &fExpTime))
+		{	qExpTime.push(fExpTime);
+			continue;
+		}
+		//-------------------	
+		time_t tDateTime;
+		if(mExtractDateTime(acBuf, &tDateTime))
+		{	qDateTime.push(tDateTime);
+			continue;
 		}
 	}
 	fclose(pFile);
+	//---------------------------
+	int iNumTilts = qTilt.size();
+	bool bComplete = true;
+	if(iNumTilts != qDose.size()) bComplete = false;
+	else if(iNumTilts != qFrmPath.size()) bComplete = false;
+	else if(iNumTilts != qExpTime.size()) bComplete = false;
+	else if(iNumTilts != qDateTime.size()) bComplete = false;
+	//---------------------------
+	if(!bComplete)
+	{	while(qFrmPath.size() > 0)
+		{	char* pcFrmPath = qFrmPath.front();
+			qFrmPath.pop();
+			if(pcFrmPath != 0L) delete[] pcFrmPath;
+		}
+		printf("Warning: faulty mdoc file found, skip it!\n"
+		   "   MDOC: %s\n\n", m_acMdocFile);
+		return false;
+	}
+	//---------------------------
+	mAllocate(iNumTilts);
+	for(int i=0; i<m_iNumTilts; i++)
+	{	m_pfTilts[i] = qTilt.front();
+		m_pfDoses[i] = qDose.front();
+		m_ppcFrmPath[i] = qFrmPath.front();
+		m_pfExpTimes[i] = qExpTime.front();
+		m_pDateTimes[i] = qDateTime.front();
+		//-------------------
+		qTilt.pop();
+		qDose.pop();
+		qFrmPath.pop();
+		qExpTime.pop();
+		qDateTime.pop();	
+	}
+	//---------------------------
 	mOrderAcquisition();
 	mMakeExpTimeRelative();
-	//---------------------------
 	if(m_iNumTilts >= 7) return true;
-	else return false;
+	//---------------------------
+	printf("Warning: mdoc file has less than 7 tilts, skip it!\n"
+	   "   MDOC: %s\n\n", m_acMdocFile);
+	return false;
 }
 
-int CReadMdoc::mExtractValZ(char* pcLine)
+bool CReadMdoc::mExtractValZ(char* pcLine, int* piValZ)
 {
 	char* pcZValue = strstr(pcLine, "ZValue");
-	if(pcZValue == 0L) return -99;
+	if(pcZValue == 0L) return false;
 	//-----------------
 	char* pcEqual = strrchr(pcLine, '=');
-	int iValZ = atoi(&pcEqual[1]);
-	return iValZ;
+	piValZ[0] = atoi(&pcEqual[1]);
+	return true;
 }
 
 bool CReadMdoc::mExtractTilt(char* pcLine, float* pfTilt)
@@ -337,10 +349,28 @@ void CReadMdoc::mOrderAcquisition(void)
 
 void CReadMdoc::mClean(void)
 {
-	for(int i=0; i<m_iBufSize; i++)
+	for(int i=0; i<m_iNumTilts; i++)
 	{	if(m_ppcFrmPath[i] == 0L) continue;
 		delete[] m_ppcFrmPath[i];
 		m_ppcFrmPath[i] = 0L;
 	}
 	m_iNumTilts = 0;
+}
+
+void CReadMdoc::mAllocate(int iNumTilts)
+{
+	m_iNumTilts = iNumTilts;
+	m_ppcFrmPath = new char*[m_iNumTilts];
+        m_piAcqIdxs = new int[m_iNumTilts];
+        m_pfTilts = new float[m_iNumTilts];
+        m_pfDoses = new float[m_iNumTilts];
+        m_pfExpTimes = new float[m_iNumTilts];
+        m_pDateTimes = new time_t[m_iNumTilts];
+        //---------------------------
+        memset(m_ppcFrmPath, 0, sizeof(char*) * m_iNumTilts);
+        memset(m_piAcqIdxs, 0, sizeof(int) * m_iNumTilts);
+        memset(m_pfTilts, 0, sizeof(float) * m_iNumTilts);
+        memset(m_pfDoses, 0, sizeof(float) * m_iNumTilts);
+        memset(m_pfExpTimes, 0, sizeof(float) * m_iNumTilts);
+        memset(m_pDateTimes, 0, sizeof(time_t) * m_iNumTilts);
 }

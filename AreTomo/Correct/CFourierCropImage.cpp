@@ -6,6 +6,26 @@
 using namespace McAreTomo::AreTomo;
 using namespace McAreTomo::AreTomo::Correct;
 
+static float sCalcMean(float* gfImg, int* piImgSize, bool bPadded)
+{
+	int iPixels = piImgSize[0] * piImgSize[1];
+	float* pfImg = new float[iPixels];
+	cudaMemcpy(pfImg, gfImg, iPixels * sizeof(float),
+	   cudaMemcpyDefault);
+	//---------------------------
+	int iImgX = (piImgSize[0] / 2 - 1) * 2;
+	if(!bPadded) iImgX = piImgSize[0];
+	//---------------------------
+	double dMean = 0.0f;
+	for(int y=0; y<piImgSize[1]; y++)
+	{	float* pfLine = &pfImg[y * piImgSize[0]];
+		for(int x=0; x<iImgX; x++) dMean += pfLine[x];
+	}
+	dMean = dMean / (iImgX * piImgSize[1]);
+	delete[] pfImg;
+	return (float)dMean;
+}
+
 CFourierCropImage::CFourierCropImage(void)
 {
 }

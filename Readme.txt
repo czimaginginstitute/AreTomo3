@@ -705,3 +705,47 @@ Changes:
    1) Parse the DateTime field in MDOC file instead of ZValue to determine
       the correct acquisition order. Note that the format of DateTime are
       similar to "01-Aug-2024 15:27-36", "02-Qug-2024 07:52:28".
+
+AreTomo3 2.3.2 [08-17-2026]
+---------------------------
+General:
+   1) We may need to revise the implementation of CReadMdoc.cpp using
+      multiple queues to improve its robustness.
+   2) We need a more robust algorithm to measure the sample thickness.
+   3) We need to fix the image scaling issue, which may be caused in
+      Fourier cropping.
+   4) We need to revisit detection of dark images.
+Bug Fix:
+Changes:
+   1) AreTomo/Recon/CCalcVolThick.cpp: revised how edge is detected.
+      a) Search artifact peak positions from top and bottom boundaries.
+      b) Search the minimum points from artifact positions towards the
+         center of the volume.
+      c) Search the maximum point within the range defined by the two
+         minimum points.
+      d) Using the two minimum points and the maximum point to define
+         the sample edges.
+   2) AreTomo/MrcUtil/CRemoveDarkFrames.cpp: Dark frames are identified
+      based on the mean and sigma of the image ratios, which are calculated
+      for each tilt image. The ratio is the image mean divided by its sigma.
+   3) AreTomo/Recon/GWeight.cu: Removed normalization by fN due to Fourier
+      transform. This increases voxel intensity variation.
+   4) MaUtil/GFourierResize2D.cu and GFtResize2D.cu: Added fBinning =
+      piSizeIn[0] * piSizeIn[1] / (piSizeOut[0] * piSizeOut[1]) to make
+      Fourier cropping equivalent to real space binning. Note that the
+      forward FFT must be normalized first.
+   5) DataUtil/CReadMdoc.cpp: Reimplemented the reading section. Instead of
+      reading ZValue section by section, this version reads line by line,
+      parses the line, and puts it in the relavent queue.
+
+AreTomo3 2.3.3 [09-11-2026]
+---------------------------
+General:
+   1) Fix the bugs reported on Github
+   2) Implement Utz's mcaln file.
+Changes:
+   1) MaUtil/GGenRandoms.cu: used a large prime number as the fix seed for
+      random number generation for run-to-run consistency.
+Bug Fix:
+   1) -FlipGain 2 crashes: MotionCor/MrcUtil/GFlip2D.cu::mGHorizontal:
+      if(y > iSizeY) return -> if(y >= iSizeY) return; 

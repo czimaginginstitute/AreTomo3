@@ -213,62 +213,40 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	int aiMinEdges[2] = {0};
 	int aiMaxEdges[2] = {0};
 	mSearchMin(pfCCs, iSize, aiMinEdges);
-	mSearchMax(pfCCs, iSize, aiMaxEdges);
+	//-----------------------------------------------
+	// search max CC between [iBot, iTop]
+	//-----------------------------------------------
+	int iBot = aiMinEdges[0]; 
+	int iTop = aiMinEdges[1];
+	float fMaxCC = (float)-1e20;
+	int iMaxPos = (iBot + iTop) / 2;
 	//---------------------------
-	int iBot = (int)(iSize * 0.1); 
-	int iTop = iSize - iBot;
-	//-----------------------------------------------
-	// 1) calculate the mean score. 
-	//-----------------------------------------------
-	float fMeanCC = 0.0f;
-	float fStdCC = 0.0f;
 	for(int i=iBot; i<iTop; i++)
-	{	fMeanCC += pfCCs[i];
-		fStdCC += (pfCCs[i] * pfCCs[i]);
+	{	if(pfCCs[i] <= fMaxCC) continue;
+		fMaxCC = pfCCs[i];
+		iMaxPos = i;
 	}
-	fMeanCC = fMeanCC / (iTop - iBot);
-	fStdCC = fStdCC / (iTop - iBot) - fMeanCC * fMeanCC;
-	if(fStdCC <= 0) fStdCC = 0.0f;
-	else fStdCC = (float)sqrtf(fStdCC);
+	//-----------------------------------------------
+	// Edge set at  (fMaxCC * 2 + fMin0 + fMin1) / 4
+	//-----------------------------------------------
+	float fMin0 = pfCCs[aiMinEdges[0]];
+	float fMin1 = pfCCs[aiMinEdges[1]];
+	float fThreshold0 = fMin0 + (fMaxCC - fMin0) * 0.4f;
+	float fThreshold1 = fMin1 + (fMaxCC - fMin1) * 0.4f;
 	//---------------------------
-	for(int i=iBot; i<iHalfZ; i++)
-	{	if(pfCCs[i] < fMeanCC) continue;
+	for(int i=aiMinEdges[0]; i<iMaxPos; i++)
+	{	if(pfCCs[i] < fThreshold0) continue;
 		m_aiSampleEdges[0] = i;
 		break;
 	}
-	//---------------------------
-	float fMinCC = fMeanCC;
-	int iMin = m_aiSampleEdges[0];
-	for(int i=iBot; i<m_aiSampleEdges[0]; i++)
-	{	if(pfCCs[i] >= fMinCC) continue;
-		fMinCC = pfCCs[i];
-		iMin = i;
-	}
-	m_aiSampleEdges[0] = (m_aiSampleEdges[0] + iMin) / 2;
-	//-----------------------------------------------
-	// temporarily search the top edge from the top
-	// until we hit the point of mean CC.
-	//-----------------------------------------------
-	for(int i=iTop; i>iHalfZ; i--)
-	{	if(pfCCs[i] < fMeanCC) continue;
+	for(int i=aiMinEdges[1]; i>iMaxPos; i--)
+	{	if(pfCCs[i] < fThreshold1) continue;
 		m_aiSampleEdges[1] = i;
 		break;
 	}
-	//-----------------------------------------------
-	// we search the min CC point in between iTop
-	// the mean CC point stored in m_aiSampleEdges[1]
-	//-----------------------------------------------
-	fMinCC = fMeanCC;
-	iMin = m_aiSampleEdges[1];
-	for(int i=iTop; i>m_aiSampleEdges[1]; i--)
-	{	if(pfCCs[i] >= fMinCC) continue;
-		fMinCC = pfCCs[i];
-		iMin = i;
-	}
-	m_aiSampleEdges[1] = (m_aiSampleEdges[1] + iMin) / 2;
 	//---------------------------
-	m_aiSampleEdges[0] *= m_fBinning;
-	m_aiSampleEdges[1] *= m_fBinning;
+	m_aiSampleEdges[0] = (int)(m_aiSampleEdges[0] * m_fBinning);
+	m_aiSampleEdges[1] = (int)(m_aiSampleEdges[1] * m_fBinning);
 	//---------------------------
 	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
 	pAlnParam->m_iThickness = m_aiSampleEdges[1] - m_aiSampleEdges[0];
@@ -284,29 +262,56 @@ void CCalcVolThick::mDetectEdges(float* pfCCs, int iSize)
 	   (int)(iTop * m_fBinning));
 }
 
+//--------------------------------------------------------------------
+// 1. Search two minimum CC points, one from the center to bottom,
+//    the other from center to top.
+// 2. These two points define the range to search for the edges of
+//    of the sample.
+//--------------------------------------------------------------------
 void CCalcVolThick::mSearchMin(float* pfCCs, int iSize, int* piMin)
 {
-	int iOffset = iSize / 8;
-	int iBot = iOffset;
-	float fBot = pfCCs[iOffset];
-	//---------------------------
-	for(int i=0; i<iOffset; i++)
-	{	if(pfCCs[i] >= fBot) continue;
-		fBot = pfCCs[i];
-		iBot = i;
+	int iHalf = iSize / 2;
+	int iEdge = (int)(iSize * 0.10f);
+	//-----------------------------------------------
+	// Detect reconstruction artifact bottom and top
+	// edges. They are the points with max cc within
+	// the bands 10% of VolZ from volume edges.
+	//----------------------------------------------- 
+	float fMaxCC = (float)-1e20;
+	int iMaxPos = 0;
+	for(int i=0; i<iEdge; i++)
+	{	if(pfCCs[i] <= fMaxCC) continue;
+		fMaxCC = pfCCs[i];
+		iMaxPos = i;
 	}
-	piMin[0] = iBot;
+	int iEdge0 = iMaxPos;
 	//---------------------------
-	int iStart = iSize - iOffset;
-	int iTop = iStart;
-	float fTop = pfCCs[iStart];
-	//---------------------------
-	for(int i=iStart; i<iSize; i++)
-	{	if(pfCCs[i] >= fTop) continue;
-		fTop = pfCCs[i];
-		iTop = i;
+	fMaxCC = (float)-1e20;
+	iMaxPos = iSize - 1;
+	for(int i=iSize-iEdge; i<iSize; i++)
+	{	if(pfCCs[i] <= fMaxCC) continue;
+		fMaxCC = pfCCs[i];
+		iMaxPos = i;
 	}
-	piMin[1] = iTop;
+	int iEdge1 = iMaxPos;
+	//---------------------------
+	int iStart = iEdge0;
+	float fMinCC = (float)1e20;
+	//---------------------------
+	for(int i=iStart; i<iHalf; i++)
+	{	if(pfCCs[i] >= fMinCC) continue;
+		fMinCC = pfCCs[i];
+		piMin[0] = i;
+	}
+	//---------------------------
+	int iEnd = iEdge1;
+	fMinCC = (float)1e20;
+	//---------------------------
+	for(int i=iHalf; i<iEnd; i++)
+	{	if(pfCCs[i] >= fMinCC) continue;
+		fMinCC = pfCCs[i];
+		piMin[1] = i;
+	}
 }
 
 void CCalcVolThick::mSearchMax(float* pfCCs, int iSize, int* piMax)

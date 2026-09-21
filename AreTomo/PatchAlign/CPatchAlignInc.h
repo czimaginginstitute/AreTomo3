@@ -9,20 +9,6 @@
 namespace McAreTomo::AreTomo::PatchAlign
 {
 
-class GRandom2D
-{
-public:
-	GRandom2D(void);
-	~GRandom2D(void);
-	void DoIt
-	( float* gfInImg,
-	  float* gfOutImg,
-	  int* piImgSize,
-	  bool bPadded,
-	  cudaStream_t stream = 0
-	);
-};
-
 class GExtractPatch
 {
 public:
