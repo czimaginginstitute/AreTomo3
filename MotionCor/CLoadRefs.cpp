@@ -217,7 +217,7 @@ void CLoadRefs::PostProcess(int iRotFact, int iFlip, int iInverse)
 		cudaMemcpy(m_pfGain, gfBuf, tBytes, cudaMemcpyDefault);
 	}
 	//-------------------------------------------------------------
-	if(m_pfDark != 0L && (iRotFact != 0 || iFlip == 0))
+	if(m_pfDark != 0L && (iRotFact != 0 || iFlip != 0))
 	{	cudaMemcpy(gfBuf, m_pfDark, tBytes, cudaMemcpyDefault);
 		mRotate(gfBuf, m_aiDarkSize, iRotFact);
 		mFlip(gfBuf, m_aiDarkSize, iFlip);
