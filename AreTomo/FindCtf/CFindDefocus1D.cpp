@@ -61,7 +61,12 @@ void CFindDefocus1D::DoIt
 {	memcpy(m_afDfRange, afDfRange, sizeof(float) * 2);
 	memcpy(m_afPhaseRange, afPhaseRange, sizeof(float) * 2);
 	m_gfRadialAvg = gfRadialAvg;
-	//--------------------------
+	//---------------------------
+	m_pGCC1D->SetResRange(
+	   m_afResRange, 
+	   m_pCtfParam->m_fPixelSize);
+	m_pGCC1D->m_fBFactor = m_pCtfParam->m_fBFactor;
+	//---------------------------
 	m_fMaxCC = (float)-1e20;
 	float afResult[3] = {0.0f};
 	mBrutalForceSearch(afResult);
@@ -127,11 +132,6 @@ void CFindDefocus1D::mCalcCTF(float fDefocus, float fExtPhase)
 
 float CFindDefocus1D::mCorrelate(void)
 {
-	float fRes1 = ((m_iCmpSize - 1) * 2) * m_pCtfParam->m_fPixelSize;
-	float fMinFreq = fRes1 / m_afResRange[0];
-	float fMaxFreq = fRes1 / m_afResRange[1];
-	//---------------------------------------
-	m_pGCC1D->Setup(fMinFreq, fMaxFreq, 1.0f);
 	float fCC = m_pGCC1D->DoIt(m_gfCtf1D, m_gfRadialAvg);
 	return fCC;
 }

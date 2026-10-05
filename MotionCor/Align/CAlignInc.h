@@ -386,30 +386,46 @@ public:
 	static void DeleteInstances(void);
 	static CSaveAlign* GetInstance(int iNthGpu);
 	~CSaveAlign(void);
-	bool Open(char* pcFileName);
-	bool Open(char* pcDirName, char* pcStackFile);
-	void SaveSetting(int* piStkSize, int* piPatches, int* piThrow);
+	//-----------------------------------------------------------
+	// Writes the .mcaln v1 motion-alignment file (frozen format,
+	// see arewarpo docs/mcaln_format.md) when -OutMotion is set.
+	// DoGlobal: full-frame path (patches 0 0, global block only).
+	// DoLocal: patch path (frame table + global + local blocks,
+	// exactly the post-MakeRelative state the correction used).
+	//-----------------------------------------------------------
 	void DoGlobal(MMD::CStackShift* pStackShift);
 	void DoLocal(MMD::CPatchShifts* pPatchShifts);
-	char* GetStartTag(char* pcTagName);
-	char* GetEndTag(char* pcTagName);
-	char m_acSetting[64];
-	char m_acStackSize[64];
-	char m_acPatches[64];
-	char m_acThrow[64];
-	char m_acGlobalShift[64];
-	char m_acLocalShift[64];
-	char m_acConverge[64];
-	char m_acStackID[64];
-	char m_acPatchID[64];
 	int m_iNthGpu;
 private:
 	CSaveAlign(void);
-	void mSaveGlobal(MMD::CStackShift* pFullShift);
-	void mSaveLocal(MMD::CPatchShifts* pPatchShifts);
-	FILE* m_pFile;
+	FILE* mOpen(void);
+	void mSaveHeader(FILE* pFile, int* piStkSize, int iPatX, int iPatY,
+	   int iNumFrames);
+	void mSaveGlobal(FILE* pFile, MMD::CStackShift* pFullShift);
 	static CSaveAlign* m_pInstances;
 	static int m_iNumGpus;
+};
+
+//-----------------------------------------------------------------
+// Reads a .mcaln v1 file (-InMotion) and rebuilds CStackShift /
+// CPatchShifts so the correction stages can run without any
+// measurement. MakeRelative is NOT applied - file shifts are final.
+//-----------------------------------------------------------------
+class CLoadAlign
+{
+public:
+	CLoadAlign(void);
+	~CLoadAlign(void);
+	bool DoIt(int iNthGpu);          // parse <OutDir>/<movie>.mcaln
+	MMD::CStackShift* m_pFullShift;   // caller owns after Take*
+	MMD::CPatchShifts* m_pPatchShifts; // 0L when patches 0 0
+	MMD::CStackShift* TakeFullShift(void);
+	MMD::CPatchShifts* TakePatchShifts(void);
+private:
+	bool mParse(const char* pcPath, int* piStkSize);
+	void mSetPatchShift(int iFrame, int iPatch, float* pfShift,
+	   bool bValid);
+	void mClean(void);
 };
 
 class GNormByStd2D
@@ -471,6 +487,7 @@ public:
 	~CAlignMain(void);
 	void DoIt(int iNthGpu);
 private:
+	bool mCorrectFromFile(void);
 	char* mCreateLogFile(void);
 	int m_iNthGpu;
 };

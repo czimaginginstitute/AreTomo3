@@ -20,12 +20,6 @@ CFindCtfBase::CFindCtfBase(void)
         m_pCtfTheory = 0L;
         m_gfFullSpect = 0L;
         //-----------------
-        m_afPhaseRange[0] = 0.0f;
-	m_afPhaseRange[1] = 0.0f;
-	//-----------------
-	m_afDfRange[0] = 2000.0f;
-	m_afDfRange[1] = 40000.0f;
-	//-----------------
 	m_iNthGpu = 0;
 }
 
@@ -53,30 +47,13 @@ void CFindCtfBase::Setup1(CCtfTheory* pCtfTheory)
 	m_aiCmpSize[0] = m_aiCmpSize[1] / 2 + 1;
 	//-----------------
 	float fPixSize = m_pCtfTheory->GetPixelSize();
-        m_afResRange[0] = 18.0f * fPixSize;
+        m_afResRange[0] = fmin(20.0f * fPixSize, 30.0f);
 	m_afResRange[1] = (2.0f * fPixSize) / 0.75f;
-        if(m_afResRange[1] < 3.5f) m_afResRange[1] = 3.5f;
-	//-----------------
-	float fPixSize2 = fPixSize * fPixSize;
-	m_afDfRange[0] =  2000.0f * fPixSize2;
-	m_afDfRange[1] = 40000.0f * fPixSize2;
 	//-----------------
 	int iCmpSize = m_aiCmpSize[0] * m_aiCmpSize[1];
 	cudaMalloc(&m_gfFullSpect, sizeof(float) * iCmpSize * 4);
 	m_gfRawSpect = m_gfFullSpect + iCmpSize * 2;
 	m_gfCtfSpect = m_gfFullSpect + iCmpSize * 3;
-}
-
-void CFindCtfBase::SetPhase(float fMinPhase, float fMaxPhase)
-{
-	m_afPhaseRange[0] = fMinPhase;
-	m_afPhaseRange[1] = fMaxPhase;
-}
-
-void CFindCtfBase::SetDefocus(float fMinDf, float fMaxDf)
-{
-	m_afDfRange[0] = fMinDf;
-	m_afDfRange[1] = fMaxDf;
 }
 
 void CFindCtfBase::SetHalfSpect(float* pfCtfSpect)
@@ -151,71 +128,18 @@ void CFindCtfBase::ShowResult(void)
 
 void CFindCtfBase::mRemoveBackground(void)
 {
-	float fMinRes = 1.0f / 15.0f;
+	//-----------------------------------------------
+	// The box size corresponds to 30 A.
+	//-----------------------------------------------
+	MD::CCtfParam* pCtfParam = m_pCtfTheory->GetParam(false);
+	float fMinFreq = pCtfParam->m_fPixelSize / 40.0f;
+	int iBoxSize = (int)(fMinFreq * m_aiCmpSize[1]);
+	iBoxSize = iBoxSize / 2 * 2 + 1;
+	if(iBoxSize < 11) iBoxSize = 11;
+	//---------------------------
 	GRmBackground2D rmBackground;
-	rmBackground.DoIt(m_gfRawSpect, m_gfCtfSpect, m_aiCmpSize, fMinRes);
-	//-----------------
-	mLowpass();
+	rmBackground.DoIt(
+	   m_gfRawSpect, m_gfCtfSpect, 
+	   m_aiCmpSize, iBoxSize);
 }
-
-void CFindCtfBase::mLowpass(void)
-{
-	GCalcSpectrum calcSpectrum;
-	bool bPadded = true;
-        calcSpectrum.GenFullSpect(m_gfCtfSpect, m_aiCmpSize,
-	   m_gfFullSpect, bPadded);
-        //-----------------
-	MU::CCufft2D cufft2D;
-        int aiFFTSize[] = {(m_aiCmpSize[0] - 1) * 2, m_aiCmpSize[1]};
-        cufft2D.CreateForwardPlan(aiFFTSize, false);
-        cufft2D.Forward(m_gfFullSpect, true);
-        //-----------------
-	MU::GFFTUtil2D fftUtil2D;
-        cufftComplex* gCmpFullSpect = (cufftComplex*)m_gfFullSpect;
-        fftUtil2D.Lowpass(gCmpFullSpect, gCmpFullSpect,
-           m_aiCmpSize, 10.0f);
-        //-----------------
-        cufft2D.CreateInversePlan(aiFFTSize, false);
-        cufft2D.Inverse(gCmpFullSpect);
-        //-----------------
-        int iFullSizeX = m_aiCmpSize[0] * 2;
-        int iHalfX = m_aiCmpSize[0] - 1;
-        size_t tBytes = sizeof(float) * m_aiCmpSize[0];
-        for(int y=0; y<m_aiCmpSize[1]; y++)
-        {       float* gfSrc = m_gfFullSpect + y * iFullSizeX + iHalfX;
-                float* gfDst = m_gfCtfSpect + y * m_aiCmpSize[0];
-                cudaMemcpy(gfDst, gfSrc, tBytes, cudaMemcpyDefault);
-        }
-}
-
-void CFindCtfBase::mHighpass(void)
-{
-        GCalcSpectrum calcSpectrum;
-        bool bPadded = true;
-        calcSpectrum.GenFullSpect(m_gfRawSpect, m_aiCmpSize,
-           m_gfFullSpect, bPadded);
-        //-----------------
-        MU::CCufft2D cufft2D;
-        int aiFFTSize[] = {(m_aiCmpSize[0] - 1) * 2, m_aiCmpSize[1]};
-        cufft2D.CreateForwardPlan(aiFFTSize, false);
-        cufft2D.Forward(m_gfFullSpect, true);
-        //-----------------
-        MU::GFFTUtil2D fftUtil2D;
-        cufftComplex* gCmpFullSpect = (cufftComplex*)m_gfFullSpect;
-        fftUtil2D.Highpass(gCmpFullSpect, gCmpFullSpect,
-           m_aiCmpSize, 800.0f);
-        //-----------------
-        cufft2D.CreateInversePlan(aiFFTSize, false);
-        cufft2D.Inverse(gCmpFullSpect);
-        //-----------------
-        int iFullSizeX = m_aiCmpSize[0] * 2;
-        int iHalfX = m_aiCmpSize[0] - 1;
-        size_t tBytes = sizeof(float) * m_aiCmpSize[0];
-        for(int y=0; y<m_aiCmpSize[1]; y++)
-        {       float* gfSrc = m_gfFullSpect + y * iFullSizeX + iHalfX;
-                float* gfDst = m_gfCtfSpect + y * m_aiCmpSize[0];
-                cudaMemcpy(gfDst, gfSrc, tBytes, cudaMemcpyDefault);
-        }
-}
-
 

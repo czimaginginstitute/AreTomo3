@@ -192,6 +192,31 @@ private:
 	static int m_iNumGpus;
 };
 
+class CCtfInput
+{
+public:
+	static CCtfInput* GetInstance(void);
+	static void DeleteInstance(void);
+	~CCtfInput(void);
+	//---------------------------
+	void GetDfRange(float fCentVal, float fRange, float* pfAllowed);
+	void GetAstMagRange(float fCentVal, float fRange, float* pfAllowed);
+	void GetAstAngRange(float fCentVal, float fRange, float* pfAllowed);
+	void GetPhaseRange(float fCentVal, float fRange, float* pfAllowed);
+	void ClipRange(float* pfRange, float* pfMaxRange);
+	//---------------------------
+	bool bExtPhase(void);
+	//---------------------------
+	float m_afResRange[2];    // [30A, 4A]
+	float m_afDfRange[2];     // [1000A, 40000A]
+	float m_afAstMagRange[2]; // [0.0f, 0.2f]
+	float m_afAstAngRange[2]; // [0.0f, 180f] degree
+	float m_afPhaseRange[2];  // [40,   100f] degree
+private:
+	CCtfInput(void);
+	static CCtfInput* m_pInstance;
+};
+
 class CCtfParam
 {
 public:
@@ -214,7 +239,7 @@ public:
 	CCtfParam* GetCopy(void);
 	//-----------------
 	float m_fWavelength; // pixel
-	float m_fCs; // pixel
+	float m_fCs;         // pixel
 	float m_fAmpContrast;
 	float m_fAmpPhaseShift; // radian
 	float m_fPixelSize;  // angstrom
@@ -227,6 +252,7 @@ public:
 	float m_fScore;
 	float m_fCtfRes;     // angstrom
 	float m_fTilt;
+	float m_fBFactor;
 };
 
 class CCtfResults
@@ -345,6 +371,7 @@ private:
 	CReadMdoc(void);
 	void mClean(void);
 	void mAllocate(int iNumTilts);
+	bool mCheckOpenTS(const char* pcMdocFile);
 	//---------------------------
 	bool mExtractValZ(char* pcLine, int* pi);
 	bool mExtractTilt(char* pcLine, float* pfTilt);

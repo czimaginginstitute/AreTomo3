@@ -60,7 +60,7 @@ void CFindCtfMain::DoIt(int iNthGpu)
 	   "please wait ......\n\n", m_iNthGpu);
 	//-----------------
 	mDoTilts();
-	mRefineTilts();
+	//mRefineTilts();
 	//-----------------
 	MD::CCtfResults* pCtfRes = MD::CCtfResults::GetInstance(m_iNthGpu);
 	pCtfRes->DisplayAll();
@@ -88,9 +88,6 @@ void CFindCtfMain::mInit(bool bRefine)
 	//-----------------
 	m_pFindCtf2D->Setup1(&aInitCTF);
 	if(bRefine) return;
-	//-----------------
-	m_pFindCtf2D->SetPhase(pAtInput->m_afExtPhase[0],
-	   pAtInput->m_afExtPhase[1]);
 	//-----------------
 	MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
         int aiTileSize[] = {pAtInput->m_iCtfTileSize, pAtInput->m_iCtfTileSize};
@@ -121,28 +118,25 @@ void CFindCtfMain::mGenAvgSpects
 
 void CFindCtfMain::mDoTilts(void)
 {
-	CAtInput* pAtInput = CAtInput::GetInstance();
-	float fHalfR = pAtInput->m_afExtPhase[1] / 2;
-	float fMinP = fmaxf(pAtInput->m_afExtPhase[0] - fHalfR, 0.0f);
-	float fMaxP = fminf(pAtInput->m_afExtPhase[0] + fHalfR, 180.0f);
-	m_pFindCtf2D->SetPhase(fMinP, fMaxP);
-	//---------------------------
 	CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
 	int iZeroTilt = pTsTiles->GetTiltIdx(0.0f);
 	m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[iZeroTilt]);
 	m_pFindCtf2D->Do2D();
 	mGetResults(iZeroTilt);
 	//---------------------------
-	float fInitP = m_pFindCtf2D->m_fExtPhase;
-	fHalfR = fHalfR * 0.25f;
-	fMinP = fmaxf(fMinP, fInitP - fHalfR);
-	fMaxP = fminf(fMaxP, fInitP + fHalfR);
+	float fAstMag = CFindCtfHelp::CalcAstRatio(
+	   m_pFindCtf2D->m_fDfMin,
+	   m_pFindCtf2D->m_fDfMax);
+	float afRangeDF[] = {m_pFindCtf2D->m_fDfMin, 10000.0f};
+	float afRangeAM[] = {fAstMag, 0.0f};
+	float afRangeAA[] = {m_pFindCtf2D->m_fAstAng, 0.0f};
+	float afRangePP[] = {m_pFindCtf2D->m_fExtPhase, 30.0f};
 	//---------------------------
 	for(int i=0; i<m_iNumTilts; i++)
 	{	if(i == iZeroTilt) continue;
-		m_pFindCtf2D->SetPhase(fMinP, fMaxP);
 		m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[i]);
-		m_pFindCtf2D->Do2D();
+		m_pFindCtf2D->Refine(afRangeDF, afRangeAM, 
+		   afRangeAA, afRangePP);
 		mGetResults(i);
 	}
 }
@@ -177,6 +171,7 @@ void CFindCtfMain::mRefineTilts(void)
 
 void CFindCtfMain::mRefineTilt(int iTilt, int iRefTilt)
 {
+	/*
 	CAtInput* pAtInput = CAtInput::GetInstance();
         CTsTiles* pTsTiles = CTsTiles::GetInstance(m_iNthGpu);
         MD::CCtfResults* pCtfResults = MD::CCtfResults::GetInstance(m_iNthGpu);
@@ -206,8 +201,9 @@ void CFindCtfMain::mRefineTilt(int iTilt, int iRefTilt)
         afAstAngle[1] = 0.0f;
 	//---------------------------
 	m_pFindCtf2D->SetHalfSpect(m_ppfHalfSpects[iTilt]);
-	m_pFindCtf2D->Refine(afDfRange, afAstRatio, afAstAngle, afExtPhase);
+	m_pFindCtf2D->Refine(20000.0f, 0.0f, 0.0f, 0.0f);
 	mGetResults(iTilt);
+	*/
 }
 	   
 float CFindCtfMain::mGetResults(int iTilt)

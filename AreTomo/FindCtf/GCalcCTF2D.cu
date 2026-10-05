@@ -60,22 +60,25 @@ static __global__ void mGEmbedCtf
 	if(y >= iCmpY) return;
 	//--------------------
 	float fY = (y - iCmpY * 0.5f) / iCmpY;
-	float fX = (blockIdx.x - (float)gridDim.x) * 0.5f / gridDim.x;
-	fX = sqrtf(fX * fX + fY * fY);
-	if(fX < fMinFreq || fX > fMaxFreq) return;
-	//----------------------------------------------
-	// fX is negative frequency, apply symmetry here
-	//----------------------------------------------
-	int iX = gridDim.x - blockIdx.x;
-	int iY = (iCmpY - y) % iCmpY;
-	fY = gfCtf2D[iY * (gridDim.x + 1) + iX];
-	fY = (fabsf(fY) - 0.5f) * fGain + fMean;
-	//--------------------------------------------------------
-	// CTF is embededd on the right half of the full spectrum.
-	// Therefore, there is a (gridDim.x = iNx / 2) offset in
-	// the horizontal axis.
-	//--------------------------------------------------------
-	gfFullSpect[y * (gridDim.x * 2) + blockIdx.x] = fY;
+        float fX = (blockIdx.x - (float)gridDim.x) * 0.5f / gridDim.x;
+        float fR = sqrtf(fX * fX + fY * fY);
+        if(fR < fMinFreq || fR > fMaxFreq) return;
+        //---------------------------
+        fR = atanf(fY / fX) * 180.0f / 3.141593f;
+        if(fabsf(fR) > 60) return;
+        //----------------------------------------------
+        // fX is negative frequency, apply symmetry here
+        //----------------------------------------------
+        int iX = gridDim.x - blockIdx.x;
+        int iY = (iCmpY - y) % iCmpY;
+        fY = fabsf(gfCtf2D[iY * (gridDim.x + 1) + iX]);
+        fY = (fY - 0.5) * fGain + fMean;
+        //--------------------------------------------------------
+        // CTF is embededd on the right half of the full spectrum.
+        // Therefore, there is a (gridDim.x = iNx / 2) offset in
+        // the horizontal axis.
+        //--------------------------------------------------------
+        gfFullSpect[y * (gridDim.x * 2) + blockIdx.x] = fY;
 }
 
 GCalcCTF2D::GCalcCTF2D(void)

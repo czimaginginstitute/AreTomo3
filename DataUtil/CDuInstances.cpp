@@ -15,6 +15,7 @@ void CDuInstances::CreateInstances(int iNumGpus)
 	CTsPackage::CreateInstances(iNumGpus);
 	CLogFiles::CreateInstances(iNumGpus);
 	CTimeStamp::CreateInstances();
+	CCtfInput::GetInstance();
 }
 
 void CDuInstances::DeleteInstances(void)
@@ -28,4 +29,5 @@ void CDuInstances::DeleteInstances(void)
 	CLogFiles::DeleteInstances();
 	CAsyncSaveVol::DeleteInstances();
 	CTimeStamp::DeleteInstances();
+	CCtfInput::DeleteInstance();
 }

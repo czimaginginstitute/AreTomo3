@@ -5,6 +5,7 @@
 #include <memory.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 using namespace McAreTomo::DataUtil;
 
@@ -117,6 +118,13 @@ float CReadMdoc::GetExpTime(int iTilt)
 bool CReadMdoc::DoIt(const char* pcMdocFile)
 {
 	mClean();
+	//-----------------------------------------------
+	// When the .openTS exists, the movie files of
+	// the tilt series are incomplete.
+	//-----------------------------------------------
+	bool bOpenTS = mCheckOpenTS(pcMdocFile);
+	if(bOpenTS) return false;
+	//---------------------------
 	FILE* pFile = fopen(pcMdocFile, "rt");
 	if(pFile == 0L) return false;
 	//---------------------------
@@ -205,6 +213,22 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 	printf("Warning: mdoc file has less than 7 tilts, skip it!\n"
 	   "   MDOC: %s\n\n", m_acMdocFile);
 	return false;
+}
+
+bool CReadMdoc::mCheckOpenTS(const char* pcMdocFile)
+{
+	char acOpenTS[512] = {'\0'};
+	if(pcMdocFile == 0L || strlen(pcMdocFile) == 0) return false;
+	//---------------------------
+	strcpy(acOpenTS, pcMdocFile);
+	char* pcDot = strrchr(acOpenTS, '.');
+	if(pcDot == 0L) return false;
+	//---------------------------
+	strcpy(pcDot, ".openTS");
+	struct stat st;
+	int iRet = stat(acOpenTS, &st);
+	if(iRet == 0) return true;
+	else return false;
 }
 
 bool CReadMdoc::mExtractValZ(char* pcLine, int* piValZ)

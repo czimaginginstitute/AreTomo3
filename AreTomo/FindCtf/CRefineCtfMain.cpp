@@ -98,9 +98,6 @@ void CRefineCtfMain::mFindHandedness(void)
 	//-----------------
 	if(fScore1 > fScore2) pCtfRes->m_iDfHand = 1;
 	else pCtfRes->m_iDfHand = -1;
-	printf("Defocus handedness (GPU %d): "
-	   "1 score: %.5f; -1 score: %.5f\n\n",
-	   m_iNthGpu, fScore1, fScore2);
 }
 
 void CRefineCtfMain::mRefineOffset(float fStep, int iNumSteps, bool bBeta)
@@ -170,6 +167,7 @@ float CRefineCtfMain::mRefineCTF(int iKind)
 		m_pFindCtf2D->Refine(afDfRange, afAstRatio,
 		   afAstAngle, afExtPhase);
 		mGetResults(i);
+
         }
 	return pCtfRes->GetLowTiltScore(m_fLowTilt);
 }

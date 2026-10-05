@@ -1,11 +1,12 @@
 #include "CFindCtfInc.h"
+#include <math.h>
 
 using namespace McAreTomo::AreTomo::FindCtf;
 
 float CFindCtfHelp::CalcAstRatio(float fDfMin, float fDfMax)
 {
 	float fDiff = (fDfMax - fDfMin) * 0.5f;
-	float fMean = (fDfMax + fDfMin) * 0.5f;
+	float fMean = (fabsf(fDfMax) + fabsf(fDfMin)) * 0.5f;
 	if(fMean <= 0.0f) return 0.0f;
 	else return (fDiff / fMean);
 }

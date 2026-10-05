@@ -73,6 +73,8 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/FindCtf/GCalcSpectrum.cu \
 	./AreTomo/FindCtf/GCC1D.cu \
 	./AreTomo/FindCtf/GCC2D.cu \
+	./AreTomo/FindCtf/GDetectIce1D.cu \
+	./AreTomo/FindCtf/GEstBFactor1D.cu \
 	./AreTomo/FindCtf/GSpectralCC2D.cu \
 	./AreTomo/FindCtf/GCorrCTF2D.cu \
 	./AreTomo/FindCtf/GRadialAvg.cu \
@@ -86,7 +88,6 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/PatchAlign/GExtractPatch.cu \
 	./AreTomo/PatchAlign/GGenXcfImage.cu \
 	./AreTomo/PatchAlign/GNormByStd2D.cu \
-	./AreTomo/PatchAlign/GRandom2D.cu \
 	./AreTomo/ProjAlign/GProjXcf.cu \
 	./AreTomo/ProjAlign/GReproj.cu \
 	./AreTomo/Recon/GBackProj.cu \
@@ -103,6 +104,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./MaUtil/CFileName.cpp \
 	./MaUtil/CPad2D.cpp \
 	./MaUtil/CPeak2D.cpp \
+	./MaUtil/CPowell.cpp \
 	./MaUtil/CSaveTempMrc.cpp \
 	./MaUtil/CSimpleFuncs.cpp \
 	./DataUtil/CAlnSums.cpp \
@@ -120,6 +122,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./DataUtil/CStackFolder.cpp \
 	./DataUtil/CTiltSeries.cpp \
 	./DataUtil/CTsPackage.cpp \
+	./DataUtil/CCtfInput.cpp \
 	./DataUtil/CCtfParam.cpp \
 	./DataUtil/CLogFiles.cpp \
 	./DataUtil/CTimeStamp.cpp \
@@ -145,6 +148,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./MotionCor/Align/CPatchAlign.cpp \
 	./MotionCor/Align/CPatchCenters.cpp \
 	./MotionCor/Align/CSaveAlign.cpp \
+	./MotionCor/Align/CLoadAlign.cpp \
 	./MotionCor/Align/CSimpleSum.cpp \
 	./MotionCor/Align/CTransformStack.cpp \
 	./MotionCor/Correct/CCorrectFullShift.cpp \
@@ -198,6 +202,7 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/Correct/CFourierCropImage.cpp \
 	./AreTomo/DoseWeight/CWeightTomoStack.cpp \
 	./AreTomo/FindCtf/CCtfTheory.cpp \
+	./AreTomo/FindCtf/CCGradient.cpp \
 	./AreTomo/FindCtf/CFindCtf1D.cpp \
 	./AreTomo/FindCtf/CFindCtf2D.cpp \
 	./AreTomo/FindCtf/CFindCtfBase.cpp \

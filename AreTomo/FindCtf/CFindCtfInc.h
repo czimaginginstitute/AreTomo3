@@ -201,7 +201,7 @@ public:
 	( float* gfInSpect, // half spact
 	  float* gfOutSpect,
 	  int* piCmpSize,
-	  float fMinFreq // relative frequency[0, 0.5]
+	  int iBoxSize // Fourier pixels
 	);
 };
 
@@ -278,22 +278,38 @@ private:
 	int m_aiSpectSize[2];
 };
 
+class GEstBFactor1D
+{
+public:
+        GEstBFactor1D(void);
+        ~GEstBFactor1D(void);
+        void Setup
+        ( float* pfResRange, // ex: [30A, 4A]
+          float fPixSize,    // angstrom
+          float fBStep,
+          int iNumStep
+        );
+        float DoIt(float* gfSpectrum, int iSize);
+private:
+        void mClean(void);
+        float m_fBStep;
+        int m_iNumSteps;
+        float* m_gfBuf;
+};
+
 class GCC2D
 {
 public:
 	GCC2D(void);
 	~GCC2D(void);
-	void Setup
-	(  float fFreqLow,  // relative freq [0, 0.5]
-	   float fFreqHigh, // relative freq [0, 0.5]
-	   float fBFactor
+	void SetResRange
+	( float* pfResRange,
+	  float fPixSize
 	);
 	void SetSize(int* piCmpSize); // half spectrum
 	float DoIt(float* gfCTF, float* gfSpectrum);
-private:
-	float m_fFreqLow;
-	float m_fFreqHigh;
 	float m_fBFactor;
+private:
 	int m_aiCmpSize[2];
 	int m_iGridDimX;
 	int m_iBlockDimX;
@@ -306,23 +322,34 @@ public:
 	GCC1D(void);
 	~GCC1D(void);
 	void SetSize(int iSize);
-	void Setup
-	(  float fFreqLow,   // relative freq [0, 0.5]
-	   float fFreqHigh,  // relative freq [0, 0.5]
-	   float fBFactor
+	void SetResRange
+	( float* pResRange,
+	  float fPixSize
 	);
 	float DoIt(float* gfCTF, float* gfSpectrum);
-	float DoCPU
-	(  float* gfCTF,
-	   float* gfSpectrum,
-	   int iSize
-	);
+	float m_fBFactor;
 private:
 	int m_iSize;
 	float* m_gfRes;
 	float m_fFreqLow;
 	float m_fFreqHigh;
-	float m_fBFactor;
+};
+
+class GDetectIce1D
+{
+public:
+        GDetectIce1D(void);
+        ~GDetectIce1D(void);
+        void DoIt
+        ( float* gfSpect,
+          int iSize,
+          float fPixSize  // angstrom
+        );
+        //---------------------------
+        bool m_bIceRing1;
+        bool m_bIceRing2;
+private:
+        float mCalcAmp(float* gfSpect, int iSize, float* pfRingRange);
 };
 
 //--------------------------------------------------------------------
@@ -700,6 +727,38 @@ private:
 	float m_fStd;     
 };
 
+class CCGradient : public MU::CPowell
+{
+public:
+        CCGradient(void);
+        virtual ~CCGradient(void);
+        void Clean(void);
+        void SetCtfParam(MD::CCtfParam* pCtfParam);
+        void SetSpect(float* gfSpect, int* piCmpSize);
+        //---------------------------
+        float DoIt
+        ( float* pfInitPoint,
+          float* pfSearchRange,
+          int iNumSteps
+        );
+        float Eval(float* pfPoint);
+        //---------------------------
+        float GetDfMin(void); // angstrom
+        float GetDfMax(void); // angstrom
+        float GetAstAngle(void); // degree
+        float GetExtPhase(void); // degree
+	float m_fBestCC;
+private:
+        float* m_gfCtf2D;
+        float* m_gfSpect;
+        float* m_pfScales;
+        GCalcCTF2D m_aGCalcCtf2D;
+        GCC2D* m_pGCC2D;
+        MD::CCtfParam* m_pCtfParam;
+        int m_aiCmpSize[2];
+};
+
+
 class CFindDefocus1D
 {
 public:
@@ -750,13 +809,14 @@ public:
 	//-----------------
 	void DoIt
 	( float* gfSpect,
-	  float* pfDfRange,
-	  float* pfPhaseRange
+	  float fRangeDF,  // defocus
+	  float fRangeAM,  // ast mag
+	  float fRangeAA,  // ast angle
+	  float fRangePP   // phase plate
 	);
 	void RefineParam
 	( float* gfSpect,
-	  float fMinVal,
-	  float fMaxVal,
+	  float* pfRange,  // [min, max]
 	  float fStep, 
 	  int iParam
 	);
@@ -774,7 +834,8 @@ public:
 	float GetScore(void);
 	float GetCtfRes(void); // angstrom
 private:
-	void mGridSearch(float* pfDfRange, float* pfPhaseRange);
+	void mGridSearchAA(float* pfAstMagRange, float* pfAstAngRange);
+	void mGridSearchFP(float* pfDfRange, float* pfPhaseRange);
         float mCorrelate(void);
 	void mCalcCtfRes(void);
 	//---------------------------
@@ -801,8 +862,6 @@ public:
 	void Clean(void);
 	void SetGpu(int iNthGpu) { m_iNthGpu = iNthGpu; }
 	void Setup1(CCtfTheory* pCtfTheory);
-	void SetPhase(float fMinPhase, float fMaxPhase); // degree
-	void SetDefocus(float fMinDf, float fMaxDf);     // angstrom
 	void SetHalfSpect(float* pfCtfSpect);
 	//-----------------
 	float* GetHalfSpect(bool bRaw, bool bToHost);
@@ -821,8 +880,6 @@ public:
 	float m_fCtfRes;
 protected:
 	void mRemoveBackground(void);
-	void mLowpass(void);
-	void mHighpass(void);
 	//-----------------
 	CCtfTheory* m_pCtfTheory;
 	float* m_gfFullSpect;
@@ -830,8 +887,6 @@ protected:
 	float* m_gfCtfSpect;
 	int m_aiCmpSize[2];
 	float m_afResRange[2];
-	float m_afPhaseRange[2]; // for searching extra phase in degree
-	float m_afDfRange[2];    // min and max defocus in angstrom 
 	int m_iNthGpu;
 };
 
@@ -845,6 +900,7 @@ public:
 	void Do1D(void);
 	void Refine1D(float fInitDf, float fDfRange);
 protected:
+	void mEstimateBFactor(void);
 	void mFindDefocus(void);
 	void mRefineDefocus(float fDfRange);
 	void mCalcRadialAverage(void);
@@ -861,18 +917,13 @@ public:
 	void Setup1(CCtfTheory* pCtfTheory);
 	void Do2D(void);
 	void Refine
-	( float afDfMean[2],   // central value & range
-	  float afAstRatio[2], // central value & range
-	  float afAstAngle[2], // central value & range
-	  float afExtPhase[2]  // central value & range
+	( float* pfRangeDF,
+	  float* pfRangeAM,
+	  float* pfRangeAA,
+	  float* pfRangePP
 	);
 private:
-	void mRefine
-	( float fDfDfRange,
-	  float fAstMagRange,
-	  float fAstAngRange,
-	  float fPhaseRange
-	);
+	void mCGRefine(void);
 	void mGetResults(void);
 	CFindDefocus2D* m_pFindDefocus2D;
 };

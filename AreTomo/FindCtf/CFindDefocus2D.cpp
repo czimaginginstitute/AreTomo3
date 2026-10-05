@@ -83,10 +83,7 @@ void CFindDefocus2D::Setup1(MD::CCtfParam* pCtfParam, int* piCmpSize)
 
 void CFindDefocus2D::Setup2(float afResRange[2])
 {
-	float fRes1 = m_aiCmpSize[1] * m_pCtfParam->m_fPixelSize;
-	float fMinFreq = fRes1 / afResRange[0];
-	float fMaxFreq = fRes1 / afResRange[1];
-	m_pGCC2D->Setup(fMinFreq, fMaxFreq, 1.0f);
+	m_pGCC2D->SetResRange(afResRange, m_pCtfParam->m_fPixelSize);
 }
 
 //--------------------------------------------------------------------
@@ -109,59 +106,69 @@ void CFindDefocus2D::SetInitVals
 
 void CFindDefocus2D::DoIt
 (	float* gfSpect,
-	float* pfDfRange,
-	float* pfPhaseRange
+	float fRangeDF,
+	float fRangeAM,
+	float fRangeAA,
+	float fRangePP
 )
 {	m_gfSpect = gfSpect;
-	this->RefineParam(m_gfSpect, 0.0, 180.0f, 1.0f, 2);
-	this->RefineParam(m_gfSpect, 0.0, 0.5f, 0.005f, 1);
-	mCalcCtfRes();
+	MD::CCtfInput* pCtfInput = MD::CCtfInput::GetInstance();
 	//---------------------------
-	mGridSearch(pfDfRange, pfPhaseRange);
-	this->RefineParam(m_gfSpect, 0.0, 0.5f, 0.005f, 1);
-	this->RefineParam(m_gfSpect, 0.0f, 180.0f, 1.0f, 2);
-	//---------------------------
-	float fPhaseRange = pfPhaseRange[1] - pfPhaseRange[0];
-	if(fPhaseRange > 0.5f)
-	{	this->RefineParam(m_gfSpect, 0.0f, 180.0f, 1.0f, 3);
+	float afRangeDF[2] = {0.0f};
+	float afRangeAM[2] = {0.0f};
+	float afRangeAA[2] = {0.0f};
+	float afRangePP[2] = {0.0f};  // phase plate
+	for(int i=1; i<3; i++)
+	{	pCtfInput->GetDfRange(
+		   m_afNewParam[0], fRangeDF / i,
+	   	   afRangeDF);	   
+		pCtfInput->GetAstMagRange(
+		   m_afNewParam[1], fRangeAM / i,
+		   afRangeAM);
+		pCtfInput->GetAstAngRange(
+		   m_afNewParam[2], fRangeAA / i,
+		   afRangeAA);
+		pCtfInput->GetPhaseRange(
+		   m_afNewParam[3], fRangePP / i,
+		   afRangePP);
+		//-------------------
+		mGridSearchAA(afRangeAM, afRangeAA);
+		mGridSearchFP(afRangeDF, afRangePP);
+		mCalcCtfRes();
 	}
-	mCalcCtfRes();
 }
 
 void CFindDefocus2D::Refine
 (	float* gfSpect,
-	float fDfRange,
-	float fPhaseRange
+	float fRangeDF,
+	float fRangePP
 )
 {	m_gfSpect = gfSpect;
+	MD::CCtfInput* pCtfInput = MD::CCtfInput::GetInstance();
 	//---------------------------
-	float fDfMean = m_afNewParam[0];
-	float fMinDf = fDfMean - 0.5f * fDfRange;
-	float fMaxDf = fDfMean + 0.5f * fDfRange;
-	fMinDf = fmax(fMinDf, 1000.0f);
-	this->RefineParam(gfSpect, fMinDf, fMaxDf, 100.0f, 0);
+	float afRangeDF[2] = {0.0f};
+	float afRangePP[2] = {0.0f};
 	//---------------------------
-	if(fPhaseRange >= 0.5f)
-	{	float fExtPhase = m_afNewParam[3];
-		float fMinPhase = fExtPhase - 0.5f * fPhaseRange;
-		float fMaxPhase = fExtPhase + 0.5f * fPhaseRange;
-		fMinPhase = fmaxf(fMinPhase, 0.0f);
-		fMaxPhase = fminf(fMaxPhase, 180.0f);
-		this->RefineParam(gfSpect, fMinPhase, fMaxPhase, 1.0f, 3);
+	for(int i=1; i<3; i++)
+	{	pCtfInput->GetDfRange(
+                   m_afNewParam[0], fRangeDF / i,
+                   afRangeDF);
+		pCtfInput->GetPhaseRange(
+                   m_afNewParam[3], fRangePP / i,
+                   afRangePP);
+		mGridSearchFP(afRangeDF, afRangePP);
+		mCalcCtfRes();
 	}
-	//---------------------------
-	mCalcCtfRes();
 }
 
 void CFindDefocus2D::RefineParam
 (	float* gfSpect,
-	float fMinVal,
-	float fMaxVal,
+	float* pfRange, 
 	float fStep,
 	int iParam
 )
 {	m_gfSpect = gfSpect;
-	float fRange = fMaxVal - fMinVal;
+	float fRange = pfRange[1] - pfRange[0];
 	if(fRange == 0.0f) return;
 	else if(fStep <= 0) return;
 	else memcpy(m_afOldParam, m_afNewParam, sizeof(m_afNewParam));
@@ -172,12 +179,10 @@ void CFindDefocus2D::RefineParam
 	//---------------------------
 	float fMaxCC = mCorrelate();
 	float fBestVal = m_afNewParam[iParam];
-	float fInitVal = fBestVal;
+	float fInitVal = pfRange[0];
 	//---------------------------
 	for(int i=0; i<iNumSteps; i++)
 	{	m_afNewParam[iParam] = fInitVal + fStep * (i - iCent);
-		if(m_afNewParam[iParam] < fMinVal) continue;
-		else if(m_afNewParam[iParam] > fMaxVal) continue;
 		//-------------------
 		float fCC = mCorrelate();
 		if(fCC > fMaxCC)
@@ -194,14 +199,57 @@ void CFindDefocus2D::RefineParam
 	else memcpy(m_afNewParam, m_afOldParam, sizeof(m_afOldParam));
 }
 
-void CFindDefocus2D::mGridSearch
+void CFindDefocus2D::mGridSearchAA
+(	float* pfAstMagRange,
+	float* pfAstAngRange
+)
+{	memcpy(m_afOldParam, m_afNewParam, sizeof(m_afOldParam));
+	//---------------------------
+	int iNumStepsAM = 20;
+	float fRangeAM = pfAstMagRange[1] - pfAstMagRange[0];
+	float fStepAM = fRangeAM / iNumStepsAM;
+	if(fStepAM <= 0) iNumStepsAM = 1;
+	//---------------------------
+	int iNumStepsAA = 30;
+	float fRangeAA = pfAstAngRange[1] - pfAstAngRange[0];
+	float fStepAA = fRangeAA / iNumStepsAA;
+	if(fStepAA <= 0) iNumStepsAA = 1;
+	//---------------------------
+	int iSteps = iNumStepsAM * iNumStepsAA;
+	if(iSteps == 1) return;
+	//---------------------------
+	float fBestAM = 0.0f;
+	float fBestAA = 0.0f;
+	float fBestCC = (float)-1e20;
+	//---------------------------
+	for(int i=0; i<iSteps; i++)
+	{	int iAM = i % iNumStepsAM;
+		int iAA = i / iNumStepsAM;
+		m_afNewParam[1] = iAM * fStepAM + pfAstMagRange[0];
+		m_afNewParam[2] = iAA * fStepAA + pfAstAngRange[0];
+		float fCC = mCorrelate();
+		if(fCC <= fBestCC) continue;
+		//-------------------
+		fBestAM = m_afNewParam[1];
+		fBestAA = m_afNewParam[2];
+		fBestCC = fCC;
+	}
+	m_afNewParam[1] = fBestAM;
+	m_afNewParam[2] = fBestAA;
+	m_afNewParam[4] = fBestCC;
+	if(fBestCC > m_afOldParam[4]) return;
+	//---------------------------
+	memcpy(m_afNewParam, m_afOldParam, sizeof(m_afNewParam));
+}
+
+void CFindDefocus2D::mGridSearchFP
 (	float* pfDfRange,
 	float* pfPhaseRange
 )
 {       memcpy(m_afOldParam, m_afNewParam, sizeof(m_afOldParam));
 	//---------------------------
-	float fDfStep = 100.0f;
-	float fPhStep = 1.0f;
+	float fDfStep = 300.0f;
+	float fPhStep = 3.0f;
 	//---------------------------
         float fBestDF = 0.0f;
         float fBestPH = 0.0f;
@@ -242,6 +290,7 @@ float CFindDefocus2D::mCorrelate(void)
 	//---------------------------
 	m_aGCalcCtf2D.DoIt(fDfMin, fDfMax, fAstRad, fExtPhaseRad, 
 	   m_gfCtf2D, m_aiCmpSize);
+	m_pGCC2D->m_fBFactor = m_pCtfParam->m_fBFactor;
 	float fCC = m_pGCC2D->DoIt(m_gfCtf2D, m_gfSpect);
 	return fCC;
 }

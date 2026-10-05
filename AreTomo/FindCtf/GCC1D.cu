@@ -6,6 +6,8 @@
 #define BLOCK_SIZEX 512
 
 using namespace McAreTomo::AreTomo::FindCtf;
+static __constant__ float c_afResRange[2];  // pix_size/res
+static __constant__ float c_afIceRange[2];  // pix_size/res
 
 //-----------------------------------------------------------------------------
 // 1. The zero-frequency component is at (x=0, y=iCmpY/2). The frequency
@@ -13,58 +15,57 @@ using namespace McAreTomo::AreTomo::FindCtf;
 // 2. fFreqLow, fFreqHigh are in the range of [0, 0.5f] of unit 1/pixel.
 //-----------------------------------------------------------------------------
 static __global__ void mGCalculate
-(	float* gfCTF,
-	float* gfSpectrum,
-	int iSize,
-	float fFreqLow,
-	float fFreqHigh,
-	float fBFactor,
-	float* gfRes
+(       float* gfCTF,
+        float* gfSpectrum,
+        int iSize,
+        float fBFactor,
+        float* gfRes
 )
-{	extern __shared__ float s_gfSums[];
-	int i = 0, iOffset = 0, x=0;
-	//---------------------------
-	for(i=0; i<6; i++)
-	{	iOffset = i * blockDim.x;
-		s_gfSums[iOffset + threadIdx.x] = 0.0f;
-	}
-	__syncthreads();
-	//---------------------------
-	x = blockIdx.x * blockDim.x + threadIdx.x;
-	if(x >= iSize) return;
-	//---------------------------
-	if(x >= fFreqLow && x < fFreqHigh)
-	{	float fCTF = x * 0.5f / (iSize - 1);
-		float fSpec = gfSpectrum[x]; 
-		fCTF = (fabsf(gfCTF[x]) - 0.5f) * expf(-fBFactor * fCTF * fCTF);
-		//--------------------------
-		s_gfSums[threadIdx.x] = fCTF * fSpec;
-		s_gfSums[blockDim.x + threadIdx.x] = fCTF;
-		s_gfSums[2 * blockDim.x + threadIdx.x] = fSpec;
-		s_gfSums[3 * blockDim.x + threadIdx.x] = fCTF * fCTF;
-		s_gfSums[4 * blockDim.x + threadIdx.x] = fSpec * fSpec;
-		s_gfSums[5 * blockDim.x + threadIdx.x] = 1.0f;
-	}
-	__syncthreads();
-	//---------------------------
-	iOffset = blockDim.x / 2;
-	while(iOffset > 0)
-	{	if(threadIdx.x < iOffset)
-		{	for(i=0; i<6; i++)
-			{	int k = i * blockDim.x + threadIdx.x;
-				s_gfSums[k] += s_gfSums[k + iOffset];
-			}
-		}
-		__syncthreads();
-		iOffset /= 2;
-	}
-	//---------------------------
-	if(threadIdx.x == 0)
-	{	iOffset = 6 * blockIdx.x;
-		for(i=0; i<6; i++)
-		{	gfRes[iOffset + i] = s_gfSums[i * blockDim.x];
-		}
-	}
+{       extern __shared__ char s_cArray[];
+        float* s_gfCC = (float*)&s_cArray[0];
+        float* s_gfStd1 = &s_gfCC[blockDim.x];
+        float* s_gfStd2 = &s_gfStd1[blockDim.x];
+        s_gfCC[threadIdx.x] = 0.0f;
+        s_gfStd1[threadIdx.x] = 0.0f;
+        s_gfStd2[threadIdx.x] = 0.0f;
+        __syncthreads();
+        //---------------------------
+        int x = blockIdx.x * blockDim.x + threadIdx.x;
+        if(x >= iSize) return;
+        //---------------------------
+        float fX = x / ((iSize - 1.0f) * 2.0f);
+        bool bNotIce = (fX < c_afIceRange[0] || fX > c_afIceRange[1]);
+        //---------------------------
+        if(fX >= c_afResRange[0] && bNotIce)
+        {       float fW = fX; // - c_afResRange[0];
+		fW = expf(-fBFactor * fW * fW);
+                float fSpec = gfSpectrum[x];
+                float fCTF = (fabsf(gfCTF[x]) - 0.5f) * fW;
+                //-------------------
+                s_gfCC[threadIdx.x] = fCTF * fSpec;
+                s_gfStd1[threadIdx.x] = fCTF * fCTF;
+                s_gfStd2[threadIdx.x] = fSpec * fSpec;
+        }
+        __syncthreads();
+        //--------------
+        x = blockDim.x / 2;
+	while(x > 0)
+        {       if(threadIdx.x < x)
+                {       int j = x + threadIdx.x;
+                        s_gfCC[threadIdx.x] += s_gfCC[j];
+                        s_gfStd1[threadIdx.x] += s_gfStd1[j];
+                        s_gfStd2[threadIdx.x] += s_gfStd2[j];
+                }
+                __syncthreads();
+                x /= 2;
+        }
+        //-------------
+        if(threadIdx.x == 0)
+        {       x = 3 * blockIdx.x;
+                gfRes[x] = s_gfCC[0];
+                gfRes[x+1] = s_gfStd1[0];
+                gfRes[x+2] = s_gfStd2[0];
+        }
 }
 
 GCC1D::GCC1D(void)
@@ -78,14 +79,17 @@ GCC1D::~GCC1D(void)
 	if(m_gfRes != 0L) cudaFree(m_gfRes);
 }
 
-void GCC1D::Setup
-(	float fFreqLow,  // pixel in Fourier domain
-	float fFreqHigh, // pixel in Fourier domain
-	float fBFactor
+void GCC1D::SetResRange
+(	float* pfResRange, // [low, high] (A)
+	float fPixSize
 )
-{	m_fFreqLow = fFreqLow;
-	m_fFreqHigh = fFreqHigh;
-	m_fBFactor = fBFactor;
+{	float afResRange[2] = {0.0f};
+        afResRange[0] = fPixSize / pfResRange[0];
+        afResRange[1] = fPixSize / pfResRange[1];
+        cudaMemcpyToSymbol(c_afResRange, afResRange, sizeof(float) * 2);
+        //---------------------------
+        float afIceRange[] = {1.0f, 2.0f};
+        cudaMemcpyToSymbol(c_afIceRange, afIceRange, sizeof(float) * 2);	
 }
 
 void GCC1D::SetSize(int iSize)
@@ -97,67 +101,34 @@ void GCC1D::SetSize(int iSize)
 } 
 
 float GCC1D::DoIt(float* gfCTF, float* gfSpectrum)
-{    	
+{
 	dim3 aBlockDim(256, 1);
-	dim3 aGridDim(1, 1);
-	aGridDim.x = (m_iSize + aBlockDim.x - 1) / aBlockDim.x;
-	//-----------------------------------------------------
-	size_t tBytes = sizeof(float) * m_iSize;
-	cudaMemset(m_gfRes, 0, tBytes);
-	//----------------------------
-	tBytes = sizeof(float) * aBlockDim.x * 6;
-	mGCalculate<<<aGridDim, aBlockDim, tBytes>>>(gfCTF, gfSpectrum, 
-	   m_iSize, m_fFreqLow, m_fFreqHigh, m_fBFactor, m_gfRes);
-     	//-----------------------------------------------
-	float* pfRes = new float[aGridDim.x * 6];
-	tBytes = sizeof(float) * aGridDim.x * 6;
-	cudaMemcpy(pfRes, m_gfRes, tBytes, cudaMemcpyDefault);
-	//----------------------------------------------------
-	double adVals[6] = {0.0};
-	for(int i=0; i<aGridDim.x; i++)
-	{	int j = 6 * i;
-		for(int k=0; k<6; k++)
-		{	adVals[k] += pfRes[j + k];
-		}
-	}
-	for(int i=0; i<5; i++)
-	{	adVals[i] /= (adVals[5] + 1e-30);
-	}
-	if(pfRes != 0L) delete[] pfRes;
-	//-----------------------------
-	double dCC = adVals[0] - adVals[1] * adVals[2];
-	double dStd1 = adVals[3] - adVals[1] * adVals[1];
-	double dStd2 = adVals[4] - adVals[2] * adVals[2];
-	if(dStd1 > 0) dStd1 = sqrt(dStd1);
-	if(dStd2 > 0) dStd2 = sqrt(dStd2);
-	if(dStd1 > 0 && dStd2 > 0) dCC /= (dStd1 * dStd2);
-	else dCC = 0.0;
-	return (float)dCC;
-}
-
-float GCC1D::DoCPU
-(	float* gfCTF,
-	float* gfSpectrum,
-	int iSize
-)
-{	float* pfCTF = new float[iSize];
-	float* pfSpectrum = new float[iSize];
-	size_t tBytes = sizeof(float) * iSize;
-	cudaMemcpy(pfCTF, gfCTF, tBytes, cudaMemcpyDeviceToHost);
-	cudaMemcpy(pfSpectrum, gfSpectrum, tBytes, cudaMemcpyDeviceToHost);
-	//-----------------------------------------------------------------
-	float fFreqLow = 2 * m_fFreqLow * iSize;
-	float fFreqHigh = 2 * m_fFreqHigh * iSize;
-	double dXY = 0, dStd1 = 0, dStd2 = 0;
-	for(int i=0; i<iSize; i++)
-	{	if(i < fFreqLow || i >= fFreqHigh) continue;
-		float fX = i * 0.5f / (iSize - 1);
-		dXY += (pfCTF[i] * pfSpectrum[i]) * exp(-m_fBFactor * fX * fX);
-		dStd1 += (pfCTF[i] * pfCTF[i]);
-		dStd2 += (pfSpectrum[i] * pfSpectrum[i]);
-	}
-	double dCC = dXY / sqrt(dStd1 * dStd2);
-	delete[] pfCTF;
-	delete[] pfSpectrum;
-	return (float)dCC;
+        dim3 aGridDim(1, 1);
+        aGridDim.x = (m_iSize + aBlockDim.x - 1) / aBlockDim.x;
+        //---------------------------
+        size_t tBytes = sizeof(float) * aGridDim.x * 3;
+        cudaMemset(m_gfRes, 0, tBytes);
+        //---------------------------
+        tBytes = sizeof(float) * aBlockDim.x * 3;
+        mGCalculate<<<aGridDim, aBlockDim, tBytes>>>(
+           gfCTF, gfSpectrum, m_iSize,
+           m_fBFactor,
+           m_gfRes);
+        //---------------------------
+        float* pfRes = new float[aGridDim.x * 3];
+        tBytes = sizeof(float) * aGridDim.x * 3;
+        cudaMemcpy(pfRes, m_gfRes, tBytes, cudaMemcpyDefault);
+        //---------------------------
+        double dCC = 0.0, dStd1 = 0.0, dStd2 = 0.0;
+        for(int i=0; i<aGridDim.x; i++)
+        {       int j = 3 * i;
+                dCC += pfRes[j];
+                dStd1 += pfRes[j+1];
+                dStd2 += pfRes[j+2];
+        }
+        if(pfRes != 0L) delete[] pfRes;
+        //-----------------------------
+        if(dStd1 > 0 && dStd2 > 0) dCC /= sqrt(dStd1 * dStd2);
+        else dCC = 0.0;
+        return (float)dCC;
 }

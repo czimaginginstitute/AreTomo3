@@ -57,8 +57,8 @@ void CSpectrumImage::mGenFullSpectrum(void)
 void CSpectrumImage::mEmbedCTF(void)
 {
 	float fPixelSize = m_pCtfTheory->GetPixelSize();
-	float fMinFreq = fPixelSize / 25.0f; //m_afResRange[0];
-	float fMaxFreq = fPixelSize / m_afResRange[1];
+	float fMinFreq = fPixelSize / m_afResRange[0];
+	float fMaxFreq = 0.4f;
 	float fGain = m_fStd * 1.5f;
 	//--------------------------
 	GCalcCTF2D gCalcCtf2D;

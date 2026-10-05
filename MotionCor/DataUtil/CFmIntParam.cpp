@@ -45,6 +45,11 @@ CFmIntParam::CFmIntParam(void)
 	m_fTotalDose = 0.0f;
 	m_iNumIntFms = 0;
 	m_iMrcMode = -1;
+	m_piProvStarts = 0L;
+	m_piProvSizes = 0L;
+	m_iProvIntFms = 0;
+	m_iProvKeepFirst = 0;
+	m_iProvKeepCount = 0;
 }
 
 
@@ -62,8 +67,62 @@ void CFmIntParam::Setup(int iNumRawFms, int iMrcMode, float fMdocDose)
 	m_iMrcMode = iMrcMode;
 	//-----------------
 	m_fTotalDose = fMdocDose;
-	mCalcIntFms(); 
+	mCalcIntFms();
+	//-----------------------------------------------------------
+	// Snapshot the pre-throw integration layout before
+	// mRemoveFrames compacts the arrays in place (frame
+	// provenance for the .mcaln frame table).
+	//-----------------------------------------------------------
+	m_iProvIntFms = m_iNumIntFms;
+	m_piProvStarts = new int[m_iProvIntFms * 2];
+	m_piProvSizes = m_piProvStarts + m_iProvIntFms;
+	for(int i=0; i<m_iProvIntFms; i++)
+	{	m_piProvStarts[i] = m_piIntFmStarts[i];
+		m_piProvSizes[i] = m_piIntFmSizes[i];
+	}
+	//-----------------
 	mRemoveFrames();
+	//-----------------
+	int iThrows = m_iProvIntFms - m_iNumIntFms;
+	if(iThrows > 0)
+	{	CMcInput* pIn = CMcInput::GetInstance();
+		m_iProvKeepFirst = pIn->m_aiThrow[0];
+	}
+	else m_iProvKeepFirst = 0;
+	m_iProvKeepCount = m_iNumIntFms;
+}
+
+int CFmIntParam::GetNumRawFrames(void)
+{
+	return m_iNumRawFms;
+}
+
+int CFmIntParam::GetProvNumIntFrames(void)
+{
+	return m_iProvIntFms;
+}
+
+int CFmIntParam::GetProvStart(int iIntFrame)
+{
+	return m_piProvStarts[iIntFrame];
+}
+
+int CFmIntParam::GetProvSize(int iIntFrame)
+{
+	return m_piProvSizes[iIntFrame];
+}
+
+bool CFmIntParam::GetProvIncluded(int iIntFrame)
+{
+	if(iIntFrame < m_iProvKeepFirst) return false;
+	if(iIntFrame >= m_iProvKeepFirst + m_iProvKeepCount) return false;
+	return true;
+}
+
+int CFmIntParam::GetProvAligned(int iIntFrame)
+{
+	if(!GetProvIncluded(iIntFrame)) return -1;
+	return iIntFrame - m_iProvKeepFirst;
 }
 
 int CFmIntParam::GetIntFmStart(int iIntFrame)
@@ -160,6 +219,12 @@ void CFmIntParam::mClean(void)
 	{	delete[] m_piIntFmStarts;
 		m_piIntFmStarts = 0L;
 		m_piIntFmSizes = 0L;
+	}
+	if(m_piProvStarts != 0L)
+	{	delete[] m_piProvStarts;
+		m_piProvStarts = 0L;
+		m_piProvSizes = 0L;
+		m_iProvIntFms = 0;
 	}
 	if(m_pfIntFmDoses != 0L) 
 	{	delete[] m_pfIntFmDoses;

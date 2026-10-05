@@ -16,6 +16,7 @@ CCtfParam::CCtfParam(void)
 	m_fTilt = 0.0f;
 	m_fScore = 0.0f;
 	m_fCtfRes = 10.0f;
+	m_fBFactor = 5.0f;
 }
 
 CCtfParam::~CCtfParam(void)
