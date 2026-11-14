@@ -38,6 +38,7 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./MotionCor/BadPixel/GLocalCC.cu \
 	./MotionCor/Align/GCC2D.cu \
 	./MotionCor/Align/GCorrelateSum2D.cu \
+	./MotionCor/Align/GGradCC2D.cu \
 	./MotionCor/Align/GNormByStd2D.cu \
 	./MotionCor/Correct/GCorrectPatchShift.cu \
 	./MotionCor/Correct/GStretch.cu \
@@ -139,7 +140,8 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./MotionCor/Align/CAlignMain.cpp \
 	./MotionCor/Align/CAlignParam.cpp \
 	./MotionCor/Align/CAlignStack.cpp \
-	./MotionCor/Align/CDetectFeatures.cpp \
+	./MotionCor/Align/CGradAlignStack.cpp \
+	./MotionCor/Align/CDetectFeatures2D.cpp \
 	./MotionCor/Align/CExtractPatch.cpp \
 	./MotionCor/Align/CFullAlign.cpp \
 	./MotionCor/Align/CGenXcfStack.cpp \

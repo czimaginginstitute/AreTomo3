@@ -66,6 +66,13 @@ void CStackShift::SetShift(int iFrame, float* pfShift)
 void CStackShift::SetShift(CStackShift* pSrcShift)
 {
 	if(pSrcShift == 0L) return;
+
+	if(m_iNumFrames != pSrcShift->m_iNumFrames)
+	{	printf("*****: %d  %d\n", m_iNumFrames,
+		   pSrcShift->m_iNumFrames);
+	}
+
+
 	int iBytes = m_iNumFrames * 2 * sizeof(float);
 	memcpy(m_pfShiftXs, pSrcShift->m_pfShiftXs, iBytes);
 }

@@ -87,8 +87,8 @@ void CFullAlign::mDoAlign(void)
 	//----------------------------------------------------------
 	int* piNumPatches = pMcInput->m_aiNumPatches;
 	if(piNumPatches[0] > 1 && piNumPatches[1] > 1)
-	{	CDetectFeatures* pDetectFeatures = 
-		   CDetectFeatures::GetInstance(m_iNthGpu);
+	{	CDetectFeatures2D* pDetectFeatures = 
+		   CDetectFeatures2D::GetInstance(m_iNthGpu);
 		pDetectFeatures->DoIt(m_pFullShift, piNumPatches);
 		//----------------
 		CPatchCenters* pPatchCenters = 

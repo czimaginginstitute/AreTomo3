@@ -771,3 +771,15 @@ Changes:
    6) DataUtil/CReadMdoc checks whether a .openTS file exists. If so, the
       corresponding .mdoc file is incomplete. It is then put to the end of
       the queue for later processing.
+
+AreTomo3 2.3.5 [10-05-2026]
+---------------------------
+General:
+   1) Try graduall increasing box size to estimate background since the
+      background is less varying in GRmBackground2D.
+Changes:
+   1) Added GGradAlignStack.cpp in MotionCor/Align. This is gradient decent
+      based approach to maximize the sum of pairwise correlation.
+Bug Fix:
+   1) We need to catch the case when there are so few frames that we need to
+      set both -FmInt 1 and -Group 1 1.

@@ -153,6 +153,7 @@ public:
 	int m_iExtZ;
 	float m_afAtBin[3];
 	float m_afTiltCor[2];
+	float m_afTiltRange[2];
 	float m_afReconRange[2];
 	float m_fAmpContrast;
 	float m_afExtPhase[2];
@@ -177,6 +178,7 @@ public:
 	char m_acExtZTag[32];
 	char m_acAtBinTag[32];
 	char m_acTiltCorTag[32];
+	char m_acTiltRangeTag[32];
 	char m_acReconRangeTag[32];
 	char m_acAmpContrastTag[32];
 	char m_acExtPhaseTag[32];

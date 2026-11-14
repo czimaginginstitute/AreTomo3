@@ -13,6 +13,9 @@ CIterativeAlign::CIterativeAlign(void)
 {
 	m_iMaxIterations = 7;
 	m_iIterations = 0;
+	m_iGradIters = 0;
+	m_fGradErr = 0.0f;
+	m_fGradCC = 0.0f;
 	m_fTol = 0.5f;
 	m_fBFactor = 150.0f;
 	m_bPhaseOnly = false;
@@ -72,6 +75,7 @@ void CIterativeAlign::DoIt(MMD::CStackShift* pStackShift)
 	MMD::CStackShift* pResShift = mAlignStack(pStackShift);
 	pStackShift->SetShift(pResShift);
 	if(pResShift != 0L) delete pResShift;
+	mRefineStack(pStackShift);
 	pStackShift->Smooth(fWeight);
 	//-----------------
 	delete m_pAlignStack;
@@ -146,6 +150,24 @@ MMD::CStackShift* CIterativeAlign::mAlignStack(MMD::CStackShift* pInitShift)
 	return pTotalShift;	
 }
 
+//--------------------------------------------------------------------
+// Refines the shifts measured by mAlignStack with gradient ascent on
+// the sum of pairwise cross correlations. Since the starting shifts
+// are already close, the coarsest B-factor is reduced for the xcf
+// buffer.
+//--------------------------------------------------------------------
+void CIterativeAlign::mRefineStack(MMD::CStackShift* pStackShift)
+{
+	CGradAlignStack gradAlign;
+	gradAlign.Setup(m_iBuffer, m_iNthGpu);
+	if(m_iBuffer == MD::EBuffer::xcf) gradAlign.SetBFactors(1000.0f, 20.0f);
+	gradAlign.DoIt(pStackShift);
+	//-----------------
+	m_iGradIters = gradAlign.m_iIterations;
+	m_fGradErr = gradAlign.m_fErr;
+	m_fGradCC = gradAlign.m_fCC;
+}
+
 char* CIterativeAlign::GetErrorLog(void)
 {
 	int iSize = m_iMaxIterations * 1024;
@@ -161,6 +183,9 @@ char* CIterativeAlign::GetErrorLog(void)
 		sprintf(acBuf, "Iteration %2d  Error: %9.3f\n", i+1, fErr);
 		strcat(pcLog, acBuf);
 	}
+	sprintf(acBuf, "Gradient refinement: %d iterations  Error: %9.3f"
+	   "  CC: %.4f\n", m_iGradIters, m_fGradErr * fXcfBin, m_fGradCC);
+	strcat(pcLog, acBuf);
 	return pcLog;
 }
 

@@ -209,6 +209,83 @@ private:
 	int m_iNthGpu;
 };
 
+//---------------------------------------------------------
+// Per-frame gradient and curvature of the sum of pairwise
+// cross correlations. See GGradCC2D.cu for the math.
+//---------------------------------------------------------
+class GGradCC2D
+{
+public:
+	GGradCC2D(void);
+	~GGradCC2D(void);
+	void Clean(void);
+	void SetSize(int* piCmpSize, int iNumFrames);
+	void SetBFactor(float fBFactor);
+	void DoFrame
+	( cufftComplex* gCmpFrm,
+	  cufftComplex* gCmpSum,
+	  float* pfShift,
+	  int iFrame,
+	  cudaStream_t stream = 0
+	);
+	double DoPower(cufftComplex* gCmpSum, cudaStream_t stream = 0);
+	double* Wait(int iNumFrames, cudaStream_t stream = 0);
+private:
+	int m_aiCmpSize[2];
+	int m_iMaxFrames;
+	float m_fBFactor;
+	float* m_gfPartial;
+	double* m_gdRes;
+	double* m_pdRes;
+};
+
+//---------------------------------------------------------
+// Aligns the frames by maximizing the sum of the cross
+// correlations of all frame pairs (i != j) with gradient
+// ascent. The search starts from the shifts passed in and
+// runs coarse to fine over a decreasing B-factor schedule.
+//---------------------------------------------------------
+class CGradAlignStack
+{
+public:
+	CGradAlignStack(void);
+	~CGradAlignStack(void);
+	void Setup(int iBuffer, int iNthGpu);
+	void SetBFactors(float fMaxBFactor, float fMinBFactor);
+	void SetTolerance(float fTol);
+	void SetMaxIterations(int iMaxIterations);
+	void DoIt(MMD::CStackShift* pStackShift);
+	//-----------------
+	float m_fCC;       // mean pairwise CC at the final B-factor
+	float m_fErr;      // largest shift update of the last iteration
+	int m_iIterations; // total iterations of all B-factors
+private:
+	void mAlignAtBFactor(float fBFactor);
+	void mCalcSum(float* pfShifts);
+	void mCalcGradient(void);
+	double mCalcTarget(float* pfShifts);
+	void mCalcStep(float fMaxStep, float* pfSteps);
+	//-----------------
+	MD::CStackBuffer* m_pFrmBuffer;
+	MD::CStackBuffer* m_pSumBuffer;
+	MMD::CFmGroupParam* m_pFmGroupParam;
+	cufftComplex* m_gCmpSum;
+	cudaStream_t m_stream;
+	GGradCC2D m_aGGradCC2D;
+	//-----------------
+	int m_iNumFrames;
+	float* m_pfShifts;   // [sx0..sxN-1, sy0..syN-1]
+	float* m_pfTrials;   // shifts of line search
+	double* m_pdGrad;    // per frame terms from GGradCC2D
+	double m_dPowSum;    // sum_k sum_q W |G_k|^2 (shift invariant)
+	double m_dTarget;    // current target function
+	//-----------------
+	float m_afBFactors[2];
+	float m_fTol;
+	int m_iMaxIterations;
+	int m_iNthGpu;
+};
+
 class CIterativeAlign
 {
 public:
@@ -219,7 +296,11 @@ public:
 	char* GetErrorLog(void);
 private:
 	MMD::CStackShift* mAlignStack(MMD::CStackShift* pInitShift); 
+	void mRefineStack(MMD::CStackShift* pStackShift);
 	CAlignStack* m_pAlignStack;
+	int m_iGradIters;
+	float m_fGradErr;
+	float m_fGradCC;
 	int m_iMaxIterations;
 	int m_iIterations;
 	float m_fTol;
@@ -440,11 +521,51 @@ public:
 class CDetectFeatures
 {
 public:
+        static void CreateInstances(int iNumGpus);
+        static void DeleteInstances(void);
+        static CDetectFeatures* GetInstance(int iNthGpu);
+        //-----------------     
+        ~CDetectFeatures(void);
+        void DoIt
+        ( MMD::CStackShift* pXcfStackShift,
+          int* piNumPatches
+        );
+        void GetCenter
+        ( int iPatch, int* piImgSize,
+          float* pfCent
+        );
+        void FindNearest
+        ( float* pfLoc, int* piImgSize,
+          int* piPatSize, float* pfNewLoc
+        );
+        int m_iNthGpu;
+private:
+        CDetectFeatures(void);
+        void mClean(void);
+        void mFindCenters(void);
+        void mFindCenter(float* pfCenter);
+        bool mCheckFeature(float fCentX, float fCentY);
+        void mSetUsed(float fCentX, float fCentY);
+        int mCheckRange(int iStart, int iSize, int* piRange);
+        int m_aiBinnedSize[2];
+        int m_aiNumPatches[2];
+        float m_afPatSize[2];
+        int m_aiSeaRange[4];
+        bool* m_pbFeatures;
+        bool* m_pbUsed;
+        float* m_pfCenters;
+        static CDetectFeatures* m_pInstances;
+        static int m_iNumGpus;
+};
+
+class CDetectFeatures2D
+{
+public:
 	static void CreateInstances(int iNumGpus);
 	static void DeleteInstances(void);
-	static CDetectFeatures* GetInstance(int iNthGpu);
+	static CDetectFeatures2D* GetInstance(int iNthGpu);
 	//-----------------	
-	~CDetectFeatures(void);
+	~CDetectFeatures2D(void);
 	void DoIt
 	( MMD::CStackShift* pXcfStackShift, 
 	  int* piNumPatches
@@ -453,27 +574,36 @@ public:
 	( int iPatch, int* piImgSize, 
 	  float* pfCent
 	);
-	void FindNearest
-	( float* pfLoc, int* piImgSize, 
-	  int* piPatSize, float* pfNewLoc
-	);
+	float GetScore(int iPatch);   // darkness * std ratio, -1 if none
+	bool HasFeature(int iPatch);
 	int m_iNthGpu;
 private:
-	CDetectFeatures(void);
+	CDetectFeatures2D(void);
 	void mClean(void);
-	void mFindCenters(void);
-	void mFindCenter(float* pfCenter);
-	bool mCheckFeature(float fCentX, float fCentY);
-	void mSetUsed(float fCentX, float fCentY);
-	int mCheckRange(int iStart, int iSize, int* piRange);
+	void mBinSum(MMD::CStackShift* pXcfStackShift);
+	void mCalcMargin(MMD::CStackShift* pXcfStackShift);
+	void mBuildScoreMap(void);
+	void mGaussBlur
+	( float* pfIn, float* pfOut, 
+	  float* pfBuf, float fSigma
+	);
+	void mPatchStats
+	( float* pfVals, int iCount,
+	  float* pfMedian, float* pfMad
+	);
+	void mGetPatchRect(int iPatch, int* piStart, int* piEnd);
+	void mFindPatchFeature(int iPatch);
+	float mParabolicPeak(float fLeft, float fCent, float fRight);
 	int m_aiBinnedSize[2];
 	int m_aiNumPatches[2];
 	float m_afPatSize[2];
-	int m_aiSeaRange[4];
-	bool* m_pbFeatures;
-	bool* m_pbUsed;
-	float* m_pfCenters;
-	static CDetectFeatures* m_pInstances;
+	int m_aiMargin[2];
+	float* m_pfBinnedSum;
+	float* m_pfScore;    // darkness * std ratio, 0 if not prominent
+	float* m_pfDark;     // darkness z-score at the best scale
+	float* m_pfStdRatio; // local std / background std at best scale
+	float* m_pfCenters;  // x, y, score (-1: no feature), dark, ratio
+	static CDetectFeatures2D* m_pInstances;
 	static int m_iNumGpus;
 };
 

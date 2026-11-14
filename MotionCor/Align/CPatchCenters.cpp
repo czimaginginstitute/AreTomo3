@@ -63,8 +63,8 @@ void CPatchCenters::Calculate(void)
 	if(m_piPatStarts != 0L) delete[] m_piPatStarts;
 	m_piPatStarts = new int[2 * m_iNumPatches];
 	//-----------------
-	CDetectFeatures* pDetectFeatures = 
-	   CDetectFeatures::GetInstance(m_iNthGpu);
+	CDetectFeatures2D* pDetectFeatures = 
+	   CDetectFeatures2D::GetInstance(m_iNthGpu);
 	float afLoc[2], afNewLoc[2];
 	for(int i=0; i<m_iNumPatches; i++)
 	{	int x = i % pInput->m_aiNumPatches[0];

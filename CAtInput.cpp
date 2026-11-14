@@ -33,6 +33,7 @@ CAtInput::CAtInput(void)
 	strcpy(m_acExtZTag, "-ExtZ");
 	strcpy(m_acAtBinTag, "-AtBin");
 	strcpy(m_acTiltCorTag, "-TiltCor");
+	strcpy(m_acTiltRangeTag, "-TiltRange");
 	strcpy(m_acReconRangeTag, "-ReconRange");
 	strcpy(m_acAmpContrastTag, "-AmpContrast");
 	strcpy(m_acExtPhaseTag, "-ExtPhase");
@@ -61,6 +62,8 @@ CAtInput::CAtInput(void)
 	m_afAtBin[2] = 0.0f;  // no third res
 	m_afTiltCor[0] = 0.0f;
 	m_afTiltCor[1] = 0.0f;
+	m_afTiltRange[0] = -99.0f;
+	m_afTiltRange[1] = 99.0f;
 	m_afReconRange[0] = -90.0f;
 	m_afReconRange[1] = 90.0f;
 	m_fAmpContrast = 0.07f;
@@ -242,6 +245,10 @@ void CAtInput::Parse(int argc, char* argv[])
 	if(m_afAtBin[0] < 1) m_afAtBin[0] = 1.0f;
 	if(m_afAtBin[1] < 1) m_afAtBin[1] = 0.0f;
 	if(m_afAtBin[2] < 1) m_afAtBin[2] = 0.0f;
+	//-----------------
+	aParseArgs.FindVals(m_acTiltRangeTag, aiRange);
+        if(aiRange[1] > 2) aiRange[1] = 2;
+        aParseArgs.GetVals(aiRange, m_afTiltRange);
 	//-----------------
 	aParseArgs.FindVals(m_acTiltCorTag, aiRange);
 	if(aiRange[1] > 2) aiRange[1] = 2;

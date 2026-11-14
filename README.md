@@ -10,6 +10,9 @@ AreTomo3 is developed on Linux platform equipped with at least one Nvidia GPU ca
 
 If the compute capability of GPUs is 5.x, use makefile instead. If CUDAHOME is not provided, the default installation path of CUDA given in makefile or makefile11 will be used.
 
+## Tools
+- `tools/MdocToTlt.py`: generates AreTomo3 `_TLT.txt` files (tilt angle, acquisition order, exposure dose) from SerialEM `.mdoc` files, one file or a batch at a time. See [tools/README_MdocToTlt.md](tools/README_MdocToTlt.md).
+
 ## Code of Conduct
 
 This project adheres to the Contributor Covenant [code of conduct](https://github.com/chanzuckerberg/.github/blob/main/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [opensource@chanzuckerberg.com](mailto:opensource@chanzuckerberg.com).

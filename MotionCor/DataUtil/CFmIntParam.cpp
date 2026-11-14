@@ -171,11 +171,15 @@ void CFmIntParam::mCalcIntFms(void)
 	if(iFmInt <= 0)
 	{	if(fRawFmDose > 0) iFmInt = (int)(0.15f / fRawFmDose);
 		else iFmInt = m_iNumRawFms / 12;
+		if(iFmInt < 1) iFmInt = 1;
 	}
-	if(iFmInt < 1) iFmInt = 1;
 	//---------------------------
 	m_iNumIntFms = m_iNumRawFms / iFmInt;
-	if(m_iNumIntFms < 1) m_iNumIntFms = 1;
+	if(m_iNumIntFms < 3)
+	{	iFmInt = m_iNumRawFms / 3;
+		if(iFmInt < 1) iFmInt = 1;
+		m_iNumIntFms = m_iNumRawFms / iFmInt;
+	}
 	//---------------------------
 	mAllocate();
 	int iLast = m_iNumIntFms - 1;

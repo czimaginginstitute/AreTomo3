@@ -265,11 +265,11 @@ void CPatchShifts::MakeRelative(void)
 {
 	float afMeanStd[2], fMin = (float)1e20;
 	int iRef = 0;
-	for(int i=1; i<m_aiFullSize[2]; i++)
+	for(int i=0; i<m_aiFullSize[2]; i++)
 	{	mCalcMeanStd(i, afMeanStd);
 		float fVal = afMeanStd[0] + afMeanStd[1];
-		printf("%3d  %3d %8.2f  %8.2f\n", i, iRef, afMeanStd[0],
-		   afMeanStd[1]); 
+		//printf("%3d  %3d %8.2f  %8.2f\n", i, iRef, afMeanStd[0],
+		//   afMeanStd[1]); 
 		if(fVal > fMin) continue;
 		fMin = fVal;
 		iRef = i;

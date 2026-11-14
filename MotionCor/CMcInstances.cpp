@@ -20,7 +20,7 @@ void CMcInstances::CreateInstances(int iNumGpus)
 	MMB::CCorrectMain::CreateInstances(iNumGpus);
 	//-----------------
 	MMA::CPatchCenters::CreateInstances(iNumGpus);
-	MMA::CDetectFeatures::CreateInstances(iNumGpus);
+	MMA::CDetectFeatures2D::CreateInstances(iNumGpus);
 	MMA::CSaveAlign::CreateInstances(iNumGpus);
 }
 
@@ -34,6 +34,6 @@ void CMcInstances::DeleteInstances(void)
 	//-----------------
 	MMA::CPatchCenters::DeleteInstances();
 	MMA::CSaveAlign::DeleteInstances();
-	MMA::CDetectFeatures::DeleteInstances();
+	MMA::CDetectFeatures2D::DeleteInstances();
 }
 
