@@ -29,8 +29,8 @@ GPositivity::~GPositivity(void)
 void GPositivity::DoIt(int iNthGpu)
 {
 	printf("Set positivity ...\n");
-	MD::CTsPackage* pTsPkg = MD::CTsPacakge::GetInstance(iNthGpu);
-	MD::CTiltSeries* pTiltSeries = pTsPkg->GetTiltSeries();
+	MD::CTsPackage* pTsPkg = MD::CTsPackage::GetInstance(iNthGpu);
+	MD::CTiltSeries* pTiltSeries = pTsPkg->GetSeries(0);
 	//-----------------
 	int* piStkSize = pTiltSeries->m_aiStkSize;
 	//---------------------------------------
@@ -45,7 +45,7 @@ void GPositivity::DoIt(int iNthGpu)
 	aFindMinMax.SetSize(piStkSize, !bPadded);
 	//---------------------------------------
 	for(int i=0; i<piStkSize[2]; i++)
-	{	float* pfFrm = pTiltSeries->GetFrame(i);
+	{	void* pfFrm = pTiltSeries->GetFrame(i);
 		cudaMemcpy(gfFrm, pfFrm, tBytes, cudaMemcpyDefault);
 		//--------------------------------------------------
 		float fMin = aFindMinMax.DoMin(gfFrm, bSync);
@@ -63,7 +63,7 @@ void GPositivity::DoIt(int iNthGpu)
 	dim3 aGridDim(1, 1);
 	aGridDim.x = (iPixels + aBlockDim.x - 1) / aBlockDim.x;
 	for(int i=0; i<piStkSize[2]; i++)
-	{	float* pfFrm = pTiltSeries->GetFrame(i);
+	{	void* pfFrm = pTiltSeries->GetFrame(i);
 		cudaMemcpy(gfFrm, pfFrm, tBytes, cudaMemcpyDefault);
 		mGSubtract<<<aGridDim, aBlockDim>>>(gfFrm, iPixels, fStackMin);
 		cudaMemcpy(pfFrm, gfFrm, tBytes, cudaMemcpyDefault);
