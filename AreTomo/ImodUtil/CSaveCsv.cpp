@@ -87,8 +87,8 @@ void CSaveCsv::mSaveForRelion(void)
 
 void CSaveCsv::mGenList(void)
 {
-	MAM::CDarkFrames* pDarkFrames = 
-	   MAM::CDarkFrames::GetInstance(m_iNthGpu);
+	MAM::CBadImages* pDarkFrames = 
+	   MAM::CBadImages::GetInstance(m_iNthGpu);
 	m_iAllTilts = pDarkFrames->m_aiRawStkSize[2];
 	//-----------------
 	m_pcOrderedList = new char[m_iAllTilts * 256];
@@ -114,7 +114,7 @@ void CSaveCsv::mGenList(void)
 		char* pcLine = m_pcOrderedList + iLine * 256;
 		sprintf(pcLine, "%4d,%.2f", iAcqIdx, fTilt);
 		//----------------
-		m_pbDarkImgs[iLine] = pDarkFrames->IsDarkFrame(i);
+		m_pbDarkImgs[iLine] = pDarkFrames->IsDarkImg(i);
 	}
 }
 

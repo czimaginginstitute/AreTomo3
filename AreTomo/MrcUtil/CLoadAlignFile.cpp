@@ -99,11 +99,11 @@ bool CLoadAlignFile::mParseHeader(void)
 		else delete[] pcLine;
 	}
 	//---------------------------------------------------------
-	// 1) CDarkFrames instance's Setup must have been called
+	// 1) CBadImages instance's Setup must have been called
 	// already prior to this method. 2) iNumAlnTilts is
 	// number of tilt images after rejecting dark images.
 	//---------------------------------------------------------
-	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
+	CBadImages* pDarkFrames = CBadImages::GetInstance(m_iNthGpu);
 	int iNumAlnTilts = pDarkFrames->GetNumAlnTilts();
 	if(iNumAlnTilts <= 0) return false;
 	//-----------------
@@ -138,7 +138,7 @@ bool CLoadAlignFile::mParseRawSize(char* pcLine)
 }
 
 //--------------------------------------------------------------------
-// 1. Add each dark image to CDarkFrames.
+// 1. Add each dark image to CBadImages.
 //--------------------------------------------------------------------
 bool CLoadAlignFile::mParseDarkFrame(char* pcLine)
 {
@@ -152,8 +152,8 @@ bool CLoadAlignFile::mParseDarkFrame(char* pcLine)
 	float fTilt = 0.0f;
 	sscanf(pcDarkFrm, "%d %d %f", &iFrmIdx, &iSecIdx, &fTilt);
 	//-----------------
-	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
-	pDarkFrames->AddDark(iFrmIdx, iSecIdx, fTilt);
+	CBadImages* pDarkFrames = CBadImages::GetInstance(m_iNthGpu);
+	pDarkFrames->AddBadImg(iFrmIdx, iSecIdx, fTilt);
 	return true;
 }
 
@@ -214,7 +214,7 @@ bool CLoadAlignFile::mParseThickness(char* pcLine)
 void CLoadAlignFile::mLoadGlobal(void)
 {
 	CAlignParam* pAlignParam = CAlignParam::GetInstance(m_iNthGpu);
-	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
+	CBadImages* pDarkFrames = CBadImages::GetInstance(m_iNthGpu);
 	int iNumAlnTilts = pDarkFrames->GetNumAlnTilts();
 	//-----------------
 	int iSecIndex = 0;
@@ -289,7 +289,7 @@ void CLoadAlignFile::mLoadLocal(void)
 void CLoadAlignFile::mToOneBased(void)
 {
 	CAlignParam* pAlignParam = CAlignParam::GetInstance(m_iNthGpu);
-	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
+	CBadImages* pDarkFrames = CBadImages::GetInstance(m_iNthGpu);
 	bool bDark0Based = pDarkFrames->bZeroBased();
 	bool bAln0Based = pAlignParam->bZeroBased();
 	if(!bDark0Based && !bAln0Based) return;

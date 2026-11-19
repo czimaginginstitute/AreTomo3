@@ -167,6 +167,7 @@ public:
 	int m_iAlign;
 	int m_iOutImod;
 	float m_fDarkTol;
+	float m_afBadTiltRange[2];
 	bool m_bIntpCor;
 	int m_iCtfTileSize;
 	int m_aiCorrCTF[2];
@@ -192,6 +193,7 @@ public:
 	char m_acCropVolTag[32];
 	char m_acOutImodTag[32];
 	char m_acDarkTolTag[32];
+	char m_acBadTiltRangeTag[32];
 	char m_acBFactorTag[32];
 	char m_acIntpCorTag[32];
 	char m_acCorrCTFTag[32];
@@ -316,7 +318,15 @@ private:
 	//-----------------
 	static CProcessThread* m_pInstances;
 	static int m_iNumGpus;
-	static std::unordered_map<std::string, int> *m_pMdocFiles;
+	//-----------------
+	// Pending (not yet loadable) mdoc files: number of
+	// attempts and time of first attempt.
+	//-----------------
+	struct MdocRetry
+	{	int iAttempts;
+		time_t tFirstTry;
+	};
+	static std::unordered_map<std::string, MdocRetry> *m_pMdocFiles;
 };
 
 class CGenStarFile
@@ -348,7 +358,7 @@ public:
 	~CMcAreTomoMain(void);
 	bool DoIt(void);
 private:
-	void mProcess(void);
+	int mProcess(void);
 };
 
 }

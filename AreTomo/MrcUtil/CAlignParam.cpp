@@ -59,6 +59,7 @@ CAlignParam::CAlignParam(void)
 	m_fBetaOffset = 0.0f;
 	m_iThickness = 0;
 	//-----------------
+	m_iRefFrm = -1;
 	m_iNumFrames = 0;
 	m_fZ0 = 0.0f;
 }
@@ -250,6 +251,57 @@ void CAlignParam::RotateShift(int iFrame, float fAngle)
         this->SetShift(iFrame, afShift);
 }
 
+int CAlignParam::FindRefFrame(void)
+{
+	// calculate mean shift within +/1 21 degree
+	float afMeanShift[2] = {0.0f};
+	float fMaxTilt = 21.0f;
+	int iCount = 0;
+	for(int i=0; i<m_iNumFrames; i++)
+	{	float fTilt = this->GetTilt(i);
+		if(fabs(fTilt) > fMaxTilt) continue;
+		afMeanShift[0] += m_pfShiftXs[i];
+		afMeanShift[1] += m_pfShiftYs[i];
+		iCount += 1;
+	}
+	if(iCount == 0) iCount = 1;
+	afMeanShift[0] /= iCount;
+	afMeanShift[1] /= iCount;
+
+	// using zero-tilt frame as reference if the mean shift is small
+	double dMeanS = sqrtf(afMeanShift[0] * afMeanShift[1] +
+	   afMeanShift[1] * afMeanShift[1]);
+	if(dMeanS <= 500)
+	{	m_iRefFrm = this->GetFrameIdxFromTilt(0.0f);
+		float fRefTilt = this->GetTilt(m_iRefFrm);
+		return m_iRefFrm;
+	}
+	// find the frame whose shift is closest to the mean
+	float fMinShift = (float)1e30;
+	m_iRefFrm = -1;
+	for(int i=0; i<m_iNumFrames; i++)
+	{	float fTilt = this->GetTilt(i);
+		if(fabs(fTilt) > fMaxTilt) continue;
+		float fDeltaX = m_pfShiftXs[i] - afMeanShift[0];
+		float fDeltaY = m_pfShiftYs[i] - afMeanShift[1];
+		double dS = sqrtf(fDeltaX * fDeltaX + fDeltaY * fDeltaY);
+		if(dS > fMinShift) continue;
+		fMinShift = (float)dS;
+		m_iRefFrm = i;
+	}
+	float fRefTilt = this->GetTilt(m_iRefFrm);
+	printf("****** CAlignParam: fRefTilt = %f  m_iRefParam = %d\n",
+		fRefTilt, m_iRefFrm);
+	return m_iRefFrm;
+}
+
+int CAlignParam::GetRefFrame(void)
+{
+	if(m_iRefFrm >= 0) return m_iRefFrm;
+	m_iRefFrm = this->GetFrameIdxFromTilt(0.0f);
+	return m_iRefFrm;
+}
+
 void CAlignParam::MakeRelative(int iRefFrame)
 {
 	for(int i=0; i<m_iNumFrames; i++)
@@ -299,8 +351,8 @@ void CAlignParam::SortBySecIndex(void)
 
 void CAlignParam::RemoveDarkFrames(void)
 {
-	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
-	int iNumDarks = pDarkFrames->m_iNumDarks;
+	CBadImages* pDarkFrames = CBadImages::GetInstance(m_iNthGpu);
+	int iNumDarks = pDarkFrames->m_iNumBads;
 	if(iNumDarks <= 0) return;
 	//-----------------------------------------------
 	// This is to avoid removing twice accidentally.
@@ -315,7 +367,7 @@ void CAlignParam::RemoveDarkFrames(void)
 	//-----------------
 	int k = 0;
 	for(int i=0; i<m_iNumFrames; i++)
-	{	if(pDarkFrames->IsDarkFrame(i)) continue;
+	{	if(pDarkFrames->IsDarkImg(i)) continue;
 		piSecIdx[k] = m_piSecIndex[i];
 		pfTilts[k] = m_pfTilts[i];
 		pfShiftXs[k] = m_pfShiftXs[i];
@@ -440,6 +492,18 @@ void CAlignParam::LogShift(char* pcLogFile)
 	fclose(pFile);
 }
 
+void CAlignParam::DisplayShift(void)
+{	
+	printf("CAlignParam: alignment parameters\n");
+	for(int i=0; i<m_iNumFrames; i++)
+        {       printf("%4d %8.2f % 8.2f %7.2f %7.2f %9.2f %9.2f\n",
+                   i, m_afCenter[0], m_afCenter[1],
+                   m_pfTilts[i], m_pfTiltAxis[i],
+                   m_pfShiftXs[i], m_pfShiftYs[i]);
+        }
+	printf("\n");
+}
+
 void CAlignParam::FitRotCenterZ(void)
 {
 	float afRotCent[3] = {0.0f};
@@ -497,24 +561,6 @@ void CAlignParam::GetRotationCenter(float* pfCenter)
         pfCenter[0] = afS0[0] / cos(m_pfTilts[iZeroTilt] * s_fD2R);
         pfCenter[1] = afS0[1];
 	pfCenter[2] = m_fZ0;
-}
-
-void CAlignParam::RemoveOffsetX(float fFact)
-{
-	if(m_fX0 == 0) return;
-	//--------------------
-	float afRawShift[2] = {0.0f}, afShift[2] = {0.0f};
-	for(int i=0; i<m_iNumFrames; i++)
-	{	this->GetShift(i, afRawShift);
-		//----------------------------
-		double dCos = cos(m_pfTilts[i] * s_fD2R);
-                afShift[0] = (float)(m_fX0 * dCos);
-		afShift[1] = 0.0f;
-		CAlignParam::RotShift(afShift, m_pfTiltAxis[i], afShift);
-		afRawShift[0] += (afShift[0] * fFact);
-		afRawShift[1] += (afShift[1] * fFact);
-		this->SetShift(i, afRawShift);
-	}
 }
 
 void CAlignParam::RemoveOffsetZ(float fFact)

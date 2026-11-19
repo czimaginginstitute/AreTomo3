@@ -14,7 +14,8 @@ using namespace McAreTomo;
 
 CProcessThread* CProcessThread::m_pInstances = 0L;
 int CProcessThread::m_iNumGpus = 0;
-std::unordered_map<std::string, int>* CProcessThread::m_pMdocFiles = 0L;
+std::unordered_map<std::string, CProcessThread::MdocRetry>*
+	CProcessThread::m_pMdocFiles = 0L;
 
 void CProcessThread::CreateInstances(int iNumGpus)
 {
@@ -31,7 +32,8 @@ void CProcessThread::CreateInstances(int iNumGpus)
 	// store reading-failed mdoc files and the number
 	// of attempts.
 	//--------------------------------------------------
-	m_pMdocFiles = new std::unordered_map<std::string, int>;
+	if(m_pMdocFiles != 0L) delete m_pMdocFiles;
+	m_pMdocFiles = new std::unordered_map<std::string, MdocRetry>;
 }
 
 void CProcessThread::DeleteInstances(void)
@@ -48,7 +50,7 @@ void CProcessThread::DeleteInstances(void)
 
 CProcessThread* CProcessThread::GetFreeThread(void)
 {
-	int iWaitTime = 0.0f;
+	float fWaitTime = 0.0f;
 	while(true)
 	{	for(int i=0; i<m_iNumGpus; i++)
 		{	CProcessThread* pThread = &m_pInstances[i];
@@ -58,9 +60,9 @@ CProcessThread* CProcessThread::GetFreeThread(void)
 		{	CProcessThread* pThread = &m_pInstances[i];
 			pThread->WaitForExit(0.1f);
 			if(!pThread->IsAlive()) return pThread;
-			else iWaitTime += 0.1f;
+			else fWaitTime += 0.1f;
 		}
-		if(iWaitTime > 600.0f) break;
+		if(fWaitTime > 600.0f) break;
 	}
 	return 0L;
 }
@@ -110,33 +112,69 @@ int CProcessThread::DoIt(void)
 	// loaded, start the processing thread.
 	//-----------------------------------------------
 	MD::CReadMdoc* pReadMdoc = MD::CReadMdoc::GetInstance(m_iNthGpu);
-	bool bLoaded = pReadMdoc->DoIt(pTsPackage->m_acInFile);
-	if(bLoaded)
-	{	this->Start();
+	int iStatus = pReadMdoc->DoIt(pTsPackage->m_acInFile);
+	if(iStatus == 1)
+	{	m_pMdocFiles->erase(pTsPackage->m_acInFile);
+		this->Start();
 		return 1;
 	}
 	//-----------------------------------------------
 	// 2) If the mdoc cannot be loaded, then try to
 	// load it some other time.
 	//-----------------------------------------------
-	MD::CStackFolder* pStackFolder = MD::CStackFolder::GetInstance();
+	time_t tNow = time(0L);
 	auto item = m_pMdocFiles->find(pTsPackage->m_acInFile);
 	if(item == m_pMdocFiles->end())
-	{	m_pMdocFiles->insert({pTsPackage->m_acInFile, 1});
-		pStackFolder->PushFile(pTsPackage->m_acInFile);
-		return 0;
+	{	MdocRetry aRetry = {0, tNow};
+		item = m_pMdocFiles->insert(
+		   {pTsPackage->m_acInFile, aRetry}).first;
 	}
+	item->second.iAttempts += 1;
 	//-----------------------------------------------
-	// 3) Try reload no more than 10 times.
+	// 3) The mdoc is not ready (.openTS exists, or
+	// content incomplete). Keep retrying as long as
+	// the mdoc or .openTS file is still being
+	// updated. Give up only when neither has been
+	// modified for iTimeout seconds.
+	// 4) The mdoc cannot be opened: retry no more
+	// than 10 times.
 	//-----------------------------------------------
-	if(item->second < 10)
-	{	item->second = item->second + 1;
+	bool bGiveUp = false;
+	if(iStatus == 0)
+	{	CInput* pInput = CInput::GetInstance();
+		const int iTimeout = 1800; // seconds
+		time_t tLastMod = MD::CReadMdoc::GetLastModified(
+		   pTsPackage->m_acInFile);
+		//---------------------------------------
+		// In real-time mode (-Serial > 1), wait
+		// at least iTimeout seconds since the mdoc
+		// was first seen, in case the files were
+		// copied with their original time stamps.
+		// In batch mode, stale files are skipped
+		// right away.
+		//---------------------------------------
+		if(pInput->m_iSerial > 1 &&
+		   tLastMod < item->second.tFirstTry)
+		{	tLastMod = item->second.tFirstTry;
+		}
+		if((tNow - tLastMod) > iTimeout) bGiveUp = true;
+	}
+	else if(item->second.iAttempts >= 10) bGiveUp = true;
+	//-----------------
+	if(!bGiveUp)
+	{	MD::CStackFolder* pStackFolder =
+		   MD::CStackFolder::GetInstance();
 		pStackFolder->PushFile(pTsPackage->m_acInFile);
 		return 0;
 	}
 	//-----------------
-	printf("Warning: failed to read mdoc file.\n");
-	printf("   mdoc file: %s\n\n", pTsPackage->m_acInFile);
+	printf("Warning: failed to read mdoc file, skip it.\n");
+	printf("   mdoc file: %s\n", pTsPackage->m_acInFile);
+	printf("   reason:    %s\n", pReadMdoc->m_acErrMsg);
+	printf("   attempts:  %d over %d seconds\n\n",
+	   item->second.iAttempts,
+	   (int)(tNow - item->second.tFirstTry));
+	m_pMdocFiles->erase(item);
 	return -1;
 }
 

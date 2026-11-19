@@ -226,8 +226,8 @@ void CImodUtil::mSaveTiltComFile(void)
 	FILE* pFile = fopen(acComFile, "wt");
 	if(pFile == 0L) return;
 	//---------------------
-	MAM::CDarkFrames* pDarkFrames =
-	   MAM::CDarkFrames::GetInstance(m_iNthGpu);
+	MAM::CBadImages* pDarkFrames =
+	   MAM::CBadImages::GetInstance(m_iNthGpu);
 	int* piRawSize = pDarkFrames->m_aiRawStkSize;
 	int aiAlnSize[] = {0, 0};
 	Correct::CCorrectUtil::CalcAlignedSize(piRawSize, 
@@ -256,7 +256,7 @@ void CImodUtil::mSaveTiltComFile(void)
 	fprintf(pFile, "OFFSET 0.0\n");
 	fprintf(pFile, "SHIFT 0.0 0.0\n");
 	//--------------------------------
-	if(pInput->m_iOutImod == 1 && pDarkFrames->m_iNumDarks > 0)
+	if(pInput->m_iOutImod == 1 && pDarkFrames->m_iNumBads > 0)
 	{	char acExclude[128] = {'\0'};
 		pDarkFrames->GenImodExcludeList(acExclude, 128);
 		fprintf(pFile, "%s\n", acExclude);

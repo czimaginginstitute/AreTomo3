@@ -378,16 +378,16 @@ void CCtfResults::RemoveDarkCTFs(void)
 {
 	if(!bHasCTF()) return;
 	//---------------------------
-	MAM::CDarkFrames* pDarkFrames = 
-	   MAM::CDarkFrames::GetInstance(m_iNthGpu);
-	if(pDarkFrames->m_iNumDarks <= 0) return;
+	MAM::CBadImages* pDarkFrames = 
+	   MAM::CBadImages::GetInstance(m_iNthGpu);
+	if(pDarkFrames->m_iNumBads <= 0) return;
 	//---------------------------
 	int iNumAlnTilts = pDarkFrames->GetNumAlnTilts();
 	CCtfParam** ppCtfParams = new CCtfParam*[iNumAlnTilts];	
 	//---------------------------
 	int iCount = 0;
 	for(int i=0; i<m_iNumImgs; i++)
-	{	if(pDarkFrames->IsDarkFrame(i)) 
+	{	if(pDarkFrames->IsDarkImg(i)) 
 		{	if(m_ppCtfParams[i] != 0L)
 			{	delete m_ppCtfParams[i];
 				m_ppCtfParams[i] = 0L;

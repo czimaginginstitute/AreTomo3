@@ -1,4 +1,5 @@
 #include "CDataUtilInc.h"
+#include "../CMcAreTomoInc.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -18,7 +19,7 @@ void CReadMdoc::CreateInstances(int iNumGpus)
 	//-----------------
 	if(m_pInstances != 0L) delete[] m_pInstances;
 	m_pInstances = new CReadMdoc[iNumGpus];
-	for(int i=0; i<m_iNumGpus; i++)
+	for(int i=0; i<iNumGpus; i++)
 	{	m_pInstances[i].m_iNthGpu = i;
 	}
 	m_iNumGpus = iNumGpus;
@@ -40,23 +41,18 @@ CReadMdoc* CReadMdoc::GetInstance(int iNthGpu)
 CReadMdoc::CReadMdoc(void)
 {
 	m_iNthGpu = 0;
-	m_iNumTilts = 1024;
 	m_iNumTilts = 0;
+	m_iBufSize = 0;
 	//---------------------------
-	m_ppcFrmPath = new char*[m_iNumTilts];
-	m_piAcqIdxs = new int[m_iNumTilts];
-	m_pfTilts = new float[m_iNumTilts];
-	m_pfDoses = new float[m_iNumTilts];
-	m_pfExpTimes = new float[m_iNumTilts];
-	m_pDateTimes = new time_t[m_iNumTilts];
+	m_ppcFrmPath = 0L;
+	m_piAcqIdxs = 0L;
+	m_pfTilts = 0L;
+	m_pfDoses = 0L;
+	m_pfExpTimes = 0L;
+	m_pDateTimes = 0L;
 	//---------------------------
-	memset(m_ppcFrmPath, 0, sizeof(char*) * m_iNumTilts);
-	memset(m_piAcqIdxs, 0, sizeof(int) * m_iNumTilts);
-	memset(m_pfTilts, 0, sizeof(float) * m_iNumTilts);
-	memset(m_pfDoses, 0, sizeof(float) * m_iNumTilts);
-	memset(m_pfExpTimes, 0, sizeof(float) * m_iNumTilts);
-	memset(m_pDateTimes, 0, sizeof(time_t) * m_iNumTilts);
 	memset(m_acMdocFile, 0, sizeof(m_acMdocFile));
+	memset(m_acErrMsg, 0, sizeof(m_acErrMsg));
 }
 
 CReadMdoc::~CReadMdoc(void)
@@ -115,32 +111,44 @@ float CReadMdoc::GetExpTime(int iTilt)
 	return m_pfExpTimes[iTilt];
 }
 
-bool CReadMdoc::DoIt(const char* pcMdocFile)
+int CReadMdoc::DoIt(const char* pcMdocFile)
 {
 	mClean();
+	memset(m_acErrMsg, 0, sizeof(m_acErrMsg));
 	//-----------------------------------------------
 	// When the .openTS exists, the movie files of
-	// the tilt series are incomplete.
+	// the tilt series are incomplete. This check
+	// applies only when processing starts from
+	// movies (-Cmd 0).
 	//-----------------------------------------------
-	bool bOpenTS = mCheckOpenTS(pcMdocFile);
-	if(bOpenTS) return false;
+	CInput* pInput = CInput::GetInstance();
+	bool bOpenTS = false;
+	if(pInput->m_iCmd == 0) bOpenTS = mCheckOpenTS(pcMdocFile);
+	if(bOpenTS)
+	{	strcpy(m_acErrMsg, ".openTS file exists, tilt series "
+		   "is still being collected");
+		printf("*** Info: %s\n   %s\n\n", pcMdocFile, m_acErrMsg);
+		return 0;
+	}
 	//---------------------------
 	FILE* pFile = fopen(pcMdocFile, "rt");
-	if(pFile == 0L) return false;
+	if(pFile == 0L)
+	{	strcpy(m_acErrMsg, "cannot open mdoc file");
+		return -1;
+	}
 	//---------------------------
 	memset(m_acMdocFile, 0, sizeof(m_acMdocFile));
-	strcpy(m_acMdocFile, pcMdocFile);
+	strncpy(m_acMdocFile, pcMdocFile, sizeof(m_acMdocFile) - 1);
 	//---------------------------
-	char acBuf[256] = {'\0'};
+	char acBuf[1024] = {'\0'};
 	std::queue<float> qTilt;
 	std::queue<float> qDose;
 	std::queue<float> qExpTime;
 	std::queue<char*> qFrmPath;
 	std::queue<time_t> qDateTime;
 	//---------------------------
-	while(!feof(pFile))
-	{	char* pcRet = fgets(acBuf, 256, pFile);
-		//-------------------
+	while(fgets(acBuf, sizeof(acBuf), pFile) != 0L)
+	{	//-------------------
 		float fTilt = -99.0f;
 		if(mExtractTilt(acBuf, &fTilt))
  		{	qTilt.push(fTilt);
@@ -186,9 +194,8 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 			qFrmPath.pop();
 			if(pcFrmPath != 0L) delete[] pcFrmPath;
 		}
-		printf("Warning: faulty mdoc file found, skip it!\n"
-		   "   MDOC: %s\n\n", m_acMdocFile);
-		return false;
+		strcpy(m_acErrMsg, "incomplete or faulty mdoc content");
+		return 0;
 	}
 	//---------------------------
 	mAllocate(iNumTilts);
@@ -208,27 +215,79 @@ bool CReadMdoc::DoIt(const char* pcMdocFile)
 	//---------------------------
 	mOrderAcquisition();
 	mMakeExpTimeRelative();
-	if(m_iNumTilts >= 7) return true;
+	if(m_iNumTilts >= 7) return 1;
 	//---------------------------
-	printf("Warning: mdoc file has less than 7 tilts, skip it!\n"
-	   "   MDOC: %s\n\n", m_acMdocFile);
-	return false;
+	strcpy(m_acErrMsg, "mdoc file has less than 7 tilts");
+	return 0;
+}
+
+//--------------------------------------------------------------------
+// 1. pcName1: last extension replaced, e.g. TS_1.mrc.mdoc ->
+//    TS_1.mrc.openTS.
+// 2. pcName2: all extensions of the base name replaced, e.g.
+//    TS_1.mrc.mdoc -> TS_1.openTS. Same as pcName1 when the
+//    mdoc file has only one extension.
+//--------------------------------------------------------------------
+bool CReadMdoc::mGetOpenTSNames(const char* pcMdocFile,
+	char* pcName1, char* pcName2, int iSize)
+{
+	if(pcMdocFile == 0L || strlen(pcMdocFile) == 0) return false;
+	if((int)strlen(pcMdocFile) + 8 >= iSize) return false;
+	//---------------------------
+	strcpy(pcName1, pcMdocFile);
+	char* pcDot = strrchr(pcName1, '.');
+	char* pcSlash = strrchr(pcName1, '/');
+	if(pcDot == 0L || (pcSlash != 0L && pcDot < pcSlash)) return false;
+	strcpy(pcDot, ".openTS");
+	//---------------------------
+	strcpy(pcName2, pcMdocFile);
+	char* pcBase = strrchr(pcName2, '/');
+	pcBase = (pcBase == 0L) ? pcName2 : pcBase + 1;
+	pcDot = strchr(pcBase, '.');
+	if(pcDot != 0L) strcpy(pcDot, ".openTS");
+	return true;
 }
 
 bool CReadMdoc::mCheckOpenTS(const char* pcMdocFile)
 {
-	char acOpenTS[512] = {'\0'};
-	if(pcMdocFile == 0L || strlen(pcMdocFile) == 0) return false;
+	char acOpenTS1[512] = {'\0'}, acOpenTS2[512] = {'\0'};
+	bool bValid = mGetOpenTSNames(pcMdocFile, acOpenTS1,
+	   acOpenTS2, sizeof(acOpenTS1));
+	if(!bValid) return false;
 	//---------------------------
-	strcpy(acOpenTS, pcMdocFile);
-	char* pcDot = strrchr(acOpenTS, '.');
-	if(pcDot == 0L) return false;
-	//---------------------------
-	strcpy(pcDot, ".openTS");
 	struct stat st;
-	int iRet = stat(acOpenTS, &st);
-	if(iRet == 0) return true;
-	else return false;
+	if(stat(acOpenTS1, &st) == 0) return true;
+	if(stat(acOpenTS2, &st) == 0) return true;
+	return false;
+}
+
+//--------------------------------------------------------------------
+// Returns the latest modification time of the mdoc file and its
+// .openTS file(s). Returns 0 if none of them exists. The .openTS
+// file is considered only for -Cmd 0.
+//--------------------------------------------------------------------
+time_t CReadMdoc::GetLastModified(const char* pcMdocFile)
+{
+	time_t tLatest = 0;
+	struct stat st;
+	if(pcMdocFile == 0L) return tLatest;
+	if(stat(pcMdocFile, &st) == 0) tLatest = st.st_mtime;
+	//---------------------------
+	CInput* pInput = CInput::GetInstance();
+	if(pInput->m_iCmd != 0) return tLatest;
+	//---------------------------
+	char acOpenTS1[512] = {'\0'}, acOpenTS2[512] = {'\0'};
+	bool bValid = mGetOpenTSNames(pcMdocFile, acOpenTS1,
+	   acOpenTS2, sizeof(acOpenTS1));
+	if(!bValid) return tLatest;
+	//---------------------------
+	if(stat(acOpenTS1, &st) == 0 && st.st_mtime > tLatest)
+	{	tLatest = st.st_mtime;
+	}
+	if(stat(acOpenTS2, &st) == 0 && st.st_mtime > tLatest)
+	{	tLatest = st.st_mtime;
+	}
+	return tLatest;
 }
 
 bool CReadMdoc::mExtractValZ(char* pcLine, int* piValZ)
@@ -283,8 +342,8 @@ char* CReadMdoc::mExtractFramePath(char* pcLine)
 	if(pcPath == 0L) return 0L;
 	//-----------------
 	char* pcEqual = strrchr(pcLine, '=');
-	char acPath[256] = {'\0'};
-	strcpy(acPath, &pcEqual[1]);
+	char acPath[1024] = {'\0'};
+	strncpy(acPath, &pcEqual[1], sizeof(acPath) - 1);
 	//-----------------
 	char* pcRetN = strrchr(acPath, '\n');
 	if(pcRetN != 0L) pcRetN[0] = '\0';
@@ -301,7 +360,7 @@ char* CReadMdoc::mExtractFramePath(char* pcLine)
 	//-------------------------------------
 	// remove leading white space.
 	//-------------------------------------
-	pcPath = new char[256];
+	pcPath = new char[strlen(&acPath[iStart]) + 1];
 	strcpy(pcPath, &acPath[iStart]);
 	//-------------------------------------
 	// remove trailing white space
@@ -320,9 +379,9 @@ bool CReadMdoc::mExtractDateTime(char* pcLine, time_t* pDateTime)
 	if(pcDateTime == 0L) return false;
 	//---------------------------
 	char* pcEqual = strrchr(pcLine, '=');
-	char acDateTime[64] = {'\0'};
+	char acDateTime[256] = {'\0'};
 	int iStartIdx = (pcEqual[1] == ' ') ? 2 : 1;
-	strcpy(acDateTime, &pcEqual[iStartIdx]);
+	strncpy(acDateTime, &pcEqual[iStartIdx], sizeof(acDateTime) - 1);
 	//---------------------------
 	char* pcRetN = strrchr(acDateTime, '\n');
 	if(pcRetN != 0L) pcRetN[0] = '\0';
@@ -383,6 +442,13 @@ void CReadMdoc::mClean(void)
 
 void CReadMdoc::mAllocate(int iNumTilts)
 {
+	if(m_ppcFrmPath != 0L) delete[] m_ppcFrmPath;
+	if(m_piAcqIdxs != 0L) delete[] m_piAcqIdxs;
+	if(m_pfTilts != 0L) delete[] m_pfTilts;
+	if(m_pfDoses != 0L) delete[] m_pfDoses;
+	if(m_pfExpTimes != 0L) delete[] m_pfExpTimes;
+	if(m_pDateTimes != 0L) delete[] m_pDateTimes;
+	//---------------------------
 	m_iNumTilts = iNumTilts;
 	m_ppcFrmPath = new char*[m_iNumTilts];
         m_piAcqIdxs = new int[m_iNumTilts];

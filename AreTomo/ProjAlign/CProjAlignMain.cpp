@@ -105,7 +105,8 @@ void CProjAlignMain::Set1(CParam* pParam)
 float CProjAlignMain::DoIt(MAM::CAlignParam* pAlignParam)
 {	
 	m_pAlignParam = pAlignParam;
-	m_iZeroTilt = m_pAlignParam->GetFrameIdxFromTilt(0.0f);
+	//m_iZeroTilt = m_pAlignParam->GetFrameIdxFromTilt(0.0f);
+	m_iZeroTilt = m_pAlignParam->GetRefFrame();
 	//-----------------
 	if(m_pcLog != 0L) delete[] m_pcLog;
 	int iSize = (m_iNumProjs + 16) * 256;
@@ -123,8 +124,8 @@ float CProjAlignMain::DoIt(MAM::CAlignParam* pAlignParam)
 
 float CProjAlignMain::mDoAll(void)
 {
-	m_pAlignParam->FitRotCenterZ();
-	m_pAlignParam->RemoveOffsetZ(-1.0f);
+	//m_pAlignParam->FitRotCenterZ();
+	//m_pAlignParam->RemoveOffsetZ(-1.0f);
 	//-----------------
 	for(int i=0; i<m_iNumProjs; i++)
 	{	m_pbSkipProjs[i] = true;

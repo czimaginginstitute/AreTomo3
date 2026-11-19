@@ -85,8 +85,8 @@ void CSaveXF::mSaveForWarp(void)
 //--------------------------------------------------------------------
 void CSaveXF::mSaveForRelion(void)
 {
-	MAM::CDarkFrames* pDarkFrames = 
-	   MAM::CDarkFrames::GetInstance(m_iNthGpu);
+	MAM::CBadImages* pDarkFrames = 
+	   MAM::CBadImages::GetInstance(m_iNthGpu);
 	MAM::CAlignParam* pAlnParam = 
 	   MAM::CAlignParam::GetInstance(m_iNthGpu);
 	//-----------------
@@ -122,7 +122,7 @@ void CSaveXF::mSaveForRelion(void)
 	// 1) For dark images their tilt axes are set to 0 degree
 	// and their shifts are set to 0.
 	//---------------------------------------------------------
-	for(int i=0; i<pDarkFrames->m_iNumDarks; i++)
+	for(int i=0; i<pDarkFrames->m_iNumBads; i++)
 	{	int iDarkFrm = pDarkFrames->GetDarkIdx(i);
 		int iSecIdx = pDarkFrames->GetSecIdx(iDarkFrm);
 		int iImgIdx = iSecIdx - 1;

@@ -47,6 +47,7 @@ CAtInput::CAtInput(void)
 	strcpy(m_acCropVolTag, "-CropVol");
 	strcpy(m_acOutImodTag, "-OutImod");
 	strcpy(m_acDarkTolTag, "-DarkTol");
+	strcpy(m_acBadTiltRangeTag, "-BadTiltRange");
 	strcpy(m_acBFactorTag, "-Bft");
 	strcpy(m_acIntpCorTag, "-IntpCor");
 	strcpy(m_acCorrCTFTag, "-CorrCTF");
@@ -75,6 +76,8 @@ CAtInput::CAtInput(void)
 	m_iOutXF = 0;
 	m_iAlign = 1;
 	m_fDarkTol = 0.7f;
+	m_afBadTiltRange[0] = -20.0f;
+	m_afBadTiltRange[1] = 20.0f;
 	m_bIntpCor = false;
 	m_iCtfTileSize = 512;
 	m_aiCorrCTF[0] = 1;
@@ -178,6 +181,14 @@ void CAtInput::ShowTags(void)
 	printf("   1. Set tolerance for removing dark images. The range is\n"
 	   "      in (0, 1). The default value is 0.7. The higher value is\n"
 	   "      more restrictive.\n\n");
+	//-----------------
+	printf("%-10s\n", m_acBadTiltRangeTag);
+	printf("   1. Tilt range in degrees searched for tilt images whose\n"
+	   "      shifts relative to their neighbors exceed 25%% of the\n"
+	   "      image size. These images are removed like dark images.\n"
+	   "   2. One value r gives [-r, r]. Two values give [min, max],\n"
+	   "      e.g. for a lamella with pretilt. The default is 20.\n"
+	   "   3. 0 disables the search.\n\n");
 	//-----------------
 	printf("%-10s\n", m_acOutXFTag);
 	printf("   1. When set by giving no-zero value, IMOD compatible\n"
@@ -308,6 +319,21 @@ void CAtInput::Parse(int argc, char* argv[])
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	aParseArgs.GetVals(aiRange, &m_fDarkTol);
 	//-----------------
+	aParseArgs.FindVals(m_acBadTiltRangeTag, aiRange);
+	if(aiRange[1] > 2) aiRange[1] = 2;
+	if(aiRange[1] >= 1)
+	{	float afVals[2] = {0.0f};
+		aParseArgs.GetVals(aiRange, afVals);
+		if(aiRange[1] == 1)
+		{	m_afBadTiltRange[0] = -(float)fabs(afVals[0]);
+			m_afBadTiltRange[1] = (float)fabs(afVals[0]);
+		}
+		else
+		{	m_afBadTiltRange[0] = fminf(afVals[0], afVals[1]);
+			m_afBadTiltRange[1] = fmaxf(afVals[0], afVals[1]);
+		}
+	}
+	//-----------------
 	aParseArgs.FindVals(m_acIntpCorTag, aiRange);
 	if(aiRange[1] > 1) aiRange[1] = 1;
 	int iIntpCor = 0;
@@ -374,6 +400,8 @@ void CAtInput::mPrint(void)
 	//-----------------
 	printf("%-10s  %d\n", m_acOutImodTag, m_iOutImod);
 	printf("%-10s  %.2f\n", m_acDarkTolTag, m_fDarkTol);
+	printf("%-10s  %.2f  %.2f\n", m_acBadTiltRangeTag, 
+	   m_afBadTiltRange[0], m_afBadTiltRange[1]);
 	printf("%-10s  %d\n", m_acIntpCorTag, m_bIntpCor);
 	printf("%-10s  %d %d\n", m_acCorrCTFTag, 
 	   m_aiCorrCTF[0], m_aiCorrCTF[1]);

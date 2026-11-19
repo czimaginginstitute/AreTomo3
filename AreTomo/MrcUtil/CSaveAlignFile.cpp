@@ -67,7 +67,7 @@ void CSaveAlignFile::DoIt(int iNthGpu)
 
 void CSaveAlignFile::mSaveHeader(void)
 {
-	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
+	CBadImages* pDarkFrames = CBadImages::GetInstance(m_iNthGpu);
 	m_iNumTilts = m_pAlignParam->m_iNumFrames;
 	m_iNumPatches = m_pLocalParam->m_iNumPatches;
 	//-----------------
@@ -87,7 +87,7 @@ void CSaveAlignFile::mSaveHeader(void)
 	// needs to be reconstructed again without 
 	// repeating the alignment process.
 	//-----------------------------------------------
-	for(int i=0; i<pDarkFrames->m_iNumDarks; i++)
+	for(int i=0; i<pDarkFrames->m_iNumBads; i++)
 	{	int iDarkFm = pDarkFrames->GetDarkIdx(i);
 		int iSecIdx = pDarkFrames->GetDarkSec(i);
 		float fTilt = pDarkFrames->GetDarkTilt(i);

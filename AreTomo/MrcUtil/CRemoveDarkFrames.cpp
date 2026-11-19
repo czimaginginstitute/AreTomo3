@@ -25,7 +25,7 @@ void CRemoveDarkFrames::Setup(int iNthGpu)
 	MD::CTiltSeries* pTiltSeries = pPackage->GetSeries(0);
 	m_iAllFrms = pTiltSeries->m_aiStkSize[2];
 	//-----------------
-	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
+	CBadImages* pDarkFrames = CBadImages::GetInstance(m_iNthGpu);
 	pDarkFrames->Setup(pTiltSeries);
 }
 
@@ -38,7 +38,7 @@ void CRemoveDarkFrames::Detect(float fThreshold)
 
 void CRemoveDarkFrames::Remove(void)
 {
-	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
+	CBadImages* pDarkFrames = CBadImages::GetInstance(m_iNthGpu);
 	int iNumSeries = MD::CAlnSums::m_iNumSums;
 	//-----------------
 	for(int i=0; i<iNumSeries; i++)
@@ -54,7 +54,7 @@ void CRemoveDarkFrames::mDetect(void)
 	MD::CTsPackage* pPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* pTiltSeries = pPackage->GetSeries(0);
 	//-----------------
-	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
+	CBadImages* pDarkFrames = CBadImages::GetInstance(m_iNthGpu);
 	pDarkFrames->Setup(pTiltSeries);
 	//-----------------
 	float* pfRatio = new float[m_iAllFrms];
@@ -78,11 +78,11 @@ void CRemoveDarkFrames::mDetect(void)
 	{	int iSecIdx = pTiltSeries->m_piSecIndices[i];
 		float fTilt = pTiltSeries->m_pfTilts[i];
 		if(pfRatio[i] >= fTol) continue;
-		pDarkFrames->AddDark(i, iSecIdx, fTilt);
+		pDarkFrames->AddBadImg(i, iSecIdx, fTilt);
 	}
 	if(pfRatio != 0L) delete[] pfRatio;
 	//-----------------
-	if(pDarkFrames->m_iNumDarks <= 0) 
+	if(pDarkFrames->m_iNumBads <= 0) 
 	{	printf("GPU %d: no dark images detected.\n\n", m_iNthGpu);
 	}
 }
@@ -91,16 +91,16 @@ void CRemoveDarkFrames::mRemoveSeries(int iSeries)
 {
 	MD::CTsPackage* pPackage = MD::CTsPackage::GetInstance(m_iNthGpu);
 	MD::CTiltSeries* pTiltSeries = pPackage->GetSeries(iSeries);
-	CDarkFrames* pDarkFrames = CDarkFrames::GetInstance(m_iNthGpu);
-	if(pDarkFrames->m_iNumDarks <= 0) return;
+	CBadImages* pDarkFrames = CBadImages::GetInstance(m_iNthGpu);
+	if(pDarkFrames->m_iNumBads <= 0) return;
 	//---------------------------
-	int iSize = (pDarkFrames->m_iNumDarks + 16) * 64;
+	int iSize = (pDarkFrames->m_iNumBads + 16) * 64;
 	char* pcLog = new char[iSize];
 	sprintf(pcLog, "GPU %d: removed dark frames of series %d\n", 
 	   m_iNthGpu, iSeries);
 	//---------------------------
 	char acBuf[64] = {'\0'};
-	for(int i=pDarkFrames->m_iNumDarks-1; i>=0; i--)
+	for(int i=pDarkFrames->m_iNumBads-1; i>=0; i--)
 	{	int iDarkIdx = pDarkFrames->GetDarkIdx(i);
 		float fTilt = pTiltSeries->m_pfTilts[iDarkIdx];
 		pTiltSeries->RemoveFrame(iDarkIdx);

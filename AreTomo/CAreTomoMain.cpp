@@ -144,7 +144,7 @@ void CAreTomoMain::mSkipAlign(void)
         remDarkFrames.Setup(m_iNthGpu);
 	//---------------------------------------------------------
 	// 1) When loading alignment file is successful, the dark
-	// frames are saved in CDarkFrames. 2) CAlignParam and
+	// frames are saved in CBadImages. 2) CAlignParam and
 	// CLocalAlignParam objects are created. 3) We need to
 	// remove dark frames from tilt series, and corresponding
 	// entries in CCtfResults.
@@ -267,6 +267,12 @@ void CAreTomoMain::mRemoveDarkFrames(void)
 	MAM::CRemoveDarkFrames remDarkFrames;
 	remDarkFrames.Setup(m_iNthGpu);
 	remDarkFrames.Detect(pAtInput->m_fDarkTol);
+	//-----------------------------------------------
+	// Low-tilt images with large shifts relative to
+	// their neighbors are treated as dark images.
+	//-----------------------------------------------
+	MAM::CDetectBadShifts detectBadShifts;
+	detectBadShifts.DoIt(m_iNthGpu, pAtInput->m_afBadTiltRange);
 	remDarkFrames.Remove();
 }
 
@@ -389,7 +395,6 @@ void CAreTomoMain::mAlign(void)
 	pAlignParam->ResetShift();
 	ProjAlign::CParam* pParam = ProjAlign::CParam::GetInstance(m_iNthGpu);
 	pParam->m_fXcfSize = 2048.0f;
-	//mProjAlign();
 	//---------------------------
 	mRefineAlign();
 	mCalcThickness();
@@ -427,6 +432,7 @@ void CAreTomoMain::mCoarseAlign(void)
 		{	float fRange = fmax(20.0f / i, 10);
 			mRotAlign(fRange, 20);
 		}
+		pAlignParam->DisplayShift();
 		pTimeStamp->Record("TomoAlignCoarse:End");
 		return;
 	}
@@ -452,7 +458,8 @@ void CAreTomoMain::mCoarseAlign(void)
 		{	streAlignMain.DoIt();
 			mRotAlign(10.0f / i, 100);
 		}
-	}	
+	}
+	pAlignParam->DisplayShift();
 	pTimeStamp->Record("TomoAlignCoarse:End");
 }
 
@@ -464,8 +471,10 @@ void CAreTomoMain::mRefineAlign(void)
 	MAM::CAlignParam* pAlignParam = sGetAlignParam(m_iNthGpu);
 	float fOldAxis = pAlignParam->GetTiltAxis(0);
 	float fLastAxis = fOldAxis;
-	//---------------------------
 	float fAxisRange = 60.0f;
+	//---------------------------
+	int iRefFrm = pAlignParam->FindRefFrame();
+	pAlignParam->MakeRelative(iRefFrm);
 	//---------------------------
 	mProjAlign();
 	for(int i=1; i<=2; i++)
@@ -567,8 +576,8 @@ void CAreTomoMain::mCorrAngOffset(void)
 	MAM::CAlignParam* pAlnParam = MAM::CAlignParam::GetInstance(m_iNthGpu);
 	pAlnParam->AddAlphaOffset(fAlphaOffset);
 	//---------------------------
-	MAM::CDarkFrames* pDarkFrames = 
-	   MAM::CDarkFrames::GetInstance(m_iNthGpu);
+	MAM::CBadImages* pDarkFrames = 
+	   MAM::CBadImages::GetInstance(m_iNthGpu);
 	pDarkFrames->AddTiltOffset(pCtfResults->m_fAlphaOffset);
 }
 

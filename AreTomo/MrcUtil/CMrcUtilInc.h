@@ -60,12 +60,13 @@ public:
 	void FitRotCenterZ(void);
 	void GetRotationCenter(float* pfCenter); // x, y, z
 	void SetRotationCenterZ(float fCentZ) { m_fZ0 = fCentZ; }
-	void RemoveOffsetX(float fFact); // -1 remove, 1 restore
 	void RemoveOffsetZ(float fFact); // -1 remove, 1 restore
 	void CalcZInducedShift(int iFrame, float* pfShift);	
 	//-----------------
 	void CalcRotCenter(void);
 	//-----------------
+	int FindRefFrame(void); // See m_iRefIdx definition below
+	int GetRefFrame(void);
 	void MakeRelative(int iRefFrame);
 	void ResetShift(void);
 	void SortByTilt(void);
@@ -81,11 +82,14 @@ public:
 	void ToOneBased(void);
 	//-----------------
 	void LogShift(char* pcLogFile);
+	void DisplayShift(void);
 	//-----------------
 	float m_fAlphaOffset;
 	float m_fBetaOffset;
 	int m_iThickness; // in raw tilt-series pixel
 	int m_iOffsetZ;   // between sample center and volume center
+	int m_iRefFrm;    // Reference frame ID which x and y shifts are
+			  // closest to the mean shifts in +/- 20 degree
 	//-----------------
 	int m_iNumFrames;
 	int m_iNthGpu;
@@ -199,6 +203,145 @@ private:
 	float* m_pfStds;
 };
 
+//-------------------------------------------------------------------
+// GBinBandpass2D: Fourier-bins a host image and applies a Gaussian
+// bandpass. Output is a host image of the binned size.
+//-------------------------------------------------------------------
+class GBinBandpass2D
+{
+public:
+	GBinBandpass2D(void);
+	~GBinBandpass2D(void);
+	void Clean(void);
+	void Setup
+	( int* piRawSize, int* piBinSize,
+	  float fLowSigma,  // cycles / binned pixel
+	  float fHighSigma  // cycles / binned pixel
+	);
+	void DoIt(float* pfRawImg, float* pfBinImg);
+private:
+	int m_aiRawSize[2];
+	int m_aiBinSize[2];
+	float m_fLowSigma;
+	float m_fHighSigma;
+	float* m_gfRawPad;
+	cufftComplex* m_gBinCmp;
+	MU::CCufft2D* m_pForwardFFT;
+	MU::CCufft2D* m_pInverseFFT;
+};
+
+//-------------------------------------------------------------------
+// GMaskedNCC2D: overlap-normalized cross correlation (Padfield,
+// IEEE TIP 2012) of two images that are zero outside a common
+// rectangular mask. The FFT size is twice the image size so that
+// there is no wrap-around and every shift is scored only on the
+// pixels where both images overlap. Shifts whose overlap is less
+// than fMinOverlap of the mask area are excluded.
+//-------------------------------------------------------------------
+class GMaskedNCC2D
+{
+public:
+	GMaskedNCC2D(void);
+	~GMaskedNCC2D(void);
+	void Clean(void);
+	void Setup
+	( int* piImgSize, int* piMaskStart, int* piMaskSize,
+	  float fMinOverlap
+	);
+	void SetRef(float* pfRefImg);  // host image
+	//-----------------------------------------------
+	// Returns peak NCC. pfShift is the position of
+	// pfImg relative to the reference in pixels:
+	// pfImg(x + shift) ~ pfRefImg(x).
+	//-----------------------------------------------
+	float DoIt(float* pfImg, float* pfShift);
+private:
+	void mLoad(float* pfImg, float* gfPad);
+	void mSquare(float* gfIn, float* gfOut);
+	void mConjMul
+	( cufftComplex* gA, cufftComplex* gB,
+	  cufftComplex* gOut
+	);
+	float mSearchPeak(float* pfShift);
+	//-----------------
+	int m_aiImgSize[2];
+	int m_aiFftSize[2];
+	int m_aiCmpSize[2];
+	int m_iPadX;
+	float m_fMinOverlap;
+	float m_fMaxO;
+	cufftComplex* m_gBuf;  // all GPU buffers below
+	cufftComplex *m_gFm, *m_gFr, *m_gFr2, *m_gS1, *m_gQ1;
+	cufftComplex *m_gO, *m_gP, *m_gS2, *m_gQ2;
+	float* m_pfNCC;
+	MU::CCufft2D* m_pForwardFFT;
+	MU::CCufft2D* m_pInverseFFT;
+};
+
+//-------------------------------------------------------------------
+// CDetectBadShifts: in a given (low) tilt range, find tilt images whose
+// shifts relative to their neighbors are too large or cannot be
+// measured consistently. Flagged images are added to CBadImages
+// and are removed together with the dark images.
+// 1. All pairs of low-tilt images are cross-correlated with the
+//    overlap-normalized NCC. No stretching is applied since the
+//    stretch factor is at most 1/cos(20) = 1.06.
+// 2. Absolute shifts are solved by robust (Huber then Tukey IRLS) weighted
+//    least squares. No image is the reference (the zero-tilt image
+//    is often the bad one); the mean shift is set to zero.
+// 3. Each image is tested by leave-one-out against a smooth
+//    (quadratic in tilt) trend fit to the other images.
+// 4. Must be called after dark detection and before removal, on
+//    the full tilt series sorted by tilt angle.
+//-------------------------------------------------------------------
+class CDetectBadShifts
+{
+public:
+	CDetectBadShifts(void);
+	~CDetectBadShifts(void);
+	//-----------------------------------------------
+	// pfTiltRange: [min, max] tilt in degrees to be
+	// searched. The search is skipped if max <= min.
+	//-----------------------------------------------
+	void DoIt(int iNthGpu, float* pfTiltRange);
+private:
+	void mClean(void);
+	bool mFindLowTilts(void);
+	void mBinImages(void);
+	void mMeasurePairs(void);
+	void mSolveShifts(void);
+	void mTestTrend(void);
+	void mFlagImages(void);
+	void mFitTrend
+	( float* pfWeights, int iSkip,
+	  double* pdCoeffX, double* pdCoeffY
+	);
+	float mCalcTrend(double* pdCoeff, float fTilt);
+	float mNormTilt(float fTilt);
+	//-----------------
+	int m_iNthGpu;
+	MD::CTiltSeries* m_pTiltSeries;
+	float m_afTiltRange[2];
+	int m_iNumImgs;      // number of low-tilt images
+	int* m_piFrmIdxs;    // frame indices in the full series
+	float* m_pfTilts;
+	//-----------------
+	int m_aiBinSize[2];
+	float m_afBinning[2];
+	int m_aiMaskStart[2];
+	int m_aiMaskSize[2];
+	float** m_ppfBinImgs;
+	//-----------------
+	float* m_pfPairShifts; // [N*N*2] pos of j rel. to i, raw px
+	float* m_pfPairNCCs;   // [N*N]
+	float* m_pfPairWgts;   // [N*N] robust weights
+	float* m_pfShifts;     // [N*2] solved positions, raw px
+	float* m_pfInliers;    // [N] fraction of consistent pairs
+	float* m_pfLooErrs;    // [N*2] leave-one-out trend error x, y
+	float m_fTrendSigma;
+	bool* m_pbBadImgs;
+};
+
 class CCalcStackStats
 {
 public:
@@ -208,7 +351,7 @@ public:
 };
 
 //--------------------------------------------------------------------
-// 1. m_pfTilts in CDarkFrames should be sorted in ascending order.
+// 1. m_pfTilts in CBadImages should be sorted in ascending order.
 // 2. m_piAcqIdxs stores the acquisition index at each tilt angle.
 //    This allows us to generate the ordered list needed by Relion4.
 // 3. m_piSecIdxs stores the mrc index of each tilt image since tilt
@@ -218,32 +361,32 @@ public:
 // 4. IMPORTANT: The tilt series (pSeries) passed into Setup must
 //    be sorted by tilt angle first!!! (Done in CProcessThread).
 //--------------------------------------------------------------------
-class CDarkFrames
+class CBadImages
 {
 public:
 	static void CreateInstances(int iNumGpus);
 	static void DeleteInstances(void);
-	static CDarkFrames* GetInstance(int iNthGpu);
+	static CBadImages* GetInstance(int iNthGpu);
 	//-----------------
-	~CDarkFrames(void);
+	~CBadImages(void);
 	void Setup                 // including dark images
 	( MD::CTiltSeries* pSeries  // sorted by tilt angles
 	);                         // hence frame idx is angle idx
 	void Setup(int iNthGpu);
 	//-----------------
-	void AddDark(int iFrmIdx, int iSecIdx, float fTilt);
+	void AddBadImg(int iFrmIdx, int iSecIdx, float fTilt);
 	void AddTiltOffset(float fTiltOffset); 
 	//-----------------
 	int GetAcqIdx(int iFrame);
 	int GetSecIdx(int iFrame);
 	float GetTilt(int iFrame);
 	//-----------------
-	int GetDarkIdx(int iDark); // iDark in [0, m_iNumDarks)
+	int GetDarkIdx(int iDark); // iDark in [0, m_iNumBads)
 	int GetDarkSec(int iDark);
 	float GetDarkTilt(int iDark);
 	int GetNumAlnTilts(void);
 	//-----------------
-	bool IsDarkFrame(int iFrame);
+	bool IsDarkImg(int iFrame);
 	void GenImodExcludeList(char* pcLine, int iSize);
 	//-----------------
 	bool bZeroBased(void);
@@ -254,16 +397,16 @@ public:
 	float* m_pfDarkTilts;
 	//-----------------
 	int m_aiRawStkSize[3];
-	int m_iNumDarks;
+	int m_iNumBads;
 	int m_iNthGpu;
 private:
-	CDarkFrames(void);
+	CBadImages(void);
 	void mClean(void);
 	int* m_piAcqIdxs; // ordered chronologically in acquisition, or z-value
 	int* m_piSecIdxs; // indices of images in MRC files
 	float* m_pfTilts; // tilt angles of all images
 	bool* m_pbDarkImgs; // flag of dark images
-	static CDarkFrames* m_pInstances;
+	static CBadImages* m_pInstances;
 	static int m_iNumGpus;
 };
 

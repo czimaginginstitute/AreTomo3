@@ -7,7 +7,8 @@ namespace McAreTomo::AreTomo::MrcUtil
 	class CPatchShifts;
 	class CRemoveDarkFrames;
 	class CCalcStackStats;
-	class CDarkFrames;
+	class CBadImages;
+	class CDetectBadShifts;
 	class CSaveAlignFile;
 	class CSaveStack;
 	class GExtractPatch;

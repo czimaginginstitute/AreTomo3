@@ -81,10 +81,18 @@ bool CMcAreTomoMain::DoIt(void)
 		//iCount += 1;
 		//if(iQueueSize > 0 && iCount <= 1)
 		if(iQueueSize > 0)
-		{	mProcess();
+		{	int iStatus = mProcess();
 			if(pInput->m_iCmd == 0)
 			{	s_pStackFolder->WaitForExit(5.0f);
 			}
+			//-----------------------------------------
+			// The mdoc was not ready and pushed back
+			// to the queue. Always pause before the
+			// next attempt, even when -Cmd != 0 or
+			// the folder thread has exited, otherwise
+			// retries would busy-spin.
+			//-----------------------------------------
+			if(iStatus == 0) sleep(2);
 			continue;
 		}
 		bExit = s_pStackFolder->WaitForExit(1.0f);
@@ -101,12 +109,17 @@ bool CMcAreTomoMain::DoIt(void)
 	return true;
 }
 
-void CMcAreTomoMain::mProcess(void)
+//--------------------------------------------------------------------
+// Returns CProcessThread::DoIt's status: 1 started, 0 deferred
+// (pushed back to the queue), -1 skipped. Returns 0 when no GPU
+// is free.
+//--------------------------------------------------------------------
+int CMcAreTomoMain::mProcess(void)
 {
 	CProcessThread* pProcessThread = CProcessThread::GetFreeThread();
 	if(pProcessThread == 0L)
 	{	printf("All GPUs are used, wait ......\n\n");
-		return;
+		return 0;
 	}
 	int iNthGpu = pProcessThread->m_iNthGpu; 
 	//-----------------
@@ -115,6 +128,6 @@ void CMcAreTomoMain::mProcess(void)
 	pTsPackage->SetInFile(pcInFile);
 	if(pcInFile != 0L) delete[] pcInFile;
 	//-----------------
-	pProcessThread->DoIt();
+	return pProcessThread->DoIt();
 }
 

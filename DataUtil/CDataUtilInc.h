@@ -357,7 +357,13 @@ public:
 	static void DeleteInstances(void);
 	static CReadMdoc* GetInstance(int iNthGpu);
 	~CReadMdoc(void);
-	bool DoIt(const char* pcMdocFile);
+	//---------------------------------------------------
+	// Returns 1: loaded, 0: not ready yet (.openTS exists,
+	// incomplete content, or too few tilts), -1: cannot
+	// open. m_acErrMsg describes the reason when not 1.
+	//---------------------------------------------------
+	int DoIt(const char* pcMdocFile);
+	static time_t GetLastModified(const char* pcMdocFile);
 	char* GetFramePath(int iTilt);     // do not free
 	char* GetFrameFileName(int iTilt); // do not free
 	int GetAcqIdx(int iTilt);
@@ -367,8 +373,11 @@ public:
 	int m_iNumTilts;
 	int m_iNthGpu;
 	char m_acMdocFile[256];
+	char m_acErrMsg[128];
 private:
 	CReadMdoc(void);
+	static bool mGetOpenTSNames(const char* pcMdocFile,
+	   char* pcName1, char* pcName2, int iSize);
 	void mClean(void);
 	void mAllocate(int iNumTilts);
 	bool mCheckOpenTS(const char* pcMdocFile);

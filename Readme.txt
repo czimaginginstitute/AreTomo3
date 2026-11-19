@@ -783,3 +783,22 @@ Changes:
 Bug Fix:
    1) We need to catch the case when there are so few frames that we need to
       set both -FmInt 1 and -Group 1 1.
+
+AreTomo3 2.3.6 [11-14-2026]
+---------------------------
+1. Changes:
+   1) Use non-zero tilt image as the reference image if all other images have
+      large shifts relative to it. Find a reference image in +/-21 degrees to
+      which the tilt images in this tilt ranges have the smallest overall 
+      shifts. a) Added FindRefFrame() in AreTomo/MrcUtil/CAlignParam.cpp.
+      b) revised CAreTomoMain.cpp and CProjAlignMain.cpp to use this new
+      reference frame.
+   2) Claude reimplements the detection of openTS file. In CProcessThread, if the time
+      interval from last modification to now exceeds 1800 seconds, skip the mdoc
+      file.
+   3) Claude implements the detection of bad tilt images that have large shifts
+      relative others. This function can be enabled by -BadTiltRang. This is
+      for detecting large shift within low tilt range [-20, 20]. Although users
+      can use larger range, the detection may become less reliable because it
+      does not consider image stretching. The default is [-20, 20].
+      -BadTiltRange 0 disables this function.

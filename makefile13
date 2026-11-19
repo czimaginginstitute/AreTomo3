@@ -78,6 +78,7 @@ CUSRCS = ./MaUtil/GAddFrames.cu \
 	./AreTomo/FindCtf/GEstBFactor1D.cu \
 	./AreTomo/FindCtf/GSpectralCC2D.cu \
 	./AreTomo/FindCtf/GCorrCTF2D.cu \
+	./AreTomo/MrcUtil/GMaskedNCC2D.cu \
 	./AreTomo/FindCtf/GRadialAvg.cu \
 	./AreTomo/FindCtf/GRemoveMean.cu \
 	./AreTomo/FindCtf/GRmBackground2D.cu \
@@ -180,10 +181,11 @@ SRCS = ./MaUtil/CParseArgs.cpp \
 	./AreTomo/MrcUtil/CAlignParam.cpp \
 	./AreTomo/MrcUtil/CCalcStackStats.cpp \
 	./AreTomo/MrcUtil/CCropVolume.cpp \
-	./AreTomo/MrcUtil/CDarkFrames.cpp \
+	./AreTomo/MrcUtil/CBadImages.cpp \
 	./AreTomo/MrcUtil/CLocalAlignParam.cpp \
 	./AreTomo/MrcUtil/CPatchShifts.cpp \
 	./AreTomo/MrcUtil/CRemoveDarkFrames.cpp \
+	./AreTomo/MrcUtil/CDetectBadShifts.cpp \
 	./AreTomo/MrcUtil/CSaveAlignFile.cpp \
 	./AreTomo/MrcUtil/CLoadAlignFile.cpp \
 	./AreTomo/MrcUtil/CSaveStack.cpp \

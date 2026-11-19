@@ -95,8 +95,8 @@ void CSaveTilts::mSaveForRelion(void)
 
 void CSaveTilts::mGenList(void)
 {
-	MAM::CDarkFrames* pDarkFrames =
-	   MAM::CDarkFrames::GetInstance(m_iNthGpu);
+	MAM::CBadImages* pDarkFrames =
+	   MAM::CBadImages::GetInstance(m_iNthGpu);
 	//-----------------
 	m_iAllTilts = pDarkFrames->m_aiRawStkSize[2];
 	m_pcOrderedList = new char[m_iAllTilts * m_iLineSize];
@@ -109,7 +109,7 @@ void CSaveTilts::mGenList(void)
 		char* pcLine = m_pcOrderedList + iImgIdx * m_iLineSize;
 		sprintf(pcLine, "%8.2f", fTilt);
 		//----------------
-		m_pbDarkImgs[iImgIdx] = pDarkFrames->IsDarkFrame(i);
+		m_pbDarkImgs[iImgIdx] = pDarkFrames->IsDarkImg(i);
 	}
 }
 

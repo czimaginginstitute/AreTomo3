@@ -25,8 +25,8 @@ void CSaveXtilts::DoIt
 	if(pFile == 0L) return;
 	//-----------------
 	CAtInput* pInput = CAtInput::GetInstance();
-	MAM::CDarkFrames* pDarkFrames = 
-	   MAM::CDarkFrames::GetInstance(iNthGpu);
+	MAM::CBadImages* pDarkFrames = 
+	   MAM::CBadImages::GetInstance(iNthGpu);
 	MAM::CAlignParam* pAlnParam =
 	   MAM::CAlignParam::GetInstance(iNthGpu);
 	//-----------------

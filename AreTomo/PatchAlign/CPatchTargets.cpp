@@ -80,7 +80,8 @@ void CPatchTargets::Detect(void)
 		pInput->m_aiAtPatches[1] = iPatchesX;
 	}
 	//-----------------
-	m_iTgtImg = pAlignParam->GetFrameIdxFromTilt(0.0f);
+	//m_iTgtImg = pAlignParam->GetFrameIdxFromTilt(0.0f);
+	m_iTgtImg = pAlignParam->GetRefFrame();
 	m_piTargets = new int[m_iNumTgts * 2];
 	//-----------------
 	CDetectFeatures* pDetectFeatures = 
@@ -88,7 +89,7 @@ void CPatchTargets::Detect(void)
 	pDetectFeatures->SetSize(pTiltSeries->m_aiStkSize,
 	   pInput->m_aiAtPatches);
 	//-----------------
-	m_iTgtImg = pAlignParam->GetFrameIdxFromTilt(0.0f);
+	//m_iTgtImg = pAlignParam->GetFrameIdxFromTilt(0.0f);
 	float* pfZeroImg = (float*)pTiltSeries->GetFrame(m_iTgtImg);
 	pDetectFeatures->DoIt(pfZeroImg);
 	//-----------------

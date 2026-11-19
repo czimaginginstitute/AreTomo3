@@ -10,7 +10,7 @@ void CMuInstances::CreateInstances(int iNumGpus)
 	CAlignParam::CreateInstances(iNumGpus);
 	CLocalAlignParam::CreateInstances(iNumGpus);
 	CPatchShifts::CreateInstances(iNumGpus);
-	CDarkFrames::CreateInstances(iNumGpus);
+	CBadImages::CreateInstances(iNumGpus);
 }
 
 void CMuInstances::DeleteInstances(void)
@@ -18,6 +18,6 @@ void CMuInstances::DeleteInstances(void)
 	CAlignParam::DeleteInstances();
 	CLocalAlignParam::DeleteInstances();
 	CPatchShifts::DeleteInstances();
-	CDarkFrames::DeleteInstances();
+	CBadImages::DeleteInstances();
 }
 
